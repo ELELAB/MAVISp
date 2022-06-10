@@ -105,10 +105,12 @@ class MAVISFileSystem:
         for idx, r in self.dataset_table.iterrows():
             mut_fname = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['mutation_list'])[0]
             mut_path = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'], 'mutation_list', mut_fname)
-            mut_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = self._parse_mutation_list(mut_path)
+            mutations = self._parse_mutation_list(mut_path)
+            residue_start, residue_end = ( int(x) for x in r['residue range'].split('-') )
+            mutations = filter(lambda x: residue_start < int(x[1:-1]) < residue_end, mutations)
+            mut_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = mutations
 
         return mut_lists
-
 
     def _mutation_tables(self):
         if self.dataset_table is None:
