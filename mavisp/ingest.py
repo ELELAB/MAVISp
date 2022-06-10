@@ -74,6 +74,18 @@ class MAVISFileSystem:
 
         return out
 
+    def _parse_foldx_summary(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
+
+        data = pd.read_csv(fname, sep='\t', header=None)
+        data[0] = data[0].apply(lambda x: x[0] + x[2:])
+        data = data[[0,1]].rename(columns={0:'mutations',
+                                           1:'STABILITY (FoldX5, kcal/mol)'}).set_index('mutations')
+        return(data)
+
+    def _parse_rosetta_aggregate(self, fname):
+        mutation_data =  pd.read_csv(fname)
+        return mutation_data[mutation_data['state'] == 'ddg']['total_score'][0]
+
     def _dataset_table(self):
         df_list = {}
         mut_lists = {}
@@ -107,7 +119,7 @@ class MAVISFileSystem:
             mut_path = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'], 'mutation_list', mut_fname)
             mutations = self._parse_mutation_list(mut_path)
             residue_start, residue_end = ( int(x) for x in r['residue range'].split('-') )
-            mutations = filter(lambda x: residue_start < int(x[1:-1]) < residue_end, mutations)
+            mutations = list(filter(lambda x: residue_start < int(x[1:-1]) < residue_end, mutations))
             mut_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = mutations
 
         return mut_lists
@@ -128,9 +140,7 @@ class MAVISFileSystem:
                 if method == 'foldx5':
                     foldx_dir = os.path.join(analysis_basepath, 'stability', 'foldx5')
                     foldx_file = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['stability']['foldx5'])[0]
-                    data = pd.read_csv(os.path.join(foldx_dir, foldx_file), sep='\t', header=None)
-                    data[0] = data[0].apply(lambda x: x[0] + x[2:])
-                    data = data[[0,1]].set_index(0).rename(columns={1:'STABILITY (FoldX5, kcal/mol)'})
+                    data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
                     this_df = this_df.join(data)
                 if method == 'rosetta_ref2015':
                     data = []
@@ -138,8 +148,7 @@ class MAVISFileSystem:
                     for mutation in this_df.index:
                         rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
                         try:
-                            mutation_data =  pd.read_csv(rosetta_file)
-                            data.append(mutation_data[mutation_data['state'] == 'ddg']['total_score'][0])
+                            data.append(self._parse_rosetta_aggregate(rosetta_file))
                         except IOError:
                             data.append(np.nan)
                     this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
