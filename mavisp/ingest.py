@@ -18,12 +18,20 @@ import os
 from functools import reduce
 import pandas as pd
 import numpy as np
+import logging as log
+from datetime import date
 
 class MAVISFileSystem:
 
-    allowed_methods=['nmr', 'xray']#, 'alphafold']
+    supported_methods=['nmr', 'xray']#, 'alphafold']
+    supported_modes = ['basic_mode']
+    supported_stability_methods = ['foldx5', 'rosetta_ref2015']
+    supported_interaction_methods = ['foldx5']
     
     def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
+        
+        log.info(f"initializing MAVISFileSystem from {data_dir}")
+
         self.data_dir = data_dir
         self.dataset_table = None
         self.mutation_lists = None
@@ -32,12 +40,14 @@ class MAVISFileSystem:
         self.ingest_data()
 
     def ingest_data(self):
+
         self._tree = self._traverse(self.data_dir)
         self.dataset_table = self._dataset_table()
         self.mutation_lists = self._mutation_lists()
         self.mutation_tables = self._mutation_tables()
 
     def _dir_list(self, d):
+
         out = []
         for k,v in d.items():
             if v is not None:
@@ -46,6 +56,7 @@ class MAVISFileSystem:
         return out
   
     def _file_list(self, d):
+
         out = []
         for k,v in d.items():
             if v is None:
@@ -53,61 +64,127 @@ class MAVISFileSystem:
         return out
 
     def _traverse(self, rootdir):
+
+        log.info(f"building directory tree for {rootdir}")
+
         tree = {}
         rootdir = rootdir.rstrip(os.sep)
         start = rootdir.rfind(os.sep) + 1
-        print(rootdir, start)
-        for path, dirs, files in os.walk(rootdir):
+        for path, dirs, files in os.walk(rootdir, followlinks=True):
             folders = path[start:].split(os.sep)
             subdir = dict.fromkeys(files)
             parent = reduce(dict.get, folders[:-1], tree)
             parent[folders[-1]] = subdir
         return tree[os.path.basename(os.path.normpath(rootdir))]
 
-    def _parse_mutation_list(self, fname):
-        out = []
-        with open(fname) as fh:
-            for line in fh:
-                tmp = line.strip()
-                #out.append((tmp[0], tmp[1:-1], tmp[-1]))
-                out.append(tmp)
+        log.debug("built tree: {tree}")
 
-        return out
+    def _parse_mutation_list(self, fname):
+        log.info(f"parsing mutation file {fname}")
+
+        try:
+            with open(fname) as fh:
+                lines = fh.read().splitlines()
+        except IOError:
+            log.error("Couldn't parse mutation list {fname}")
+            raise
+
+        # remove duplicates, sort, remove empty lines
+        lines = sorted(list(set(lines)), key=lambda x: int(x[1:-1]))
+        lines = list(filter(lambda x: len(x) != 0, lines))
+
+        log.debug(f"found mutations: {lines}")
+
+        return lines
 
     def _parse_foldx_summary(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
 
-        data = pd.read_csv(fname, sep='\t', header=None)
+        log.info(f"parsing FoldX summary file {fname}")
+
+        try:
+            data = pd.read_csv(fname, sep='\t', header=None)
+        except IOError:
+            log.error("Couldn't parse FoldX summary file {fname}")
+            raise
+
+        # remove chain ID from identifier, keep mutation and DDG average, rename cols
         data[0] = data[0].apply(lambda x: x[0] + x[2:])
         data = data[[0,1]].rename(columns={0:'mutations',
-                                           1:'STABILITY (FoldX5, kcal/mol)'}).set_index('mutations')
+                                           1:f"{type} ({version}, {unit})"}).set_index('mutations')
+
+        log.debug(f"collected data: {data}")
         return(data)
 
     def _parse_rosetta_aggregate(self, fname):
-        mutation_data =  pd.read_csv(fname)
-        return mutation_data[mutation_data['state'] == 'ddg']['total_score'][0]
+
+        log.info(f"parsing Rosetta aggregate file {fname}")
+
+        try:
+            mutation_data =  pd.read_csv(fname)
+        except IOError:
+            log.error("Couldn't parse Rosetta energy file {fname}")
+            raise
+
+        energy = mutation_data[mutation_data['state'] == 'ddg']['total_score'][0]
+
+        log.debug("collected Rosetta energy: {energy}")
+
+        return energy
+
+    def _select_most_recent_file(self, fnames):
+        
+        dates = {}
+
+        for fname in fnames:
+
+            basename = os.path.splitext(fname)[0]
+            
+            try:
+                dates[date(int(basename[-4:]), 
+                           int(basename[-6:-4]),
+                           int(basename[-8:-6]))] = fname
+            except (ValueError, TypeError):
+                log.error("file {fname} doesn't contain a valid date string at the end of the file name")
+                raise
+
+        selected_file = dates[max(dates.keys())]
+        
+        log.debug(f"file names and their dates {dates}")
+        log.debug(f"selected most recent file {selected_file} among {fnames}")
+
+        return selected_file
+
+
 
     def _dataset_table(self):
+        
+        log.info("generating dataset table")
+
         df_list = {}
-        mut_lists = {}
-        data_dfs = {}
 
         k = 0
 
         for system in  self._dir_list(self._tree):
             for mode in self._dir_list(self._tree[system]):
-                if mode == 'full_mode':
+                if mode not in self.supported_modes:
+                    log.warning(f"ignoring unsupported mode {mode} in {[system, mode, st_id, residues]}")
                     continue
                 for structure in self._dir_list(self._tree[system][mode]):
                     st_id, residues = structure.split('_')
                     for method in self._dir_list(self._tree[system][mode][structure]):
-                        if method in self.allowed_methods:
-                            for model in self._dir_list(self._tree[system][mode][structure][method]):
-                                df_list[k] = [system, mode, st_id, residues, method, model]
-                                k += 1
+                        if method not in self.supported_methods:
+                            log.warning(f"ignoring unsupported method {method} in {[system, mode, st_id, residues]}")
+                            continue
+
+                        for model in self._dir_list(self._tree[system][mode][structure][method]):
+                            log.info(f"adding {[system, mode, st_id, residues, method, model]} to dataset")
+                                
+                            df_list[k] = [system, mode, st_id, residues, method, model]
 
         main_df = pd.DataFrame.from_dict(df_list, orient='index', columns=['system', 'mode', 'structure ID', 'residue range', 'method', 'model'])
-        return main_df
+        log.debug(f"identified datasets: {main_df}")
 
+        return main_df
 
     def _mutation_lists(self):
         if self.dataset_table is None:
@@ -115,13 +192,33 @@ class MAVISFileSystem:
 
         mut_lists = {}
         for idx, r in self.dataset_table.iterrows():
-            mut_fname = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['mutation_list'])[0]
-            mut_path = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'], 'mutation_list', mut_fname)
-            mutations = self._parse_mutation_list(mut_path)
-            residue_start, residue_end = ( int(x) for x in r['residue range'].split('-') )
-            mutations = list(filter(lambda x: residue_start < int(x[1:-1]) < residue_end, mutations))
-            mut_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = mutations
+            
+            log.info(f"Gathering mutation list for {r['system']} {r['mode']} {r['structure ID']} {r['residue range']} {r['method']} {r['model']}")
+            
+            mutation_files = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['mutation_list'])
+            most_recent_mut_file = self._select_most_recent_file(mutation_files)
+            log.info(f"selected {most_recent_mut_file} as mutation file")
+            
+            mut_path = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'], 'mutation_list', most_recent_mut_file)
+            
+            try:
+                mutations = self._parse_mutation_list(mut_path)
+            except IOError:
+                exit(1)
 
+            log.debug(f"mutations in file: {mutations}")
+
+            residue_start, residue_end = ( int(x) for x in r['residue range'].split('-') )
+            filtered_mutations = list(filter(lambda x: residue_start <= int(x[1:-1]) <= residue_end, mutations))
+            log.debug(f"mutations left after filtering for residue number: {filtered_mutations}")
+            
+            if set(mutations) != set(filtered_mutations):
+                log.warning(f"the following mutations were filtered out as outside the structure residue range: {set(mutations) ^ set(filtered_mutations)}")
+            
+            mut_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = filtered_mutations
+
+            log.debug(f"final mutation lists: {mut_lists}")
+        
         return mut_lists
 
     def _mutation_tables(self):
@@ -131,27 +228,96 @@ class MAVISFileSystem:
         data_dfs = {}
 
         for idx, r in self.dataset_table.iterrows():
+            
+            log.info(f"Gathering data for {r['system']} {r['mode']} {r['structure ID']} {r['residue range']} {r['method']} {r['model']}")
+            
             mutations = self.mutation_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])]
             this_df = pd.DataFrame({'mutations': mutations})
             this_df = this_df.set_index('mutations')
+            
             analysis_basepath = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'])
+            
             stability_methods = self._dir_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['stability'])
+            log.info(f"found methods for stability: {stability_methods}")
+            
             for method in stability_methods:
                 if method == 'foldx5':
+                    
+                    log.info("parsing data for foldx5")
+                    
                     foldx_dir = os.path.join(analysis_basepath, 'stability', 'foldx5')
-                    foldx_file = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['stability']['foldx5'])[0]
-                    data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
+                    
+                    foldx_files = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['stability']['foldx5'])
+                    if len(foldx_files) != 1:
+                        log.error(f"multiple files found in {foldx_dir}; only one expected")
+                        exit(1)
+                    foldx_file = foldx_files[0]
+                    
+                    try:
+                        data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
+                    except IOError:
+                        exit(1)
+
                     this_df = this_df.join(data)
+                    
+                    log.debug(f"adding foldx5 data {this_df}")
+                
                 if method == 'rosetta_ref2015':
+                    
+                    log.info("parsing data for rosetta_ref2015")
+                    
                     data = []
+                    
                     rosetta_dir = os.path.join(analysis_basepath, 'stability', 'rosetta_ref2015')
+                    
                     for mutation in this_df.index:
                         rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
                         try:
                             data.append(self._parse_rosetta_aggregate(rosetta_file))
                         except IOError:
-                            data.append(np.nan)
+                            log.error("couldn't open expected energy file {rosetta_file}")
+                            exit(1)
+                    
+                    log.debug(f"adding rosetta_ref2015 data {data}")
                     this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
+
+            interaction_methods = self._dir_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['local_interactions'])
+            log.info(f"found methods for stability: {stability_methods}")
+
+            for method in interaction_methods:
+
+                if method == 'foldx5':
+                    
+                    log.info("parsing data for foldx5")
+                    
+                    foldx_dir = os.path.join(analysis_basepath, 'local_interactions', 'foldx5')
+
+                    interactors = self._dir_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['local_interactions']['foldx5'])
+                    if len(interactors) == 0:
+                        log.error("zero interactors found for FoldX local interactions")
+                        exit(1)
+
+                    for interactor in interactors:
+
+                        interactor_dir = os.path.join(foldx_dir, interactor)
+
+                        foldx_files = self._file_list(self._tree[r['system']][r['mode']][f"{r['structure ID']}_{r['residue range']}"][r['method']][r['model']]['local_interactions']['foldx5'][interactor])
+                        if len(foldx_files) != 1:
+                            log.error(f"zero or multiple files found in {foldx_dir}; exactly one expected")
+                            exit(1)
+                        foldx_file = foldx_files[0]
+                        
+                        try:
+                            data = self._parse_foldx_summary(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                        except IOError:
+                            exit(1)
+                        
+                        this_df = this_df.join(data)
+                        
+                        log.debug(f"adding foldx5 data {this_df}")
+
+
+
             data_dfs[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = this_df
 
         return data_dfs
