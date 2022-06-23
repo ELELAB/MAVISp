@@ -44,7 +44,7 @@ class MAVISFileSystem:
         self._tree = self._traverse(self.data_dir)
         self.dataset_table = self._dataset_table()
         self.mutation_lists = self._mutation_lists()
-        self.mutation_tables = self._mutation_tables()
+        self.mutation_datasets = self._mutation_tables()
 
     def _dir_list(self, d):
 
@@ -316,18 +316,7 @@ class MAVISFileSystem:
                         
                         log.debug(f"adding foldx5 data {this_df}")
 
-
-
             data_dfs[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = this_df
 
         return data_dfs
 
-
-    
-
-
-"""
-
-print(main_df)
-print(mut_lists)
-"""
