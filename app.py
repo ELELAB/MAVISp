@@ -21,12 +21,13 @@ import pandas as pd
 
 mfs = MAVISFileSystem()
 
+st.image('assets/logo.png')
+
+st.write('Welcome to MAVISp!')
+
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(mfs.dataset_table)
 gb_datasets_grid.configure_selection(selection_mode='single',
                        use_checkbox=True)
-
-
-
 
 datasets_grid = AgGrid(mfs.dataset_table,
                       gridOptions=gb_datasets_grid.build(),
