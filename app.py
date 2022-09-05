@@ -46,9 +46,3 @@ if len(datasets_grid["selected_rows"]) == 1:
                             gridOptions=this_gb.build(),
                             width=3000)
 
-
-
-
-
-
-
