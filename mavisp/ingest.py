@@ -232,8 +232,8 @@ class MAVISFileSystem:
             log.info(f"Gathering data for {r['system']} {r['mode']} {r['structure ID']} {r['residue range']} {r['method']} {r['model']}")
             
             mutations = self.mutation_lists[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])]
-            this_df = pd.DataFrame({'mutations': mutations})
-            this_df = this_df.set_index('mutations')
+            this_df = pd.DataFrame({'Mutation': mutations})
+            this_df = this_df.set_index('Mutation')
             
             analysis_basepath = os.path.join(self.data_dir, r['system'], r['mode'], f"{r['structure ID']}_{r['residue range']}", r['method'], r['model'])
             
@@ -316,6 +316,7 @@ class MAVISFileSystem:
                         
                         log.debug(f"adding foldx5 data {this_df}")
 
+            this_df = this_df.reset_index()
             data_dfs[(r['system'], r['mode'], r['structure ID'], r['residue range'], r['method'], r['model'])] = this_df
 
         return data_dfs
