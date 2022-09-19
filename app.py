@@ -18,6 +18,7 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
+import logging as log
 
 mfs = MAVISFileSystem()
 
@@ -25,18 +26,19 @@ st.image('assets/logo.png')
 
 st.write('Welcome to MAVISp!')
 
-gb_datasets_grid = GridOptionsBuilder.from_dataframe(mfs.dataset_table)
+show_table = mfs.dataset_table[['system', 'mode']]
+
+gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 gb_datasets_grid.configure_selection(selection_mode='single',
                        use_checkbox=True)
 
-datasets_grid = AgGrid(mfs.dataset_table,
+datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True)
 
 if len(datasets_grid["selected_rows"]) == 1:
-    print(datasets_grid["selected_rows"][0].values())
-    print(tuple(datasets_grid["selected_rows"][0].values()))
+    print(datasets_grid["selected_rows"])
     this_dataset = mfs.mutation_datasets[tuple(datasets_grid["selected_rows"][0].values())]
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
