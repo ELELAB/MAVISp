@@ -147,9 +147,7 @@ class MAVISFileSystem:
         
         log.info("generating dataset table")
 
-        df_list = {}
-
-        k = 0
+        df_list = []
 
         for system in  self._dir_list(self._tree):
             if system in self.excluded_proteins:
@@ -166,11 +164,9 @@ class MAVISFileSystem:
                 except:
                     exit(1)
                     
-                df_list[k] = [system, mode, mutation_list]
+                df_list.append((system, mode, mutation_list))
 
-                k += 1
-
-        main_df = pd.DataFrame.from_dict(df_list, orient='index', columns=['system', 'mode', 'mutations'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations'])
         log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -189,7 +185,7 @@ class MAVISFileSystem:
             mutations = self._parse_mutation_list(mut_path)
         except IOError:
             log.error(f"Couldn't parse mutation list {mut_path}")
-            exit(1)
+            raise IOError
 
         log.debug(f"final mutation lists: {mutations}")
         
