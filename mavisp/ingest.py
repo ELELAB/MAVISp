@@ -47,21 +47,10 @@ class MAVISFileSystem:
     def _dir_list(self, d):
 
         return [ k for k,v in d.items() if v is not None ]
-        """
-        out = []
-        for k,v in d.items():
-            if v is not None:
-                out.append(k)
 
-        return out
-        """
     def _file_list(self, d):
 
-        out = []
-        for k,v in d.items():
-            if v is None:
-                out.append(k)
-        return out
+        return [ k for k,v in d.items() if v is None ]
 
     def _traverse(self, rootdir):
 
