@@ -26,7 +26,7 @@ class MAVISFileSystem:
     excluded_proteins = ['ARID3A']
     supported_methods = ['nmr', 'xray']#, 'alphafold']
     supported_modes = ['basic_mode']
-    supported_stability_methods = ['foldx5', 'rosetta_ref2015']
+    supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
 
     def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
@@ -126,7 +126,7 @@ class MAVISFileSystem:
             log.error("Couldn't parse Rosetta energy file {fname}")
             raise
 
-        energy = mutation_data[mutation_data['state'] == 'ddg']['total_score'][0]
+        energy = mutation_data[mutation_data['state'] == 'ddg']['total_score'].to_numpy()[0]
 
         log.debug("collected Rosetta energy: {energy}")
 
@@ -279,13 +279,13 @@ class MAVISFileSystem:
 
                     log.debug(f"adding foldx5 data {this_df}")
 
-                if sm == 'rosetta_ref2015':
+                if sm == 'rosetta_ref2015' or sm == 'rosetta_cartddg2020_ref2015':
 
-                    log.info("parsing data for rosetta_ref2015")
+                    log.info(f"parsing data for {sm}")
 
                     data = []
 
-                    rosetta_dir = os.path.join(sm_basepath, 'rosetta_ref2015')
+                    rosetta_dir = os.path.join(sm_basepath, sm)
 
                     for mutation in this_df.index:
                         rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
@@ -295,7 +295,7 @@ class MAVISFileSystem:
                             log.error("couldn't open expected energy file {rosetta_file}")
                             exit(1)
 
-                    log.debug(f"adding rosetta_ref2015 data {data}")
+                    log.debug(f"adding {sm} data {data}")
                     this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
 
             interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
