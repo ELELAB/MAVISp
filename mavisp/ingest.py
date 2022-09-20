@@ -109,16 +109,17 @@ class MAVISFileSystem:
         log.info(f"parsing Rosetta aggregate file {fname}")
 
         try:
-            mutation_data =  pd.read_csv(fname)
+            mutation_data = pd.read_csv(fname)
         except IOError:
-            log.error("Couldn't parse Rosetta energy file {fname}")
+            log.error(f"Couldn't parse Rosetta energy file {fname}")
             raise
 
-        energy = mutation_data[mutation_data['state'] == 'ddg']['total_score'].to_numpy()[0]
+        mutation_data = mutation_data[mutation_data['state'] == 'ddg']
+        mutation_data = mutation_data.set_index('mutation_label')
+        mutation_data = mutation_data[['total_score']]
+        mutation_data = mutation_data.rename(columns={'total_score':'STABILITY (Rosetta, ref2015, kcal/mol)'})
 
-        log.debug("collected Rosetta energy: {energy}")
-
-        return energy
+        return mutation_data
 
     def _select_most_recent_file(self, fnames):
         
@@ -271,16 +272,21 @@ class MAVISFileSystem:
 
                         rosetta_dir = os.path.join(sm_basepath, sm)
 
-                        for mutation in this_df.index:
-                            rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
-                            try:
-                                data.append(self._parse_rosetta_aggregate(rosetta_file))
-                            except IOError:
-                                log.error("couldn't open expected energy file {rosetta_file}")
-                                exit(1)
+                        rosetta_files = os.listdir(rosetta_dir)
+                        if len(rosetta_files) != 1:
+                            log.error(f"multiple files found in {rosetta_dir}; only one expected")
+                            exit(1)
+                        rosetta_file = rosetta_files[0]
+
+                        try:
+                            data = self._parse_rosetta_aggregate(os.path.join(rosetta_dir, rosetta_file))
+                        except IOError:
+                            log.error("couldn't open expected energy file {rosetta_file}")
+                            exit(1)
+
+                        this_df = this_df.join(data)
 
                         log.debug(f"adding {sm} data {data}")
-                        this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
 
             if 'local_interactions' in self._dir_list(self._tree[system][mode]):
 
