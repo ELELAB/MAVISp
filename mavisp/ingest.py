@@ -23,8 +23,7 @@ from datetime import date
 
 class MAVISFileSystem:
 
-    excluded_proteins = ['ARID3A']
-    supported_methods = ['nmr', 'xray']#, 'alphafold']
+    excluded_proteins = []
     supported_modes = ['basic_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
@@ -155,8 +154,6 @@ class MAVISFileSystem:
 
         return selected_file
 
-
-
     def _dataset_table(self):
         
         log.info("generating dataset table")
@@ -219,124 +216,128 @@ class MAVISFileSystem:
 
             system = r['system']
             mode = r['mode']
+            mutations = r['mutations']
             
             log.info(f"Gathering data for {r['system']} {r['mode']}")
             
-            mutations = r['mutations']
             this_df = pd.DataFrame({'Mutation': mutations})
             this_df = this_df.set_index('Mutation')
             
             analysis_basepath = os.path.join(self.data_dir, system, mode)
 
-            tmp = self._dir_list(self._tree[system][mode]['stability'])
-            if len(tmp) != 1:
-                log.error("stability folder has to contain only 1 dataset")
-                exit(1)
-            structure_ID, residue_range = tmp[0].split("_")
+            if 'stability' in self._dir_list(self._tree[system][mode]):
 
-            tmp = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'])
-            if len(tmp) != 1:
-                log.error("stability folder has to contain only 1 dataset")
-                exit(1)
-            method = tmp[0]
-
-            tmp = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'][method])
-            if len(tmp) != 1:
-                log.error("stability folder has to contain only 1 dataset")
-                exit(1)
-            model = tmp[0]
-
-            stability_methods = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'][method][model])
-
-            log.info(f"found methods for stability: {stability_methods}")
-
-            for sm in stability_methods:
-
-                if sm not in self.supported_stability_methods:
-                    log.warning(f"WARNING: stability method {sm} not supported, will be skipped")
+                tmp = self._dir_list(self._tree[system][mode]['stability'])
+                if len(tmp) != 1:
+                    log.error("stability folder has to contain only 1 dataset. It will be skipped")
                     continue
+                structure_ID, residue_range = tmp[0].split("_")
+
+                tmp = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'])
+                if len(tmp) != 1:
+                    log.error("stability folder has to contain only 1 dataset. It will be skipped")
+                    continue
+                method = tmp[0]
+
+                tmp = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'][method])
+                if len(tmp) != 1:
+                    log.error("stability folder has to contain only 1 dataset. It will be skipped")
+                    continue
+                model = tmp[0]
+
+                stability_methods = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'][method][model])
 
                 sm_basepath = os.path.join(analysis_basepath, 'stability', f'{structure_ID}_{residue_range}', method, model)
 
-                if sm == 'foldx5':
+                log.info(f"found methods for stability: {stability_methods}")
 
-                    log.info("parsing data for foldx5")
+                for sm in stability_methods:
 
-                    foldx_dir = os.path.join(sm_basepath, 'foldx5')
+                    if sm not in self.supported_stability_methods:
+                        log.warning(f"WARNING: stability method {sm} not supported, will be skipped")
+                        continue
 
-                    foldx_files = os.listdir(foldx_dir)
-                    if len(foldx_files) != 1:
-                        log.error(f"multiple files found in {foldx_dir}; only one expected")
-                        exit(1)
-                    foldx_file = foldx_files[0]
+                    if sm == 'foldx5':
 
-                    try:
-                        data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
-                    except IOError:
-                        exit(1)
+                        log.info("parsing data for foldx5")
 
-                    this_df = this_df.join(data)
+                        foldx_dir = os.path.join(sm_basepath, 'foldx5')
 
-                    log.debug(f"adding foldx5 data {this_df}")
-
-                if sm == 'rosetta_ref2015' or sm == 'rosetta_cartddg2020_ref2015':
-
-                    log.info(f"parsing data for {sm}")
-
-                    data = []
-
-                    rosetta_dir = os.path.join(sm_basepath, sm)
-
-                    for mutation in this_df.index:
-                        rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
-                        try:
-                            data.append(self._parse_rosetta_aggregate(rosetta_file))
-                        except IOError:
-                            log.error("couldn't open expected energy file {rosetta_file}")
-                            exit(1)
-
-                    log.debug(f"adding {sm} data {data}")
-                    this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
-
-            interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
-
-            log.info(f"found methods for interaction: {stability_methods}")
-
-            for method in interaction_methods:
-
-                if method not in self.supported_interaction_methods:
-                    log.warning(f"Method {method} for interaction is not supported and it will be skipped")
-                    continue
-                if method == 'foldx5':
-                    
-                    log.info("parsing data for foldx5")
-
-                    int_basepath = os.path.join(analysis_basepath, 'local_interactions', 'foldx5')
-
-                    interactors = self._dir_list(self._tree[system][mode]['local_interactions']['foldx5'])
-                    if len(interactors) == 0:
-                        log.error("zero interactors found for FoldX local interactions")
-                        exit(1)
-
-                    for interactor in interactors:
-
-                        interactor_dir = os.path.join(int_basepath, interactor)
-
-                        foldx_files = os.listdir(interactor_dir)
-
+                        foldx_files = os.listdir(foldx_dir)
                         if len(foldx_files) != 1:
-                            log.error(f"zero or multiple files found in {foldx_dir}; exactly one expected")
+                            log.error(f"multiple files found in {foldx_dir}; only one expected")
                             exit(1)
                         foldx_file = foldx_files[0]
-                        
+
                         try:
-                            data = self._parse_foldx_summary(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                            data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
                         except IOError:
                             exit(1)
-                        
+
                         this_df = this_df.join(data)
-                        
+
                         log.debug(f"adding foldx5 data {this_df}")
+
+                    if sm == 'rosetta_ref2015' or sm == 'rosetta_cartddg2020_ref2015':
+
+                        log.info(f"parsing data for {sm}")
+
+                        data = []
+
+                        rosetta_dir = os.path.join(sm_basepath, sm)
+
+                        for mutation in this_df.index:
+                            rosetta_file = os.path.join(rosetta_dir, f"{mutation}_aggregate.csv")
+                            try:
+                                data.append(self._parse_rosetta_aggregate(rosetta_file))
+                            except IOError:
+                                log.error("couldn't open expected energy file {rosetta_file}")
+                                exit(1)
+
+                        log.debug(f"adding {sm} data {data}")
+                        this_df['STABILITY (Rosetta, ref2015, kcal/mol)'] = data
+
+            if 'local_interactions' in self._dir_list(self._tree[system][mode]):
+
+                interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
+
+                log.info(f"found methods for interaction: {stability_methods}")
+
+                for method in interaction_methods:
+
+                    if method not in self.supported_interaction_methods:
+                        log.warning(f"Method {method} for interaction is not supported and it will be skipped")
+                        continue
+                    if method == 'foldx5':
+
+                        log.info("parsing data for foldx5")
+
+                        int_basepath = os.path.join(analysis_basepath, 'local_interactions', 'foldx5')
+
+                        interactors = self._dir_list(self._tree[system][mode]['local_interactions']['foldx5'])
+                        if len(interactors) == 0:
+                            log.error("zero interactors found for FoldX local interactions")
+                            exit(1)
+
+                        for interactor in interactors:
+
+                            interactor_dir = os.path.join(int_basepath, interactor)
+
+                            foldx_files = os.listdir(interactor_dir)
+
+                            if len(foldx_files) != 1:
+                                log.error(f"zero or multiple files found in {foldx_dir}; exactly one expected")
+                                exit(1)
+                            foldx_file = foldx_files[0]
+
+                            try:
+                                data = self._parse_foldx_summary(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                            except IOError:
+                                exit(1)
+
+                            this_df = this_df.join(data)
+
+                            log.debug(f"adding foldx5 data {this_df}")
 
             this_df = this_df.reset_index()
             data_dfs[(system, mode)] = this_df
