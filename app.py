@@ -18,7 +18,6 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
-import logging as log
 
 mfs = MAVISFileSystem()
 
