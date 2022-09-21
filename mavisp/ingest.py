@@ -121,6 +121,26 @@ class MAVISFileSystem:
 
         return mutation_data
 
+    def _parse_cancermuts(self, fname):
+
+        log.info(f"parsing Cancermuts file {fname}")
+
+        try:
+            cancermuts = pd.read_csv(fname)
+        except IOError:
+            log.error(f"Couldn't parse Cancermuts file {fname}")
+            raise
+
+        cancermuts = cancermuts[ ~ pd.isna(cancermuts.alt_aa)]
+        cancermuts['mutation_index'] = cancermuts.ref_aa + cancermuts.aa_position.astype(str) + cancermuts.alt_aa
+        cancermuts = cancermuts.set_index('mutation_index')
+        cancermuts = cancermuts[['gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
+
+        return       cancermuts.rename(columns={ 'gnomad_genome_af' : 'gnomAD genome allele frequency',
+                                                 'gnomad_exome_af'  : 'gnomAD exome allele frequency',
+                                                 'REVEL_score'      : 'REVEL score',
+                                                 'sources'          : 'Mutation sources' })
+
     def _select_most_recent_file(self, fnames):
         
         dates = {}
@@ -286,7 +306,7 @@ class MAVISFileSystem:
 
                         this_df = this_df.join(data)
 
-                        log.debug(f"adding {sm} data {data}")
+                        log.debug(f"adding {sm} data")
 
             if 'local_interactions' in self._dir_list(self._tree[system][mode]):
 
@@ -329,6 +349,20 @@ class MAVISFileSystem:
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
+
+            if 'cancermuts' in self._dir_list(self._tree[system][mode]):
+
+                cancermuts_dir = os.path.join(analysis_basepath, 'cancermuts')
+
+                cancermuts_files = os.listdir(cancermuts_dir)
+                if len(cancermuts_files) != 1:
+                    log.error(f"multiple files found in {cancermuts_files}; only one expected")
+                    exit(1)
+                cancermuts_file = cancermuts_files[0]
+
+                cancermuts_data = self._parse_cancermuts(os.path.join(analysis_basepath, 'cancermuts', cancermuts_file))
+
+                this_df = this_df.join(cancermuts_data)
 
             this_df = this_df.reset_index()
             data_dfs[(system, mode)] = this_df
