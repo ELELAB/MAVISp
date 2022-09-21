@@ -75,7 +75,7 @@ class MAVISFileSystem:
                 lines = fh.read().splitlines()
         except IOError:
             log.error("Couldn't parse mutation list {fname}")
-            raise
+            raise IOError
 
         # remove duplicates, sort, remove empty lines
         lines = sorted(list(set(lines)), key=lambda x: int(x[1:-1]))
@@ -93,7 +93,7 @@ class MAVISFileSystem:
             data = pd.read_csv(fname, delim_whitespace=True, header=None)
         except IOError:
             log.error("Couldn't parse FoldX summary file {fname}")
-            raise
+            raise IOError
 
         # remove chain ID from identifier, keep mutation and DDG average, rename cols
         data[0] = data[0].apply(lambda x: x[0] + x[2:])
@@ -112,7 +112,7 @@ class MAVISFileSystem:
             mutation_data = pd.read_csv(fname)
         except IOError:
             log.error(f"Couldn't parse Rosetta energy file {fname}")
-            raise
+            raise IOError
 
         mutation_data = mutation_data[mutation_data['state'] == 'ddg']
         mutation_data = mutation_data.set_index('mutation_label')
@@ -155,7 +155,7 @@ class MAVISFileSystem:
                            int(basename[-8:-6]))] = fname
             except (ValueError, TypeError):
                 log.error("file {fname} doesn't contain a valid date string at the end of the file name")
-                raise
+                raise TypeError
 
         selected_file = dates[max(dates.keys())]
         
@@ -360,7 +360,10 @@ class MAVISFileSystem:
                     exit(1)
                 cancermuts_file = cancermuts_files[0]
 
-                cancermuts_data = self._parse_cancermuts(os.path.join(analysis_basepath, 'cancermuts', cancermuts_file))
+                try:
+                    cancermuts_data = self._parse_cancermuts(os.path.join(analysis_basepath, 'cancermuts', cancermuts_file))
+                except IOError:
+                    exit(1)
 
                 this_df = this_df.join(cancermuts_data)
 
