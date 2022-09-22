@@ -51,7 +51,6 @@ if len(datasets_grid["selected_rows"]) == 1:
                         "text/csv",
                         key='download-csv')
 
-
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
 
