@@ -150,7 +150,7 @@ class MAVISFileSystem:
         except IOError:
             log.error(f"Couldn't parse PMID file {fname}")
             raise
-        print(pmid)
+
         return pmid.set_index('mutation')
 
     def _select_most_recent_file(self, fnames):
