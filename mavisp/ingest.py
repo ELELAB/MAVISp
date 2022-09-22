@@ -232,10 +232,15 @@ class MAVISFileSystem:
 
     def _process_table(self, table):
 
-        functions = [self._process_stability]
+        log.info("Processing metatable")
 
-        for f in functions: 
-            table = table.apply(f, axis=1)
+        functions = {'Stability classification' : self._process_stability}
+
+        for colname, f in functions.items():
+            log.info(f"Processing {colname}")
+            table[colname] = table.apply(f, axis=1)
+
+        return table
 
     def _mutation_tables(self):
         if self.dataset_table is None:
@@ -374,6 +379,8 @@ class MAVISFileSystem:
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
+
+            this_df = self._process_table(this_df)
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
