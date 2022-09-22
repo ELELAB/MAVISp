@@ -21,6 +21,8 @@ import pandas as pd
 
 mfs = MAVISFileSystem()
 
+st.set_page_config(layout="wide")
+
 st.image('assets/logo.png')
 
 st.write('Welcome to MAVISp!')
@@ -28,6 +30,8 @@ st.write('Welcome to MAVISp!')
 show_table = mfs.dataset_table[['system', 'mode']]
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
+gb_datasets_grid.configure_auto_height()
+
 gb_datasets_grid.configure_selection(selection_mode='single',
                        use_checkbox=True)
 
@@ -38,7 +42,14 @@ datasets_grid = AgGrid(show_table,
 
 if len(datasets_grid["selected_rows"]) == 1:
     print(datasets_grid["selected_rows"])
-    this_dataset = mfs.mutation_datasets[tuple(datasets_grid["selected_rows"][0].values())]
+    selected_key = tuple(datasets_grid["selected_rows"][0].values())
+    this_dataset = mfs.mutation_datasets[selected_key]
+
+    st.download_button("Download dataset",
+                        this_dataset.to_csv().encode('utf-8'),
+                        f"{selected_key[0]}_{selected_key[1]}.csv",
+                        "text/csv",
+                        key='download-csv')
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
