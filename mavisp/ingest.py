@@ -212,6 +212,36 @@ class MAVISFileSystem:
         
         return mutations
 
+    def _process_stability(self, row):
+        rosetta_header = 'STABILITY (Rosetta, ref2015, kcal/mol)'
+        foldx_header   = 'STABILITY (FoldX5, kcal/mol)'
+
+        stab_co = 3.0
+        neut_co = 2.0
+
+        if rosetta_header not in row.index or foldx_header not in row.index:
+            return pd.NA
+
+        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+            return 'Destabilizing'
+        if row[foldx_header] and row[rosetta_header] < (- stab_co):
+            return 'Stabilizing'
+        if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
+            return('Neutral')
+        return 'Uncertain'
+
+    def _process_table(self, table):
+
+        log.info("Processing metatable")
+
+        functions = {'Stability classification' : self._process_stability}
+
+        for colname, f in functions.items():
+            log.info(f"Processing {colname}")
+            table[colname] = table.apply(f, axis=1)
+
+        return table
+
     def _mutation_tables(self):
         if self.dataset_table is None:
             return None
@@ -276,7 +306,7 @@ class MAVISFileSystem:
                         foldx_file = foldx_files[0]
 
                         try:
-                            data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file))
+                            data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file), version='FoldX5')
                         except IOError:
                             exit(1)
 
@@ -349,6 +379,8 @@ class MAVISFileSystem:
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
+
+            this_df = self._process_table(this_df)
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
