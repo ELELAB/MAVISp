@@ -417,7 +417,7 @@ class MAVISFileSystem:
 
                 pmid_files = os.listdir(pmid_dir)
                 if len(pmid_files) != 1:
-                    log.error(f"multiple files found in {pmid_files}; only one expected")
+                    log.error(f"multiple or no files found in {pmid_files}; only one expected")
                     exit(1)
                 pmid_file = pmid_files[0]
 
