@@ -141,6 +141,18 @@ class MAVISFileSystem:
                                                  'REVEL_score'      : 'REVEL score',
                                                  'sources'          : 'Mutation sources' })
 
+    def _parse_pmid(self, fname):
+
+        log.info(f"parsing PMID file {fname}")
+
+        try:
+            pmid = pd.read_csv(fname, delim_whitespace=True)
+        except IOError:
+            log.error(f"Couldn't parse PMID file {fname}")
+            raise
+
+        return pmid.set_index('mutation')
+
     def _select_most_recent_file(self, fnames):
         
         dates = {}
@@ -399,7 +411,25 @@ class MAVISFileSystem:
 
                 this_df = this_df.join(cancermuts_data)
 
+            if 'pmid_list' in self._dir_list(self._tree[system][mode]):
+
+                pmid_dir = os.path.join(analysis_basepath, 'pmid_list')
+
+                pmid_files = os.listdir(pmid_dir)
+                if len(pmid_files) != 1:
+                    log.error(f"multiple or no files found in {pmid_files}; only one expected")
+                    exit(1)
+                pmid_file = pmid_files[0]
+
+                try:
+                    pmid_data = self._parse_pmid(os.path.join(analysis_basepath, 'pmid_list', pmid_file))
+                except IOError:
+                    exit(1)
+
+                this_df = this_df.join(pmid_data)
+
             this_df = this_df.reset_index()
+            this_df = this_df.fillna(pd.NA)
             data_dfs[(system, mode)] = this_df
 
         return data_dfs
