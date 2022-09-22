@@ -267,7 +267,7 @@ class MAVISFileSystem:
                 if len(tmp) != 1:
                     log.error("stability folder has to contain only 1 dataset. It will be skipped")
                     continue
-                structure_ID, residue_range = tmp[0].split("_")
+                structure_ID, residue_range = tmp[0].split("_", maxsplit=1)
 
                 tmp = self._dir_list(self._tree[system][mode]['stability'][f'{structure_ID}_{residue_range}'])
                 if len(tmp) != 1:
