@@ -153,6 +153,26 @@ class MAVISFileSystem:
 
         return pmid.set_index('mutation')
 
+    def _parse_ptm(self, fname):
+
+        try:
+            ptms = pd.read_csv(fname, delim_whitespace=True)
+        except:
+            log.error(f"file {fname} not in the right format")
+            raise TypeError
+
+        ptms['mutation'] = os.path.splitext(os.path.basename(fname))[0]
+
+        if len(ptms) != 1:
+            tmp_data = {}
+            for c in ptms.columns:
+                tmp_data[c] = ", ".join(map(str, ptms[c].to_list()))
+            ptms = pd.DataFrame(tmp_data)
+
+        ptms = ptms.set_index('mutation')
+
+        return ptms
+
     def _select_most_recent_file(self, fnames):
         
         dates = {}
@@ -427,6 +447,32 @@ class MAVISFileSystem:
                     exit(1)
 
                 this_df = this_df.join(pmid_data)
+
+            if 'ptm' in self._dir_list(self._tree[system][mode]):
+
+                ptm_dir = os.path.join(analysis_basepath, 'ptm')
+
+                ptm_files = os.listdir(ptm_dir)
+                if len(ptm_files) == 0:
+                    log.error(f"no files found in {ptm_files}")
+
+                ptm_data = []
+                for fname in ptm_files:
+                    try:
+                        ptm_data.append(self._parse_ptm(os.path.join(analysis_basepath, 'ptm', fname)))
+                    except (IOError, TypeError):
+                        exit(1)
+
+                ptm_data = pd.concat(ptm_data)
+                ptm_data = ptm_data.rename(columns={ '#ptm'                 : "PTMs",
+                                                     'SASA(%)'              : "PTM residue SASA (%)" ,
+                                                     'ddG(foldX5,kcal/mol)' : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                     'effect_regulation'    : "PTM effect in regulation",
+                                                     'effect_stability'     : "PTM effect in stability" ,
+                                                     'effect_function'      : "PTM effect in function",
+                                                     'notes'                : "PTM notes"})
+
+                this_df = this_df.join(ptm_data)
 
             this_df = this_df.reset_index()
             this_df = this_df.fillna(pd.NA)
