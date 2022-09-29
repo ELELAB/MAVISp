@@ -2,6 +2,10 @@
 
 the MAVISp database for structural variants annotation
 
+In the following instructions
+  - `hostname` denotes the hostname of the server (i.e. the one you usually ssh to)
+  - `user` denotes your username on the server
+
 ## Running the app - with X forwarding
 
 This is the simplest way to run MAVISp. It is however pretty slow
@@ -50,7 +54,7 @@ user experience.
 1) ssh without X forwarding to the server:
 
 ```
-ssh user@...
+ssh user@hostname
 ```
 
 2) clone the repository somewhere on the server
@@ -93,9 +97,7 @@ Please note down the port that Streamlit is providing service on
 ssh -N -L 8080:hostname:8501 user@hostname
 ```
 
-notice that you need to change:
-- the hostname
-- your username
-- the port number a the **right** of `hostname:` with the one that Streamlit is providing service on
+notice that you need to change the port number at the **right** of `hostname:`
+with the one that Streamlit is providing service on 
 
-6) **on your workstation** open a newbrowser window and visit the website `localhost:8080`. MAVISp should load.
+6) **on your workstation** open a new browser window and visit the website `localhost:8080`. MAVISp should load.
