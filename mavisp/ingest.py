@@ -262,15 +262,20 @@ class MAVISFileSystem:
             return('Neutral')
         return 'Uncertain'
 
-    def _process_table(self, table):
+    def _process_table(self, table, which='all'):
 
         log.info("Processing metatable")
 
         functions = {'Stability classification' : self._process_stability}
 
-        for colname, f in functions.items():
+        if which == 'all':
+            this_run = functions.keys()
+        else:
+            this_run = list( set(which).intersection(set(list(functions.keys()))) )
+
+        for colname in this_run:
             log.info(f"Processing {colname}")
-            table[colname] = table.apply(f, axis=1)
+            table[colname] = table.apply(functions[colname], axis=1)
 
         return table
 
@@ -370,6 +375,8 @@ class MAVISFileSystem:
 
                         log.debug(f"adding {sm} data")
 
+            this_df = self._process_table(this_df, which=['Stability classification'])
+
             if 'local_interactions' in self._dir_list(self._tree[system][mode]):
 
                 interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
@@ -411,8 +418,6 @@ class MAVISFileSystem:
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
-
-            this_df = self._process_table(this_df)
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
