@@ -269,7 +269,7 @@ class MAVISFileSystem:
 
         if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
             return 'Destabilizing'
-        if row[foldx_header] and row[rosetta_header] < (- stab_co):
+        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
             return 'Stabilizing'
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
             return('Neutral')
