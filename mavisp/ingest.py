@@ -26,7 +26,7 @@ class MAVISFileSystem:
     excluded_proteins = []
     supported_modes = ['basic_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
-    supported_interaction_methods = ['foldx5']
+    supported_interaction_methods = ['foldx5', 'rosetta_flexddg_talaris2014']
 
     def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
         
@@ -112,12 +112,12 @@ class MAVISFileSystem:
 
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
-        df = df.rename(columns={0:f"{type} ({version}, {unit})"})
+        df = df.rename(columns={0 : f"{type} ({version}, {unit})"})
 
         log.debug(f"collected data: {df}")
         return(df)
 
-    def _parse_rosetta_aggregate(self, fname):
+    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='Rosetta Flexddg2020', unit='kcal/mol'):
 
         log.info(f"parsing Rosetta aggregate file {fname}")
 
@@ -130,7 +130,7 @@ class MAVISFileSystem:
         mutation_data = mutation_data[mutation_data['state'] == 'ddg']
         mutation_data = mutation_data.set_index('mutation_label')
         mutation_data = mutation_data[['total_score']]
-        mutation_data = mutation_data.rename(columns={'total_score':'STABILITY (Rosetta, ref2015, kcal/mol)'})
+        mutation_data = mutation_data.rename(columns={'total_score':f'{type} ({version}, {unit})'})
 
         return mutation_data
 
@@ -258,8 +258,15 @@ class MAVISFileSystem:
         return mutations
 
     def _process_stability(self, row):
-        rosetta_header = 'STABILITY (Rosetta, ref2015, kcal/mol)'
-        foldx_header   = 'STABILITY (FoldX5, kcal/mol)'
+        keys = [ k for k in row.keys() if k.startswith('STABILITY') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                raise TypeError
 
         stab_co = 3.0
         neut_co = 2.0
@@ -272,14 +279,39 @@ class MAVISFileSystem:
         if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
             return 'Stabilizing'
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
-            return('Neutral')
+            return 'Neutral'
+        return 'Uncertain'
+
+    def _process_local_interactions(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('LOCAL INT') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                raise TypeError
+
+        stab_co =  1.0
+
+        if rosetta_header not in row.index or foldx_header not in row.index:
+            return pd.NA
+        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+            return 'Destabilizing'
+        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+            return 'Stabilizing'
+        if (- stab_co) <= row[foldx_header] <= stab_co and (- stab_co) <= row[rosetta_header] <= stab_co:
+            return 'Neutral'
         return 'Uncertain'
 
     def _process_table(self, table, which='all'):
 
         log.info("Processing metatable")
 
-        functions = {'Stability classification' : self._process_stability}
+        functions = {'Stability classification'         : self._process_stability,
+                    'Local interactions classification' : self._process_local_interactions}
 
         if which == 'all':
             this_run = functions.keys()
@@ -424,13 +456,48 @@ class MAVISFileSystem:
                             foldx_file = foldx_files[0]
 
                             try:
-                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, FoldX5")
                             except IOError:
                                 exit(1)
 
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
+
+                    if method == 'rosetta_flexddg_talaris2014':
+
+                        log.info("parsing data for rosetta_flexddg_talaris2014")
+
+                        int_basepath = os.path.join(analysis_basepath, 'local_interactions', 'rosetta_flexddg_talaris2014')
+
+                        interactors = self._dir_list(self._tree[system][mode]['local_interactions']['rosetta_flexddg_talaris2014'])
+                        if len(interactors) == 0:
+                            log.error("zero interactors found for Rosetta FlexDDG local interactions")
+                            exit(1)
+
+                        for interactor in interactors:
+
+                            interactor_dir = os.path.join(int_basepath, interactor)
+
+                            rosetta_files = os.listdir(interactor_dir)
+
+                            if len(rosetta_files) != 1:
+                                log.error(f"zero or multiple files found in {interactor_dir}; exactly one expected")
+                                exit(1)
+                            rosetta_file = rosetta_files[0]
+
+                            try:
+                                data = self._parse_rosetta_aggregate(os.path.join(interactor_dir, rosetta_file), type="LOCAL INT", version=f"Binding with {interactor}, Rosetta Talaris 2014")
+                            except IOError:
+                                exit(1)
+
+                            this_df = this_df.join(data)
+
+                            log.info(f"Adding local interaction information for {method}, {interactor}")
+
+                            log.debug(f"adding rosetta_flexddg_talaris2014 data {this_df}")
+
+                this_df = self._process_table(this_df, which=['Local interactions classification'])
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
