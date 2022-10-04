@@ -279,14 +279,39 @@ class MAVISFileSystem:
         if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
             return 'Stabilizing'
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
-            return('Neutral')
+            return 'Neutral'
+        return 'Uncertain'
+
+    def _process_local_interactions(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('LOCAL INT') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                raise TypeError
+
+        stab_co =  1.0
+
+        if rosetta_header not in row.index or foldx_header not in row.index:
+            return pd.NA
+        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+            return 'Destabilizing'
+        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+            return 'Stabilizing'
+        if (- stab_co) <= row[foldx_header] <= stab_co and (- stab_co) <= row[rosetta_header] <= stab_co:
+            return 'Neutral'
         return 'Uncertain'
 
     def _process_table(self, table, which='all'):
 
         log.info("Processing metatable")
 
-        functions = {'Stability classification' : self._process_stability}
+        functions = {'Stability classification'         : self._process_stability,
+                    'Local interactions classification' : self._process_local_interactions}
 
         if which == 'all':
             this_run = functions.keys()
@@ -431,7 +456,7 @@ class MAVISFileSystem:
                             foldx_file = foldx_files[0]
 
                             try:
-                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, FoldX5")
                             except IOError:
                                 exit(1)
 
@@ -471,6 +496,8 @@ class MAVISFileSystem:
                             log.info(f"Adding local interaction information for {method}, {interactor}")
 
                             log.debug(f"adding rosetta_flexddg_talaris2014 data {this_df}")
+
+                this_df = self._process_table(this_df, which=['Local interactions classification'])
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
