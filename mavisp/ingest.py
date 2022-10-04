@@ -26,7 +26,7 @@ class MAVISFileSystem:
     excluded_proteins = []
     supported_modes = ['basic_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
-    supported_interaction_methods = ['foldx5']
+    supported_interaction_methods = ['foldx5', 'rosetta_flexddg_talaris2014']
 
     def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
         
@@ -117,7 +117,7 @@ class MAVISFileSystem:
         log.debug(f"collected data: {df}")
         return(df)
 
-    def _parse_rosetta_aggregate(self, fname):
+    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
 
         log.info(f"parsing Rosetta aggregate file {fname}")
 
@@ -130,7 +130,7 @@ class MAVISFileSystem:
         mutation_data = mutation_data[mutation_data['state'] == 'ddg']
         mutation_data = mutation_data.set_index('mutation_label')
         mutation_data = mutation_data[['total_score']]
-        mutation_data = mutation_data.rename(columns={'total_score':'STABILITY (Rosetta, ref2015, kcal/mol)'})
+        mutation_data = mutation_data.rename(columns={'total_score':f'{type} {version} {unit}'})
 
         return mutation_data
 
@@ -431,6 +431,39 @@ class MAVISFileSystem:
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
+
+                    if method == 'rosetta_flexddg_talaris2014':
+
+                        log.info("parsing data for rosetta_flexddg_talaris2014")
+
+                        int_basepath = os.path.join(analysis_basepath, 'local_interactions', 'rosetta_flexddg_talaris2014')
+
+                        interactors = self._dir_list(self._tree[system][mode]['local_interactions']['rosetta_flexddg_talaris2014'])
+                        if len(interactors) == 0:
+                            log.error("zero interactors found for Rosetta FlexDDG local interactions")
+                            exit(1)
+
+                        for interactor in interactors:
+
+                            interactor_dir = os.path.join(int_basepath, interactor)
+
+                            rosetta_files = os.listdir(interactor_dir)
+
+                            if len(rosetta_files) != 1:
+                                log.error(f"zero or multiple files found in {interactor_dir}; exactly one expected")
+                                exit(1)
+                            rosetta_file = rosetta_files[0]
+
+                            try:
+                                data = self._parse_rosetta_aggregate(os.path.join(interactor_dir, rosetta_file), type="LOCAL INT", version=f"Binding with {interactor}, Rosetta Talaris 2014")
+                            except IOError:
+                                exit(1)
+
+                            this_df = this_df.join(data)
+
+                            log.info(f"Adding local interaction information for {method}, {interactor}")
+
+                            log.debug(f"adding rosetta_flexddg_talaris2014 data {this_df}")
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
