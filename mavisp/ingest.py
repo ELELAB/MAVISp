@@ -112,12 +112,12 @@ class MAVISFileSystem:
 
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
-        df = df.rename(columns={0:f"{type} ({version}, {unit})"})
+        df = df.rename(columns={0 : f"{type} ({version}, {unit})"})
 
         log.debug(f"collected data: {df}")
         return(df)
 
-    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
+    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='Rosetta Flexddg2020', unit='kcal/mol'):
 
         log.info(f"parsing Rosetta aggregate file {fname}")
 
@@ -130,7 +130,7 @@ class MAVISFileSystem:
         mutation_data = mutation_data[mutation_data['state'] == 'ddg']
         mutation_data = mutation_data.set_index('mutation_label')
         mutation_data = mutation_data[['total_score']]
-        mutation_data = mutation_data.rename(columns={'total_score':f'{type} {version} {unit}'})
+        mutation_data = mutation_data.rename(columns={'total_score':f'{type} ({version}, {unit})'})
 
         return mutation_data
 
