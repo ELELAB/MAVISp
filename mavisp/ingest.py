@@ -85,24 +85,37 @@ class MAVISFileSystem:
 
         return lines
 
-    def _parse_foldx_summary(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
+    def _parse_foldx_csv(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
 
-        log.info(f"parsing FoldX summary file {fname}")
+        log.info(f"parsing FoldX csv file {fname}")
 
         try:
-            data = pd.read_csv(fname, delim_whitespace=True, header=None)
+            df = pd.read_csv(fname)
         except IOError:
             log.error("Couldn't parse FoldX summary file {fname}")
             raise IOError
 
-        # remove chain ID from identifier, keep mutation and DDG average, rename cols
-        data[0] = data[0].apply(lambda x: x[0] + x[2:])
+        # create residue column
+        df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
 
-        data = data[[0,1]].rename(columns={0:'mutations',
-                                           1:f"{type} ({version}, {unit})"}).set_index('mutations')
+        # drop column we don't need
+        df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
-        log.debug(f"collected data: {data}")
-        return(data)
+        # stack remaining columns
+        df = df.set_index('residue')
+        df = df.stack()
+        df = df.reset_index()
+
+        # create mutation column
+        df['mutations'] = df['residue'] + df['level_1']
+        df = df.set_index('mutations')
+
+        # drop now useless columns, rename
+        df = df.drop(['residue', 'level_1'], axis=1)
+        df = df.rename(columns={0:f"{type} ({version}, {unit})"})
+
+        log.debug(f"collected data: {df}")
+        return(df)
 
     def _parse_rosetta_aggregate(self, fname):
 
@@ -343,7 +356,7 @@ class MAVISFileSystem:
                         foldx_file = foldx_files[0]
 
                         try:
-                            data = self._parse_foldx_summary(os.path.join(foldx_dir, foldx_file), version='FoldX5')
+                            data = self._parse_foldx_csv(os.path.join(foldx_dir, foldx_file), version='FoldX5')
                         except IOError:
                             exit(1)
 
@@ -381,7 +394,7 @@ class MAVISFileSystem:
 
                 interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
 
-                log.info(f"found methods for interaction: {stability_methods}")
+                log.info(f"found methods for interaction: {interaction_methods}")
 
                 for method in interaction_methods:
 
@@ -411,7 +424,7 @@ class MAVISFileSystem:
                             foldx_file = foldx_files[0]
 
                             try:
-                                data = self._parse_foldx_summary(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
+                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, Foldx5")
                             except IOError:
                                 exit(1)
 
