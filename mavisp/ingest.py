@@ -258,8 +258,15 @@ class MAVISFileSystem:
         return mutations
 
     def _process_stability(self, row):
-        rosetta_header = 'STABILITY (Rosetta, ref2015, kcal/mol)'
-        foldx_header   = 'STABILITY (FoldX5, kcal/mol)'
+        keys = [ k for k in row.keys() if k.startswith('STABILITY') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                raise TypeError
 
         stab_co = 3.0
         neut_co = 2.0
