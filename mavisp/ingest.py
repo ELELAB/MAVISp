@@ -427,8 +427,10 @@ class MAVISFileSystem:
                         log.debug(f"adding {sm} data")
 
             if len(actual_methods) > 0:
-                log.warning("No valid method for stability found; skipping processing")
                 this_df = self._process_table(this_df, which=['Stability classification'])
+            else:
+                log.warning("No valid method for stability found; skipping processing")
+
 
             if 'local_interactions' in self._dir_list(self._tree[system][mode]):
 
@@ -508,8 +510,9 @@ class MAVISFileSystem:
                             log.debug(f"adding rosetta_flexddg_talaris2014 data {this_df}")
 
                 if len(actual_methods) > 0:
-                    log.warning("No valid method for local interactions found; skipping processing")
                     this_df = self._process_table(this_df, which=['Local interactions classification'])
+                else:
+                    log.warning("No valid method for local interactions found; skipping processing")
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
