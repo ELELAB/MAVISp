@@ -371,6 +371,8 @@ class MAVISFileSystem:
 
                 log.info(f"found methods for stability: {stability_methods}")
 
+                actual_methods = set(stability_methods).intersection(set(self.supported_stability_methods))
+
                 for sm in stability_methods:
 
                     if sm not in self.supported_stability_methods:
@@ -422,13 +424,17 @@ class MAVISFileSystem:
 
                         log.debug(f"adding {sm} data")
 
-            this_df = self._process_table(this_df, which=['Stability classification'])
+            if len(actual_methods) > 0:
+                log.warning("No valid method for stability found; skipping processing")
+                this_df = self._process_table(this_df, which=['Stability classification'])
 
             if 'local_interactions' in self._dir_list(self._tree[system][mode]):
 
                 interaction_methods = self._dir_list(self._tree[system][mode]['local_interactions'])
 
                 log.info(f"found methods for interaction: {interaction_methods}")
+
+                actual_methods = set(interaction_methods).intersection(set(self.supported_interaction_methods))
 
                 for method in interaction_methods:
 
@@ -499,7 +505,9 @@ class MAVISFileSystem:
 
                             log.debug(f"adding rosetta_flexddg_talaris2014 data {this_df}")
 
-                this_df = self._process_table(this_df, which=['Local interactions classification'])
+                if len(actual_methods) > 0:
+                    log.warning("No valid method for local interactions found; skipping processing")
+                    this_df = self._process_table(this_df, which=['Local interactions classification'])
 
             if 'cancermuts' in self._dir_list(self._tree[system][mode]):
 
