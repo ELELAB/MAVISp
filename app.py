@@ -27,7 +27,7 @@ st.image('assets/logo.png')
 
 st.write('Welcome to MAVISp!')
 
-show_table = mfs.dataset_table[['system', 'mode']]
+show_table = mfs.dataset_table[['system', 'mode', 'curators']]
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 gb_datasets_grid.configure_auto_height()
@@ -41,8 +41,8 @@ datasets_grid = AgGrid(show_table,
                       fit_columns_on_grid_load = True)
 
 if len(datasets_grid["selected_rows"]) == 1:
-    print(datasets_grid["selected_rows"])
-    selected_key = tuple(datasets_grid["selected_rows"][0].values())
+    selected_key = ( datasets_grid["selected_rows"][0]['system'],
+                     datasets_grid["selected_rows"][0]['mode']    )
     this_dataset = mfs.mutation_datasets[selected_key]
 
     st.download_button("Download dataset",
