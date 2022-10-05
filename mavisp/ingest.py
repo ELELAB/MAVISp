@@ -20,7 +20,6 @@ import pandas as pd
 import numpy as np
 import logging as log
 from datetime import date
-import yaml
 
 class MAVISFileSystem:
 
@@ -85,14 +84,6 @@ class MAVISFileSystem:
         log.debug(f"found mutations: {lines}")
 
         return lines
-
-    def _parse_metadata(self, system, mode):
-        log.info("parsing metadata file")
-
-        metadata_path = os.path.join(self.data_dir, system, mode, 'metadata.yaml')
-
-        with open(metadata_path) as fh:
-            return yaml.safe_load(fh)
 
     def _parse_foldx_csv(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
 
@@ -239,25 +230,15 @@ class MAVISFileSystem:
                 except:
                     exit(1)
                     
-                try:
-                    metadata = self._parse_metadata(system, mode)
-                except IOError:
-                    log.error("Couldn't parse metadata file")
-                    raise IOError
+                df_list.append((system, mode, mutation_list))
 
-                curators= ', '.join(
-                    [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
-                    )
-
-                df_list.append((system, mode, mutation_list, curators))
-
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations'])
         log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
 
     def _mutation_list(self, system, mode):
-
+            
         log.info(f"Gathering mutation list for {system} {mode}")
 
         mutation_files = self._file_list(self._tree[system][mode]['mutation_list'])
