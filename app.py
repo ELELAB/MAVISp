@@ -19,7 +19,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
 
-mfs = MAVISFileSystem()
+mfs = MAVISFileSystem(data_dir='test/mavisp_data/')
 
 st.set_page_config(layout="wide")
 
@@ -41,7 +41,6 @@ datasets_grid = AgGrid(show_table,
                       fit_columns_on_grid_load = True)
 
 if len(datasets_grid["selected_rows"]) == 1:
-    print("sel_rows", datasets_grid["selected_rows"])
     selected_key = ( datasets_grid["selected_rows"][0]['system'],
                      datasets_grid["selected_rows"][0]['mode']    )
     this_dataset = mfs.mutation_datasets[selected_key]
