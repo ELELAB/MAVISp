@@ -266,7 +266,9 @@ class MAVISFileSystem:
             elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
                 foldx_header,   rosetta_header  = keys
             else:
-                raise TypeError
+                return pd.NA
+        else:
+            return pd.NA
 
         stab_co = 3.0
         neut_co = 2.0
