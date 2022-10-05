@@ -19,7 +19,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
 
-mfs = MAVISFileSystem(data_dir='test/mavisp_data/')
+mfs = MAVISFileSystem()
 
 st.set_page_config(layout="wide")
 
