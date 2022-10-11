@@ -28,6 +28,7 @@ class MAVISFileSystem:
     supported_modes = ['basic_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5', 'rosetta_flexddg_talaris2014']
+    supported_long_range_methods = ['allosigma2']
 
     def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
         
@@ -592,6 +593,95 @@ class MAVISFileSystem:
                                                      'notes'                : "PTM notes"})
 
                 this_df = this_df.join(ptm_data)
+
+            if 'long_range' in self._dir_list(self._tree[system][mode]):
+
+                long_range_methods = self._dir_list(self._tree[system][mode]['long_range'])
+
+                lr_basepath = os.path.join(analysis_basepath, 'long_range')
+
+                log.info(f"found methods for stability: {long_range_methods}")
+
+                actual_methods = set(long_range_methods).intersection(set(self.supported_stability_methods))
+
+                for method in long_range_methods:
+
+                    if method not in self.supported_long_range_methods:
+                        log.warning(f"Method {method} for long range is not supported and it will be skipped")
+                        continue
+
+                    if method =='allosigma2':
+
+                        allowed_fnames = set(['allosigma_mut.txt', 'down_mutations.tsv', 'up_mutations.tsv'])
+
+                        allosigma2_dir = os.path.join(lr_basepath, 'allosigma2')
+
+                        allosigma2_files = set(os.listdir(allosigma2_dir))
+                        if len(allosigma2_files) == 0:
+                            log.error(f"no files found in {allosigma2_files}")
+                        if len(allosigma2_files)  > 3:
+                            log.error(f"the allosigma2 folder can contain up to three files")
+                        if 'allosigma_mut.txt' not in allosigma2_files:
+                            log.error(f"the allosigma_mut.txt file mut be present")
+                        if not allosigma2_files.issubset(allowed_fnames):
+                            log.error(f"the only allowed file names in the allosigma2 directory are {', '.join(list(allowed_fnames))}")
+
+                        all_mut = pd.read_csv(os.path.join(allosigma2_dir, 'allosigma_mut.txt'), sep='\t')
+                        all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
+
+                        try:
+                            filt_down = pd.read_csv('filtered_down_mutations.tsv', sep='\t', index_col=0)
+                        except IOError:
+                            filt_down = None
+                        else:
+                            filt_down['mutations'] = filt_down['mutations'].str.split()
+                            filt_down = filt_down.explode('mutations')
+                            filt_down = filt_down.set_index('mutations')
+                            
+                        try:
+                            filt_up = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_up_mutations.tsv'), sep='\t')
+                        except IOError:
+                            filt_up   = None
+                        else:
+                            filt_up['mutations'] = filt_up['mutations'].str.split()
+                            filt_up = filt_up.explode('mutations')
+                            filt_up = filt_up.set_index('mutations')
+
+                        def _process_allosigma2_tables(row, filt_up, filt_down, cutoff):
+                            if pd.isna(row['allosigma-mode']):
+                                return pd.NA
+
+                            if row['allosigma-mode'] == 'UP':
+                                filt = filt_up
+                            elif row['allosigma-mode'] == 'DOWN':
+                                filt = filt_down
+
+                            if filt is None:
+                                return 'filtered_out'
+
+                            if row['mutations'] not in filt.index:
+                                return 'filtered_out'
+
+                            entry = filt.loc[row['mutations']]
+                            entry = entry.drop(['avg_dG', 'n_mutations'])
+                            values = entry[~ pd.isna(entry)].values
+
+                            if np.all(values > cutoff):
+                                return 'destabilizing'
+                            elif np.all(values < (-cutoff)):
+                                return 'stabilizing'
+                            else:
+                                return 'mixed_effects'
+
+                        all_mut['allosigma-consequence'] = all_mut.apply(_process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=1, axis=1)
+
+                        all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
+
+                        all_mut.rename(columns={'allosigma-mode': 'AlloSigma mutation type',
+                                                'allosigma-consequence' : 'AlloSigma predicted consequence'})
+
+
+                        this_df = this_df.join(all_mut)
 
             this_df = this_df.reset_index()
             this_df = this_df.fillna(pd.NA)
