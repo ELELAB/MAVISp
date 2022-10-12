@@ -610,25 +610,29 @@ class MAVISFileSystem:
 
                     if method =='allosigma2':
 
-                        allowed_fnames = set(['allosigma_mut.txt', 'down_mutations.tsv', 'up_mutations.tsv'])
+                        allowed_fnames = set(['allosigma_mut.txt', 'filtered_down_mutations.tsv', 'filtered_up_mutations.tsv'])
 
                         allosigma2_dir = os.path.join(lr_basepath, 'allosigma2')
 
                         allosigma2_files = set(os.listdir(allosigma2_dir))
                         if len(allosigma2_files) == 0:
                             log.error(f"no files found in {allosigma2_files}")
+                            raise TypeError
                         if len(allosigma2_files)  > 3:
                             log.error(f"the allosigma2 folder can contain up to three files")
+                            raise TypeError
                         if 'allosigma_mut.txt' not in allosigma2_files:
                             log.error(f"the allosigma_mut.txt file mut be present")
+                            raise TypeError
                         if not allosigma2_files.issubset(allowed_fnames):
                             log.error(f"the only allowed file names in the allosigma2 directory are {', '.join(list(allowed_fnames))}")
+                            raise TypeError
 
                         all_mut = pd.read_csv(os.path.join(allosigma2_dir, 'allosigma_mut.txt'), sep='\t')
                         all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
 
                         try:
-                            filt_down = pd.read_csv('filtered_down_mutations.tsv', sep='\t', index_col=0)
+                            filt_down = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_down_mutations.tsv'), sep='\t', index_col=0)
                         except IOError:
                             filt_down = None
                         else:
@@ -637,7 +641,7 @@ class MAVISFileSystem:
                             filt_down = filt_down.set_index('mutations')
                             
                         try:
-                            filt_up = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_up_mutations.tsv'), sep='\t')
+                            filt_up   = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_up_mutations.tsv'), sep='\t', index_col=0)
                         except IOError:
                             filt_up   = None
                         else:
