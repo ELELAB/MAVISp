@@ -19,9 +19,16 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
 
-mfs = MAVISFileSystem()
-
 st.set_page_config(layout="wide")
+
+@st.cache
+def load_data(data_dir=None):
+    if data_dir is None:
+        return MAVISFileSystem()
+    else:
+        return MAVISFileSystem(data_dir=data_dir)
+
+mfs = load_data()
 
 st.image('assets/logo.png')
 
