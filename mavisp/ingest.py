@@ -677,9 +677,8 @@ class MAVISFileSystem:
 
                         all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
 
-                        all_mut.rename(columns={'allosigma-mode': 'AlloSigma mutation type',
-                                                'allosigma-consequence' : 'AlloSigma predicted consequence'})
-
+                        all_mut = all_mut.rename(columns={'allosigma-mode': 'AlloSigma mutation type',
+                                                          'allosigma-consequence' : 'AlloSigma predicted consequence'})
 
                         this_df = this_df.join(all_mut)
 
