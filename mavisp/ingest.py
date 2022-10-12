@@ -600,9 +600,7 @@ class MAVISFileSystem:
 
                 lr_basepath = os.path.join(analysis_basepath, 'long_range')
 
-                log.info(f"found methods for stability: {long_range_methods}")
-
-                actual_methods = set(long_range_methods).intersection(set(self.supported_stability_methods))
+                log.info(f"found methods for long range: {long_range_methods}")
 
                 for method in long_range_methods:
 
