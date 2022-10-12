@@ -651,7 +651,7 @@ class MAVISFileSystem:
 
                         def _process_allosigma2_tables(row, filt_up, filt_down, cutoff):
                             if pd.isna(row['allosigma-mode']):
-                                return pd.NA
+                                return '-'
 
                             if row['allosigma-mode'] == 'UP':
                                 filt = filt_up
@@ -681,6 +681,8 @@ class MAVISFileSystem:
 
                         all_mut = all_mut.rename(columns={'allosigma-mode': 'AlloSigma mutation type',
                                                           'allosigma-consequence' : 'AlloSigma predicted consequence'})
+
+                        all_mut = all_mut.fillna('-')
 
                         this_df = this_df.join(all_mut)
 
