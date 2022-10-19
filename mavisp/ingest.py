@@ -660,10 +660,10 @@ class MAVISFileSystem:
                                 filt = filt_down
 
                             if filt is None:
-                                return 'filtered_out'
+                                return 'neutral'
 
                             if row['mutations'] not in filt.index:
-                                return 'filtered_out'
+                                return 'neutral'
 
                             entry = filt.loc[row['mutations']]
                             entry = entry.drop(['avg_dG', 'n_mutations'])
