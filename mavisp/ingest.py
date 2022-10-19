@@ -174,7 +174,7 @@ class MAVISFileSystem:
             log.error(f"Couldn't parse PMID file {fname}")
             raise
 
-        return pmid.set_index('mutation')
+        return pmid.set_index('mutation').drop_duplicates()
 
     def _parse_ptm(self, fname):
 
@@ -192,7 +192,7 @@ class MAVISFileSystem:
                 tmp_data[c] = ", ".join(map(str, ptms[c].to_list()))
             ptms = pd.DataFrame(tmp_data)
 
-        ptms = ptms.set_index('mutation')
+        ptms = ptms.set_index('mutation').drop_duplicates()
 
         return ptms
 
@@ -630,6 +630,8 @@ class MAVISFileSystem:
                             raise TypeError
 
                         all_mut = pd.read_csv(os.path.join(allosigma2_dir, 'allosigma_mut.txt'), sep='\t')
+                        all_mut = all_mut.drop_duplicates()
+
                         all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
 
                         try:
