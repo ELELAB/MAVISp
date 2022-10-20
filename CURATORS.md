@@ -1,7 +1,6 @@
 # List of curators for entries in the MAVISp database
 
-This is a list of all the people that currently contributed to MAVISp
-as curators:
+Follows a list of all the people that contributed to the MAVISp database as curators:
 
 - Matteo Arnaudi, Technical University of Denmark and Danish Cancer Society Research Center
 - Ludovica Beltrame, Technical University of Denmark
