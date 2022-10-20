@@ -6,6 +6,7 @@ Repository associated to the publication:
 > Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
 > submitted to bioRxiv
 
+
 # MAVISp
 
 ## Introduction
@@ -14,7 +15,9 @@ This is the web app of the MAVISp database for structural variants annotation.
 
 If you use MAVISp, please cite our preprint:
 
-PLACEHOLDER_REF_BIOARXIV
+> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
+> submitted to bioRxiv
 
 Please see the [CHANGELOG.md][CHANGELOG.md] file on this repository for current and expected
 data releases as well as updates on the software.
