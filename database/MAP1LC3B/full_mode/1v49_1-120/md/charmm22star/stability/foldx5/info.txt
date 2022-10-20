@@ -1,0 +1,2 @@
+#lenght(ns),frames,method
+1000,20,dt
