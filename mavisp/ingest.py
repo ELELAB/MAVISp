@@ -95,7 +95,7 @@ class MAVISFileSystem:
         with open(metadata_path) as fh:
             return yaml.safe_load(fh)
 
-    def _parse_foldx_csv(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol'):
+    def _parse_foldx_csv(self, fname, type='STABILITY', version='FoldX5', unit='kcal/mol', chain=None):
 
         log.info(f"parsing FoldX csv file {fname}")
 
@@ -108,7 +108,10 @@ class MAVISFileSystem:
         # create residue column
         df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
 
-        # drop column we don't need
+        # drop column if we don't need it. Filter by chain if we do need it
+        if chain is not None:
+            df = df[ df['chain ID'] == chain ]
+
         df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
         # stack remaining columns
@@ -127,7 +130,7 @@ class MAVISFileSystem:
         log.debug(f"collected data: {df}")
         return(df)
 
-    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='Rosetta Flexddg2020', unit='kcal/mol'):
+    def _parse_rosetta_aggregate(self, fname, type='STABILITY', version='Rosetta Flexddg2020', unit='kcal/mol', chain=None):
 
         log.info(f"parsing Rosetta aggregate file {fname}")
 
@@ -138,6 +141,8 @@ class MAVISFileSystem:
             raise IOError
 
         mutation_data = mutation_data[mutation_data['state'] == 'ddg']
+        if chain is not None:
+            mutation_data = mutation_data[ mutation_data['mutation'].str[0] == chain ]
         mutation_data = mutation_data.set_index('mutation_label')
         mutation_data = mutation_data[['total_score']]
         mutation_data = mutation_data.rename(columns={'total_score':f'{type} ({version}, {unit})'})
@@ -488,10 +493,9 @@ class MAVISFileSystem:
                             foldx_file = foldx_files[0]
 
                             try:
-                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, FoldX5")
+                                data = self._parse_foldx_csv(os.path.join(interactor_dir, foldx_file), type="LOCAL INT", version=f"Binding with {interactor}, FoldX5", chain='A')
                             except IOError:
                                 exit(1)
-
                             this_df = this_df.join(data)
 
                             log.debug(f"adding foldx5 data {this_df}")
@@ -519,7 +523,7 @@ class MAVISFileSystem:
                             rosetta_file = rosetta_files[0]
 
                             try:
-                                data = self._parse_rosetta_aggregate(os.path.join(interactor_dir, rosetta_file), type="LOCAL INT", version=f"Binding with {interactor}, Rosetta Talaris 2014")
+                                data = self._parse_rosetta_aggregate(os.path.join(interactor_dir, rosetta_file), type="LOCAL INT", version=f"Binding with {interactor}, Rosetta Talaris 2014", chain='A')
                             except IOError:
                                 exit(1)
 
