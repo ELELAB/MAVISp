@@ -47,7 +47,7 @@ virtual environment:
 virtualenv -p python3.8 MAVISp_env
 ```
 
-2. then you can activate it:
+2. then, activate it:
 
 ```
 source MAVISp_env/bin/activate
@@ -56,16 +56,16 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas streamlit streamlit-aggrid
+pip install pandas streamlit streamlit-aggrid pyyaml
 ```
 
 ### Installing requirements using a conda Python environment
 
-1. if you have access to Anaconda or Miniconda (executable `conda`), you can create a
-virtual environment:
+1. if you have access to Anaconda or Miniconda (executable `conda`), you can use it
+to create a virtual environment:
 
 ```
-conda create -n MAVISp_env python==3.8 streamlit pandas
+conda create -n MAVISp_env python==3.8 streamlit pandas pyyaml
 ```
 
 2. then you can activate it:
