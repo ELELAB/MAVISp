@@ -157,23 +157,10 @@ cd MAVISp
 streamlit run --logger.level=info --server.headless=true
 ```
 
-3. Run the app locally in headless mode:
-
-streamlit run --logger.level=info --server.headless=true app.py
-
-streamlit will respond with a welcome message similar to:
-
-```
-  You can now view your Streamlit app in your browser.
-
-  Network URL: http://0.0.0.0:8501
-  External URL: http://0.0.0.0:8501
-```
-
 Please note down the port that Streamlit is using
 (i.e. in this case it is `8501`)
 
-4. **on your workstation** open a new terminal and open an SSH tunnel:
+5. **on your workstation** open a new terminal and open an SSH tunnel:
 
 ```
 ssh -N -L 8080:hostname:8501 user@hostname
@@ -182,4 +169,4 @@ ssh -N -L 8080:hostname:8501 user@hostname
 notice that you need to change the port number at the **right** of `hostname:`
 with the one that Streamlit is providing service on 
 
-5. **on your workstation** open a new browser window and visit the website `localhost:8080`. MAVISp should load.
+6. **on your workstation** open a new browser window and visit the website `localhost:8080`. MAVISp should load.
