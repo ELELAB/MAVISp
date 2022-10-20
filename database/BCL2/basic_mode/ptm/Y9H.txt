@@ -1,0 +1,2 @@
+#ptm	SASA(%)	ddG(foldX5,kcal/mol)	effect_regulation	effect_stability	effect_function	notes			
+P	6.5	N.A.	unknown	unknown	unknown

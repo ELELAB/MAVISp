@@ -18,17 +18,26 @@ import streamlit as st
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 from mavisp.ingest import MAVISFileSystem
 import pandas as pd
+import argparse
+
+description="The MAVISp web app for the structural annotation of protein variants"
+
+parser = argparse.ArgumentParser(description=description)
+
+parser.add_argument('--database-dir',
+                    dest='database_dir',
+                    help="Location of the MAVISp database (default: ./database)",
+                    default="./database")
+
+args = parser.parse_args()
 
 st.set_page_config(layout="wide")
 
 @st.cache
-def load_data(data_dir=None):
-    if data_dir is None:
-        return MAVISFileSystem()
-    else:
-        return MAVISFileSystem(data_dir=data_dir)
+def load_data(data_dir):
+    return MAVISFileSystem(data_dir)
 
-mfs = load_data()
+mfs = load_data(args.database_dir)
 
 st.image('assets/logo.png')
 
