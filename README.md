@@ -1,3 +1,11 @@
+Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark
+Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark
+Repository associated to the publication:
+
+> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
+> submitted to bioRxiv
+
 # MAVISp
 
 ## Introduction
