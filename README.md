@@ -8,10 +8,10 @@ If you use MAVISp, please cite our preprint:
 
 PLACEHOLDER_REF_BIOARXIV
 
-Please see the CHANGELOG.md file on this repository for current and expected
+Please see the [CHANGELOG.md][CHANGELOG.md] file on this repository for current and expected
 data releases as well as updates on the software.
 
-Please see the CURATORS.md file for an up to date list of our curators.
+Please see the [CURATORS.md][CURATORS.md] file in this repository for an up to date list of our curators.
 
 ## Requirements
 
