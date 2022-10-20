@@ -30,7 +30,7 @@ class MAVISFileSystem:
     supported_interaction_methods = ['foldx5', 'rosetta_flexddg_talaris2014']
     supported_long_range_methods = ['allosigma2']
 
-    def __init__(self, data_dir="/data/raw_data/computational_data/mavisp_data/"):
+    def __init__(self, data_dir):
         
         log.info(f"initializing MAVISFileSystem from {data_dir}")
 
