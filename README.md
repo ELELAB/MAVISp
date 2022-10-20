@@ -1,10 +1,9 @@
-Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark
-Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark
-Repository associated to the publication:
-
-> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins
-> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
-> submitted to bioRxiv
+Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark  
+Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark  
+Repository associated to the publication:  
+> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
+> submitted to bioRxiv  
 
 
 # MAVISp
@@ -15,14 +14,14 @@ This is the web app of the MAVISp database for structural variants annotation.
 
 If you use MAVISp, please cite our preprint:
 
-> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins
-> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
-> submitted to bioRxiv
+> MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
+> submitted to bioRxiv  
 
-Please see the [CHANGELOG.md][CHANGELOG.md] file on this repository for current and expected
+Please see the [CHANGELOG.md](CHANGELOG.md) file on this repository for current and expected
 data releases as well as updates on the software.
 
-Please see the [CURATORS.md][CURATORS.md] file in this repository for an up to date list of our curators.
+Please see the [CURATORS.md](CURATORS.md) file in this repository for an up to date list of our curators.
 
 ## Requirements
 
