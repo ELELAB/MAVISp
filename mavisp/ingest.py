@@ -25,7 +25,7 @@ import yaml
 class MAVISFileSystem:
 
     excluded_proteins = []
-    supported_modes = ['basic_mode']
+    supported_modes = ['simple_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5', 'rosetta_flexddg_talaris2014']
     supported_long_range_methods = ['allosigma2']

@@ -2,7 +2,7 @@
 
 last update: 20/10/2022
 
-## Entries released in the database - basic mode
+## Entries released in the database - simple mode
 
 - ARID3A;Q8IVW6   (STABILITY,LONG RANGE,PTM,ensemble mode)
 - BCL2;P10415	(STABILITY,LOCAL INTERACTION,LONG RANGE, PTM)
