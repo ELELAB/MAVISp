@@ -3,7 +3,7 @@ Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhag
 Repository associated to the publication:  
 > MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
 > Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
-> submitted to bioRxiv  
+> biorxiv, doi: https://doi.org/10.1101/2022.10.22.513328
 
 
 # MAVISp
@@ -16,7 +16,7 @@ If you use MAVISp, please cite our preprint:
 
 > MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
 > Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
-> submitted to bioRxiv  
+> biorxiv, doi: https://doi.org/10.1101/2022.10.22.513328
 
 Please see the [CHANGELOG.md](CHANGELOG.md) file on this repository for current and expected
 data releases as well as updates on the software.
