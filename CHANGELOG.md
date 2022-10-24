@@ -41,6 +41,7 @@ last update: 20/10/2022
 
 # MAVISp software - changelog
 
-## v0.1
-preliminary release version
+## v0.1-dev
+* preliminary release version
+* fixed mistakes in PTM modules for BCL2
 
