@@ -1,2 +1,2 @@
 #ptm	SASA(%)	ddG(foldX5,kcal/mol)	effect_regulation	effect_stability	effect_function	notes			
-P	100.7	-0.011	damaging	neutral	unknown		Cks1 ligand	
+P	100.7	-0.011	damaging	neutral	possibly_damaging		Cks1_ligand

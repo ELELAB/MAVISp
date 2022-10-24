@@ -1,2 +1,2 @@
 #ptm	SASA(%)	ddG(foldX5,kcal/mol)	effect_regulation	effect_stability	effect_function	notes			
-P	85.9	0.651	damaging	neutral	possibly_damaging	FHA_phosphopeptide_ligands
+P	60.8	-0.124	neutral	neutral	unknown			
