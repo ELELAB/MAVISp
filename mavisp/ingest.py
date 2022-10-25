@@ -178,8 +178,8 @@ class MAVISFileSystem:
         except IOError:
             log.error(f"Couldn't parse PMID file {fname}")
             raise
-
-        return pmid.set_index('mutation').drop_duplicates()
+        pmid = pmid.set_index('mutation')
+        return pmid[ ~ pmid.index.duplicated(keep='first')]
 
     def _parse_ptm(self, fname):
 
@@ -197,7 +197,8 @@ class MAVISFileSystem:
                 tmp_data[c] = ", ".join(map(str, ptms[c].to_list()))
             ptms = pd.DataFrame(tmp_data)
 
-        ptms = ptms.set_index('mutation').drop_duplicates()
+        ptms = ptms.set_index('mutation')
+        ptms = ptms[~ ptms.index.duplicated(keep='first')]
 
         return ptms
 
@@ -570,9 +571,7 @@ class MAVISFileSystem:
                 except IOError:
                     exit(1)
                 pmid_data = pmid_data.rename(columns={'PMID':'PMID / DOI'})
-
                 this_df = this_df.join(pmid_data)
-
             if 'ptm' in self._dir_list(self._tree[system][mode]):
 
                 ptm_dir = os.path.join(analysis_basepath, 'ptm')
