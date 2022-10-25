@@ -1,257 +1,257 @@
 mutation	PMID
-D99Y
-I100F
-R103W
-S104F
-E108K
-R114L
-R114Q
-R114W
-S121I
-K126N
-L127Q
-R128C
-R128H
-H129Y
-G135S
-Q136L
-P139S
-M141T
-H144D
-H144N
-H144R
-A149D
-A149G
-T155N
-G160D
-G162R
-E167K
-V169M
-S170C
-S170F
-N171S
-T174M
-A176S
-S178L
-Q188E
-E192D
-E192K
-A193T
-G199S
-Q200L
-G202A
-A208V
-F209L
-M210T
-D213N
-V217A
-V217I
-S219F
-S221L
-A222E
-P224L
-S226R
-Q230K
-Q230R
-W231R
-S233L
-D234H
-F239L
-A242T
-A242V
-E243K
-A244G
-S245L
-V247I
-G250R
-I253V
-I254V
-S259F
-S259L
-S259P
-D260N
-D260Y
-C261R
-K262N
-E263K
-E267K
-R269W
-V270A
-R271Q
-V273M
-V274L
-T275M
-F280L
-V281I
-F283L
-P284H
-G289E
-M292I
-I298M
-W299C
-M300T
-M301I
-D302N
-D302Y
-R307G
-E313Q
-R316H
-V318I
-A319E
-A319T
-A319V
-K324N
-T328S
-K332R
-T333M
-T333S
-D334N
-A335T
-A335V
-P336L
-I339N
-R340C
-R340H
-S341C
-I342M
-P346H
-D347N
-P350L
-V363I
-A364T
-Y366H
-R368H
-V370F
-L371I
-Q373K
-T377M
-I379L
-L380M
-P381H
-P381S
-R385C
-R385H
-R388Q
-V391A
-D395E
-D395G
-I396V
-P397L
-L400F
-L400I
-R402L
-R402Q
-R402W
-Q406K
-E407D
-S408G
-S408N
-L410P
-I411N
-R415Q
-Q420H
-I423M
-K424Q
-I427N
-D428G
-Q429H
-D433H
-A434V
-K439R
-K439T
-F440S
-E442K
-D443H
-D443N
-Y444N
-R449Q
-R449W
-T454A
-E457K
-E459D
-D463N
-A465S
-R469H
-S472F
-S477C
-S477F
-Q479H
-E485Q
-A487T
-R491L
-R491W
-R495C
-A502T
-Y513C
-M517T
-K518T
-T522R
-E523K
-L525F
-L525V
-F526L
-L539F
-R540G
-R540H
-D543N
-K544T
-K545N
-K546Q
-K546R
-S549Y
-T552M
-D553Y
-V556M
-D557N
-Y559H
-P569Q
-A571T
-E572K
-E576D
-T579M
-M583V
-M586I
-R587G
-V589L
-S592L
-R593C
-R593H
-T600P
-L601I
-R602Q
-D604N
-T605P
-H606P
-P607H
-A608S
-V612M
-E614Q
-M615R
-R619H
-L622Q
-R623C
-Q626H
-E632K
-E632Q
-E633K
-A635T
-Q636R
-L637F
-Q639R
-T641M
-E643K
-R647T
-A649V
-R658C
-R658H
-A659T
-E661K
-E661Q
-G663R
-V669L
-Q671H
-A676T
-M677V
-V683A
-R692H
-H704Y
+D99Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I100F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R103W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S104F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E108K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R114L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R114Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R114W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S121I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K126N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L127Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R128C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R128H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H129Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G135S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q136L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P139S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M141T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H144D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H144N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H144R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A149D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A149G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T155N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G160D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G162R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E167K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V169M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S170C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S170F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+N171S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T174M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A176S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S178L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q188E	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E192D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E192K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A193T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G199S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q200L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G202A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A208V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F209L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M210T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D213N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V217A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V217I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S219F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S221L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A222E	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P224L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S226R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q230K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q230R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+W231R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S233L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D234H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F239L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A242T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A242V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E243K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A244G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S245L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V247I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G250R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I253V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I254V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S259F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S259L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S259P	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D260N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D260Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+C261R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K262N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E263K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E267K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R269W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V270A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R271Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V273M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V274L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T275M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F280L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V281I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F283L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P284H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G289E	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M292I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I298M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+W299C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M300T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M301I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D302N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D302Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R307G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E313Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R316H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V318I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A319E	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A319T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A319V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K324N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T328S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K332R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T333M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T333S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D334N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A335T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A335V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P336L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I339N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R340C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R340H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S341C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I342M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P346H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D347N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P350L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V363I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A364T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Y366H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R368H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V370F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L371I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q373K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T377M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I379L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L380M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P381H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P381S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R385C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R385H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R388Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V391A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D395E	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D395G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I396V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P397L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L400F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L400I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R402L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R402Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R402W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q406K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E407D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S408G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S408N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L410P	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I411N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R415Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q420H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I423M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K424Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+I427N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D428G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q429H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D433H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A434V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K439R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K439T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F440S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E442K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D443H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D443N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Y444N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R449Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R449W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T454A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E457K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E459D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D463N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A465S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R469H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S472F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S477C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S477F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q479H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E485Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A487T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R491L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R491W	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R495C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A502T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Y513C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M517T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K518T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T522R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E523K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L525F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L525V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+F526L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L539F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R540G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R540H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D543N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K544T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K545N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K546Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+K546R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S549Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T552M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D553Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V556M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D557N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Y559H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P569Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A571T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E572K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E576D	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T579M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M583V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M586I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R587G	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V589L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+S592L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R593C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R593H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T600P	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L601I	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R602Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+D604N	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T605P	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H606P	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+P607H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A608S	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V612M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E614Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M615R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R619H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L622Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R623C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q626H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E632K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E632Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E633K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A635T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q636R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+L637F	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q639R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+T641M	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E643K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R647T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A649V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R658C	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R658H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A659T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E661K	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+E661Q	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+G663R	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V669L	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+Q671H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+A676T	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+M677V	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+V683A	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+R692H	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
+H704Y	https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1
