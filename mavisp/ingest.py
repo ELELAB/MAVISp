@@ -570,8 +570,11 @@ class MAVISFileSystem:
                     pmid_data = self._parse_pmid(os.path.join(analysis_basepath, 'pmid_list', pmid_file))
                 except IOError:
                     exit(1)
+
                 pmid_data = pmid_data.rename(columns={'PMID':'PMID / DOI'})
+                
                 this_df = this_df.join(pmid_data)
+            
             if 'ptm' in self._dir_list(self._tree[system][mode]):
 
                 ptm_dir = os.path.join(analysis_basepath, 'ptm')
