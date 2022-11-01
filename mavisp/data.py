@@ -133,11 +133,9 @@ class CancermutsTable(DataType):
 
 class MAVISpFileSystem:
 
-    supported_mdoules = ['cancermuts']
     supported_modes = ['simple_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
-
     supported_modules = [ CancermutsTable ]
 
     def __init__(self, modes=None, proteins=None, data_dir="database", verbose=True):
@@ -354,8 +352,6 @@ class MAVISpFileSystem:
 
     def get_datasets_table_summary(self):
 
-        text = ""
-
         data = defaultdict(list)
 
         for _, r in self.dataset_table.iterrows():
@@ -367,5 +363,60 @@ class MAVISpFileSystem:
                 data['Status'].append(colored("WARNING", 'yellow'))
             else: 
                 data['Status'].append(colored("OK", 'green'))
+
+        return pd.DataFrame(data)
+
+    def get_datasets_table_details(self):
+
+        data = defaultdict(list)
+
+        for _, r in self.dataset_table.iterrows():
+            data['System'].append(r['system'])
+            data['Mode'].append(r['mode'])
+            
+            status = ""
+            details = ""
+
+            nl = ""
+
+            for this_m in self.supported_modules:
+                if this_m not in [x.__class__ for x in r['modules']]:
+                    status += f"{nl}{this_m.name}"
+                    details += f"{nl}"
+                    continue
+
+                if len(r['errors'][this_m.name]) == 0 and len(r['warnings'][this_m.name]) == 0:
+                    if status != "":
+                        nl = '\n'
+                    status += colored(f"{nl}{this_m.name}", 'green')
+                    details += f"-{nl}"
+
+                if len(r['errors'][this_m.name]) > 0:
+                    if status != "":
+                        nl = '\n'
+                    status += colored(f"{nl}{this_m.name}", 'red')
+                    details += f"{r['errors'][this_m.name][0]}\n"
+                    for this_err in r['errors'][this_m.name][1:]:
+                        status += f"{nl}"
+                        details += f"{this_err}\n"
+
+                if len(r['warnings'][this_m.name]) > 0:
+                    if status != "":
+                        nl = '\n'
+                        print(repr(status))
+                    if len(r['errors'][this_m.name]) == 0:
+                        status += colored(f"{nl}{this_m.name}", 'yellow')
+                        print(repr(status))
+                    else:
+                        status += f"{nl}"
+                    details += f"{r['warnings'][this_m.name][0]}\n"
+                    for this_warn in r['warnings'][this_m.name][1:]:
+                        status += f"{nl}"
+                        details += f"{this_warn}\n"
+                status = status.rstrip('\n')
+                details = details.rstrip()
+
+            data['Status'].append(status)
+            data['Details'].append(details)
 
         return pd.DataFrame(data)
