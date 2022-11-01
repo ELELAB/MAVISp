@@ -21,7 +21,7 @@ import pandas as pd
 import numpy as np
 import logging as log
 from datetime import date
-from mavisp.error import *
+from error import *
 import yaml
 from termcolor import colored
 from tabulate import tabulate
@@ -138,7 +138,7 @@ class MAVISpFileSystem:
     supported_interaction_methods = ['foldx5']
     supported_modules = [ CancermutsTable ]
 
-    def __init__(self, modes=None, proteins=None, data_dir="database", verbose=True):
+    def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 
         self.log = log.getLogger(__name__)
 
@@ -149,7 +149,6 @@ class MAVISpFileSystem:
 
         self.log.setLevel(level)
 
-        self.proteins = proteins
         if modes is None:
             modes = self.supported_modes            
         
@@ -160,9 +159,9 @@ class MAVISpFileSystem:
         self.data_dir=data_dir
 
         self._tree = self._traverse(self.data_dir)
-        self.dataset_table = self._dataset_table()
+        self.dataset_table = self._dataset_table(include=include_proteins, exclude=exclude_proteins)
 
-    def _dataset_table(self):
+    def _dataset_table(self, include, exclude):
 
         warnings = []
 
@@ -170,8 +169,8 @@ class MAVISpFileSystem:
 
         df_list = []
 
-        for system in  self._dir_list(self._tree):
-            if self.proteins is not None and system not in self.proteins:
+        for system in self._dir_list(self._tree):
+            if (include is not None and system not in include) or (exclude is not None and system in exclude) or (not (exclude is None and include is None)):
                 self.log.warning(f"ignoring unsupported protein {system}")
                 warnings.append(f"ignoring unsupported protein {system}")
                 continue
@@ -215,6 +214,8 @@ class MAVISpFileSystem:
     def _traverse(self, rootdir):
 
         log.info(f"building directory tree for {rootdir}")
+
+        rootdir = str(rootdir)
 
         tree = {}
         rootdir = rootdir.rstrip(os.sep)
@@ -296,7 +297,7 @@ class MAVISpFileSystem:
             mode = r['mode']
             mutations = r['mutations']
 
-            mavisp_modules = []
+            mavisp_modules = defaultdict(None)
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
             
@@ -324,7 +325,7 @@ class MAVISpFileSystem:
                         if len(e.warning) != 0 and stop_at == 'warning':
                             continue
                     
-                    mavisp_modules.append(this_module)
+                    mavisp_modules[mod.name] = this_module
             mavisp_dataset_column.append(mavisp_modules)
             mavisp_errors_column.append(mavisp_errors)
             mavisp_warnings_column.append(mavisp_warnings)
@@ -403,10 +404,8 @@ class MAVISpFileSystem:
                 if len(r['warnings'][this_m.name]) > 0:
                     if status != "":
                         nl = '\n'
-                        print(repr(status))
                     if len(r['errors'][this_m.name]) == 0:
                         status += colored(f"{nl}{this_m.name}", 'yellow')
-                        print(repr(status))
                     else:
                         status += f"{nl}"
                     details += f"{r['warnings'][this_m.name][0]}\n"
