@@ -63,8 +63,6 @@ class DataType(object):
     def get_dataset_view(self):
         return self.data
 
-
-
 class MultiMethodDataType(DataType):
     def __init__(self, data_dir=None):
 
@@ -180,6 +178,56 @@ class LocalInteractions(MultiMethodDataType):
     name = "local_interactions"
     methods = {'foldx5'                      : MutateXBinding(version="FoldX5"),
                 'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Flexddg Talaris2014')}
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        try:
+            super().ingest(mutations)
+        except MAVISpMultipleError as e:
+            if len(e.critical) > 0:
+                raise
+        else:
+            e = None
+        keys = self.data.keys().to_list()
+        if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
+            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+
+        self.data['Local interactions classification'] = self.data.apply(self._generate_local_interactions_classification, axis=1)
+
+        if e is None and len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+        elif len(warnings) > 0:
+            e.warning.extend(warnings)
+            raise e
+
+    def _generate_local_interactions_classification(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('LOCAL INT') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                return pd.NA
+        else:
+            return pd.NA
+
+        stab_co =  1.0
+
+        if rosetta_header not in row.index or foldx_header not in row.index:
+            return pd.NA
+        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+            return 'Destabilizing'
+        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+            return 'Stabilizing'
+        if (- stab_co) <= row[foldx_header] <= stab_co and (- stab_co) <= row[rosetta_header] <= stab_co:
+            return 'Neutral'
+        return 'Uncertain'
 
 class LongRange(MultiMethodDataType):
 
