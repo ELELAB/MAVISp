@@ -146,7 +146,7 @@ class Stability(MultiMethodDataType):
 
     def _generate_stability_classification(self, row):
 
-        keys = [ k for k in row.keys() if k.startswith('STABILITY') ]
+        keys = [ k for k in row.keys() if k.startswith('Stability') ]
 
         if len(keys) == 2:
             if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
@@ -194,7 +194,7 @@ class LocalInteractions(MultiMethodDataType):
         if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
             warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
 
-        self.data['Local interactions classification'] = self.data.apply(self._generate_local_interactions_classification, axis=1)
+        self.data['Local Int. classification'] = self.data.apply(self._generate_local_interactions_classification, axis=1)
 
         if e is None and len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -205,7 +205,7 @@ class LocalInteractions(MultiMethodDataType):
 
     def _generate_local_interactions_classification(self, row):
 
-        keys = [ k for k in row.keys() if k.startswith('LOCAL INT') ]
+        keys = [ k for k in row.keys() if k.startswith('Local Int.') ]
 
         if len(keys) == 2:
             if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:

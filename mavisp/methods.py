@@ -81,7 +81,7 @@ class MutateXStability(Method):
 class MutateXBinding(Method):
 
     unit = "kcal/mol"
-    type = "Local interactions"
+    type = "Local Int."
     chain = "A"
 
     def parse(self, dir_path):
@@ -186,7 +186,7 @@ class RosettaDDGPredictionStability(Method):
 class RosettaDDGPredictionBinding(Method):
 
     unit = "kcal/mol"
-    type = "Local Int"
+    type = "Local Int."
     chain = 'A'
 
     def parse(self, dir_path):
