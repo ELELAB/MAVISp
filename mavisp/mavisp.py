@@ -204,9 +204,9 @@ def main():
         log.warning("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
     out_table = mfs.dataset_table[['system', 'mode', 'curators']]
-    out_table = out_table.rename(columns={' system' : "Protein",
-                                            'mode'  : "Mode",
-                                            'curators' : 'Curators'})
+    out_table = out_table.rename(columns={'system' : "Protein",
+                                          'mode'  : "Mode",
+                                          'curators' : 'Curators'})
     out_table.to_csv(out_path / 'index.csv', index=False)
 
     dataset_tables_path = out_path / 'dataset_tables'
@@ -222,4 +222,5 @@ def main():
                 continue
             this_df = this_df.join(mod.get_dataset_view())
 
+        this_df = this_df.fillna(pd.NA)
         this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")

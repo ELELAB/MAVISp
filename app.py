@@ -75,6 +75,7 @@ if len(datasets_grid["selected_rows"]) == 1:
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
 
+    this_dataset = this_dataset.fillna(pd.NA)
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
                             width=3000)
