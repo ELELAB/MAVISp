@@ -21,7 +21,8 @@ import pandas as pd
 import numpy as np
 import logging as log
 from datetime import date
-from error import *
+from mavisp.error import *
+from mavisp.methods import *
 import yaml
 from termcolor import colored
 from tabulate import tabulate
@@ -30,7 +31,8 @@ class DataType(object):
     def __init__(self, data_dir=None, stop_at='critical'):
 
         self.data_dir = data_dir
-        
+        self.data = None
+
         if data_dir is None:
             return
 
@@ -54,11 +56,222 @@ class DataType(object):
         else:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("the input directory pathway doesn't exist or is not a directory")],
                                       warning=[])
-
     @data_dir.getter
     def data_dir(self):
         return self._data_dir
 
+    def get_dataset_view(self):
+        return self.data
+
+
+
+class MultiMethodDataType(DataType):
+    def __init__(self, data_dir=None):
+
+        super().__init__(data_dir)
+
+    def ingest(self, mutations):
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        warnings = []
+
+        method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        
+        if not set(method_dirs).issubset(set(self.methods.keys())):
+            this_error = f"One or more {self.name} methods are not supported"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+        
+        for method_dir in method_dirs:
+            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, method_dir))
+            self.data = self.data.join(self.methods[method_dir].data)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[])
+
+class Stability(MultiMethodDataType):
+
+    module_dir = "stability"
+    name = "stability"
+    methods = {'foldx5'                      : MutateXStability(version="FoldX5"),
+               'rosetta_cartddg2020_ref2015' : RosettaDDGPredictionStability(version='Rosetta Flexddg2020'),
+               'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Flexddg')}
+
+    def ingest(self, mutations):
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        warnings = []
+
+        this_error = "Stability folder has to contain only 1 dataset"
+        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(tmp) != 1:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        structure_ID, residue_range = tmp[0].split("_", maxsplit=1)
+
+        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
+        if len(tmp) != 1:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+        method = tmp[0]
+
+        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
+        if len(tmp) != 1:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+        model = tmp[0]
+
+        method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+
+        if not set(method_dirs).issubset(set(self.methods.keys())):
+            this_error = f"One or more {self.name} methods are not supported"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        for method_dir in method_dirs:
+            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+            self.data = self.data.join(self.methods[method_dir].data)
+
+        keys = self.data.keys().to_list()
+        if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
+            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+        
+        self.data['Stability classification'] = self.data.apply(self._generate_stability_classification, axis=1)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[])
+
+    def _generate_stability_classification(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('STABILITY') ]
+
+        if len(keys) == 2:
+            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
+                rosetta_header, foldx_header    = keys
+            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
+                foldx_header,   rosetta_header  = keys
+            else:
+                return pd.NA
+        else:
+            return pd.NA
+
+        stab_co = 3.0
+        neut_co = 2.0
+
+        if rosetta_header not in row.index or foldx_header not in row.index:
+            return pd.NA
+
+        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+            return 'Destabilizing'
+        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+            return 'Stabilizing'
+        if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
+            return 'Neutral'
+        return 'Uncertain'
+
+
+class LocalInteractions(MultiMethodDataType):
+    module_dir = "local_interactions"
+    name = "local_interactions"
+    methods = {'foldx5'                      : MutateXBinding(version="FoldX5"),
+                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Flexddg Talaris2014')}
+
+class LongRange(MultiMethodDataType):
+
+    module_dir = "long_range"
+    name = "long_range"
+    methods = {'allosigma2' : AlloSigma(version=2)}
+
+class References(DataType):
+
+    module_dir = "pmid_list"
+    name = "references"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        pmid_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(pmid_files) != 1:
+            this_error = f"multiple or no files found in {pmid_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        pmid_file = pmid_files[0]
+
+        log.info(f"parsing PMID file {pmid_file}")
+
+        try:
+            pmid = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pmid_file), delim_whitespace=True)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if 'mutation' not in pmid.columns or 'PMID' not in pmid.columns:
+            this_error = f"The CSV file must contain the following columns: mutation, PMID"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if len(pmid.columns) != 2:
+            warnings.append(MAVISpWarningError("The CSV file has more than two columns"))
+
+        pmid = pmid[['mutation', 'PMID']]
+        pmid = pmid.set_index('mutation')
+        pmid = pmid[~ pmid.index.duplicated(keep='first')]
+        self.data = pmid.rename(columns={'PMID':'PMID / DOI'})
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[])
+
+class PTMs(DataType):
+
+    module_dir = "ptm"
+    name = "ptms"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(ptm_files) == 0:
+            this_error = f"no files found in {self.module_dir}; one or more expected"
+            raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ptm_data = []
+        for fname in ptm_files:
+            try:
+                ptms = pd.read_csv(os.path.join(self.data_dir, self.module_dir, fname), delim_whitespace=True)
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+                raise MAVISpMultipleError(warning=warnings, 
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ptms['mutation'] = os.path.splitext(os.path.basename(fname))[0]
+
+            if len(ptms) != 1:
+                tmp_data = {}
+                for c in ptms.columns:
+                    tmp_data[c] = ", ".join(map(str, ptms[c].to_list()))
+                ptms = pd.DataFrame(tmp_data)
+
+            ptms = ptms.set_index('mutation')
+            ptms = ptms[~ ptms.index.duplicated(keep='first')]
+            ptm_data.append(ptms)
+
+        ptm_data = pd.concat(ptm_data)
+        self.data = ptm_data.rename(columns={   '#ptm'                 : "PTMs",
+                                                'SASA(%)'              : "PTM residue SASA (%)" ,
+                                                'ddG(foldX5,kcal/mol)' : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'effect_regulation'    : "PTM effect in regulation",
+                                                'effect_stability'     : "PTM effect in stability" ,
+                                                'effect_function'      : "PTM effect in function",
+                                                'notes'                : "PTM notes"})
 
 class CancermutsTable(DataType):
 
@@ -112,8 +325,8 @@ class CancermutsTable(DataType):
         cancermuts = cancermuts.loc[available_mutations]
 
         # check if all the mutations have a defined REVEL score
-        if np.any(pd.isna(cancermuts['REVEL_score'])):
-            warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
+        # if np.any(pd.isna(cancermuts['REVEL_score'])):
+        #     warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
 
         # filter by column and pretty rename column names
         cancermuts = cancermuts[['gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
@@ -127,16 +340,12 @@ class CancermutsTable(DataType):
             raise MAVISpMultipleError(warning=warnings, 
                                       critical=[])
 
-    def get_dataset_view(self):
-        return self.data
-
-
 class MAVISpFileSystem:
 
     supported_modes = ['simple_mode']
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
-    supported_modules = [ CancermutsTable ]
+    supported_modules = [ CancermutsTable, References, PTMs, LongRange, Stability, LocalInteractions ]
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 
@@ -156,7 +365,7 @@ class MAVISpFileSystem:
         if len(modes_diff) > 0: 
             raise TypeError(f"the following modes are not supported: {modes_diff}")
 
-        self.data_dir=data_dir
+        self.data_dir = data_dir
 
         self._tree = self._traverse(self.data_dir)
         self.dataset_table = self._dataset_table(include=include_proteins, exclude=exclude_proteins)
@@ -170,9 +379,9 @@ class MAVISpFileSystem:
         df_list = []
 
         for system in self._dir_list(self._tree):
-            if (include is not None and system not in include) or (exclude is not None and system in exclude) or (not (exclude is None and include is None)):
-                self.log.warning(f"ignoring unsupported protein {system}")
-                warnings.append(f"ignoring unsupported protein {system}")
+            if (include is not None and system not in include) or (exclude is not None and system in exclude) and (not (exclude is None and include is None)):
+                self.log.warning(f"ignoring not selected protein {system}")
+                warnings.append(f"ignoring not selected protein {system}")
                 continue
             for mode in self._dir_list(self._tree[system]):
                 if mode not in self.supported_modes:
@@ -297,7 +506,7 @@ class MAVISpFileSystem:
             mode = r['mode']
             mutations = r['mutations']
 
-            mavisp_modules = defaultdict(None)
+            mavisp_modules = defaultdict(lambda: None)
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
             
@@ -321,8 +530,10 @@ class MAVISpFileSystem:
                         mavisp_errors[mod.name].extend(e.critical)
                         mavisp_warnings[mod.name].extend(e.warning)
                         if len(e.critical) != 0:
+                            mavisp_modules[mod.name] = None
                             continue
                         if len(e.warning) != 0 and stop_at == 'warning':
+                            mavisp_modules[mod.name] = None
                             continue
                     
                     mavisp_modules[mod.name] = this_module
@@ -372,50 +583,38 @@ class MAVISpFileSystem:
         data = defaultdict(list)
 
         for _, r in self.dataset_table.iterrows():
-            data['System'].append(r['system'])
-            data['Mode'].append(r['mode'])
             
-            status = ""
-            details = ""
-
-            nl = ""
-
             for this_m in self.supported_modules:
-                if this_m not in [x.__class__ for x in r['modules']]:
-                    status += f"{nl}{this_m.name}"
-                    details += f"{nl}"
+
+                data['system'].append(r['system'])
+                data['mode'].append(r['mode'])
+                data['module'].append(this_m.name)
+
+                # module not ran/available
+                if this_m.name not in r['modules'].keys():
+                    data['status'].append("not_available")
+                    data['details_warn'].append(list())
+                    data['details_err'].append(list())
                     continue
 
+                # all good
                 if len(r['errors'][this_m.name]) == 0 and len(r['warnings'][this_m.name]) == 0:
-                    if status != "":
-                        nl = '\n'
-                    status += colored(f"{nl}{this_m.name}", 'green')
-                    details += f"-{nl}"
+                    data['status'].append("ok")
+                    data['details_warn'].append(list())
+                    data['details_err'].append(list())
+                    continue
 
+                # errors
                 if len(r['errors'][this_m.name]) > 0:
-                    if status != "":
-                        nl = '\n'
-                    status += colored(f"{nl}{this_m.name}", 'red')
-                    details += f"{r['errors'][this_m.name][0]}\n"
-                    for this_err in r['errors'][this_m.name][1:]:
-                        status += f"{nl}"
-                        details += f"{this_err}\n"
+                    data['status'].append("error")
+                    data['details_err'].append([str(x).strip() for x in r['errors'][this_m.name]])
+                    data['details_warn'].append([str(x).strip() for x in r['warnings'][this_m.name]])
+                    continue
 
+                # warnings
                 if len(r['warnings'][this_m.name]) > 0:
-                    if status != "":
-                        nl = '\n'
-                    if len(r['errors'][this_m.name]) == 0:
-                        status += colored(f"{nl}{this_m.name}", 'yellow')
-                    else:
-                        status += f"{nl}"
-                    details += f"{r['warnings'][this_m.name][0]}\n"
-                    for this_warn in r['warnings'][this_m.name][1:]:
-                        status += f"{nl}"
-                        details += f"{this_warn}\n"
-                status = status.rstrip('\n')
-                details = details.rstrip()
-
-            data['Status'].append(status)
-            data['Details'].append(details)
+                    data['status'].append("warning")
+                    data['details_err'].append(list())
+                    data['details_warn'].append([str(x).strip() for x in r['warnings'][this_m.name]])
 
         return pd.DataFrame(data)

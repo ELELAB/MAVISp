@@ -19,8 +19,9 @@ from pathlib import Path
 import argparse
 from tabulate import tabulate
 import pandas as pd
-from core import MAVISpFileSystem
+from mavisp.core import MAVISpFileSystem
 import logging as log
+from termcolor import colored
 
 header = """
                         .__                 
@@ -48,7 +49,7 @@ If you use MAVISp for your research, please cite:
 
 """
 
-module_order = ['cancermuts']
+module_order = ['cancermuts', 'references', 'ptms', 'stability', 'local_interactions', 'long_range']
 
 def main():
 
@@ -63,7 +64,7 @@ def main():
                         default="./database",
                         help="output directory where the csv database is written (default: ./database")
     parser.add_argument("-w", "--stop-on-warnings", 
-                        dest="stop_warnings",
+                        dest="stop_on_warnings",
                         default=False,
                         help="do not write output if any warning is found (default: false)")
     parser.add_argument("-p", "--included-proteins",
@@ -101,7 +102,7 @@ def main():
         excluded_proteins = None
 
     if args.included_proteins is not None:
-        included_proteins = args.excluded_proteins.split(',')
+        included_proteins = args.included_proteins.split(',')
     else:
         included_proteins = None
 
@@ -130,23 +131,78 @@ def main():
         except PermissionError:
             log.error("Coudln't create the specified output directory; exiting...")
             exit(1)
-
     mfs = MAVISpFileSystem(data_dir=in_path, exclude_proteins=excluded_proteins, include_proteins=included_proteins)
 
     mfs.ingest()
 
     summary = mfs.get_datasets_table_summary()
+    print("\n\n*** SUMMARY ***\n")
     print(tabulate(summary, headers=summary.columns, showindex=False, tablefmt="double_outline"))
 
     details = mfs.get_datasets_table_details()
-    print(tabulate(details, headers=details.columns, showindex=False, tablefmt="double_outline"))
 
-    print(mfs.dataset_table.columns)
+    details_text = "\n\n*** DETAILED REPORT ***\n\n"
+    error_count = 0
+    warning_count = 0
+
+    details['index'] = list(zip(details['system'], details['mode']))
+    systems = details['index'].unique()
+
+    for s in systems:
+        this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])]
+        details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'cyan', attrs=['bold'])
+        for _, r in this_system.iterrows():
+            if r['status'] == "ok":
+                details_text += colored(f"    ✓ {r['module']}\n", 'green')
+            if r['status'] == "error":
+                details_text += colored(f"    X {r['module']}\n", 'red')
+                for err in r['details_err']:
+                    details_text += colored(f"        {colored(err, 'red')}\n")
+                    error_count += 1
+                for warn in r['details_warn']:
+                    details_text += colored(f"        {colored(warn, 'yellow')}\n")
+                    warning_count += 1
+            if r['status'] == "warning":
+                details_text += colored(f"    ~ {r['module']}\n", 'yellow')
+                for warn in r['details_warn']:
+                    details_text += colored(f"        {colored(warn, 'yellow')}\n")
+                    warning_count += 1
+            if r['status'] == "not_available":
+                details_text += f"    ? {r['module']}\n"
+        details_text += '\n\n'
+    
+    if error_count == 0 and warning_count == 0:
+        details_text += colored("ALL GOOD! 👏👏👏\n", "green")
+    else:
+        if error_count > 0:
+            error_text = colored(f"{error_count} errors", 'red')
+        else:
+            error_text = ""
+        if warning_count > 0:
+            warning_text = colored(f"{warning_count} warnings", 'yellow')
+        else:
+            warning_text = ""
+
+        if error_text != "" and warning_text != "":
+            separator = ", "
+        else:
+            separator = ""
+
+        details_text += f"*** {error_text}{separator}{warning_text} ***\n"
+
+    print(details_text)
 
     if args.dry_run:
         log.info("Exiting without writing any file, as dry-run mode is active")
         exit()
-    
+
+    if error_count > 0:
+        log.warning("One or more critical error detected. Will not proceed to generate the database. Exiting...")
+        exit(1)
+
+    if args.stop_on_warnings and warning_count > 0:
+        log.warning("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
+
     out_table = mfs.dataset_table[['system', 'mode', 'curators']]
     out_table = out_table.rename(columns={' system' : "Protein",
                                             'mode'  : "Mode",
@@ -155,7 +211,6 @@ def main():
 
     dataset_tables_path = out_path / 'dataset_tables'
     dataset_tables_path.mkdir(exist_ok=True)
-    print(mfs.dataset_table['modules'])
     for _, r in mfs.dataset_table.iterrows():
 
         this_df = pd.DataFrame({'Mutation': r['mutations']})
@@ -163,13 +218,8 @@ def main():
 
         for mod_name in module_order:
             mod = r['modules'][mod_name]
-            print(mod)
             if mod is None:
                 continue
             this_df = this_df.join(mod.get_dataset_view())
 
         this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")
-            
-
-
-main()
