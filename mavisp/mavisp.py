@@ -49,6 +49,12 @@ If you use MAVISp for your research, please cite:
 
 """
 
+legend = f"""legend:
+{colored("    ✓ module_name", 'green')}    all good - no warnings or errors for this module
+{colored("    X module_name", 'red')}    errors detected in this module. There might be additional warnings as well
+{colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
+    = module_name    this module is not available for this protein"""
+
 module_order = ['cancermuts', 'references', 'ptms', 'stability', 'local_interactions', 'long_range']
 
 def main():
@@ -142,8 +148,11 @@ def main():
     details = mfs.get_datasets_table_details()
 
     details_text = "\n\n*** DETAILED REPORT ***\n\n"
+    details_text += legend + "\n\n"
+
     error_count = 0
     warning_count = 0
+
 
     details['index'] = list(zip(details['system'], details['mode']))
     systems = details['index'].unique()
@@ -157,18 +166,18 @@ def main():
             if r['status'] == "error":
                 details_text += colored(f"    X {r['module']}\n", 'red')
                 for err in r['details_err']:
-                    details_text += colored(f"        {colored(err, 'red')}\n")
+                    details_text += f"        {colored(err, 'red')}\n"
                     error_count += 1
                 for warn in r['details_warn']:
-                    details_text += colored(f"        {colored(warn, 'yellow')}\n")
+                    details_text += f"        {colored(warn, 'yellow')}\n"
                     warning_count += 1
             if r['status'] == "warning":
                 details_text += colored(f"    ~ {r['module']}\n", 'yellow')
                 for warn in r['details_warn']:
-                    details_text += colored(f"        {colored(warn, 'yellow')}\n")
+                    details_text += f"        {colored(warn, 'yellow')}\n"
                     warning_count += 1
             if r['status'] == "not_available":
-                details_text += f"    ? {r['module']}\n"
+                details_text += f"    = {r['module']}\n"
         details_text += '\n\n'
     
     if error_count == 0 and warning_count == 0:
