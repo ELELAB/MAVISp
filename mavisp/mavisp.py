@@ -184,11 +184,11 @@ def main():
         details_text += colored("ALL GOOD! 👏👏👏\n", "green")
     else:
         if error_count > 0:
-            error_text = colored(f"{error_count} errors", 'red')
+            error_text = colored(f"{error_count} error(s)", 'red')
         else:
             error_text = ""
         if warning_count > 0:
-            warning_text = colored(f"{warning_count} warnings", 'yellow')
+            warning_text = colored(f"{warning_count} warning(s)", 'yellow')
         else:
             warning_text = ""
 
