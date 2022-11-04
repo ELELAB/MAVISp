@@ -1,0 +1,333 @@
+Mutation,"Stability (FoldX5, kcal/mol)","Stability (Rosetta Flexddg2020, kcal/mol)",Stability classification,gnomAD genome allele frequency,gnomAD exome allele frequency,REVEL score,Mutation sources,PMID / DOI,AlloSigma2 mutation type,AlloSigma2 predicted consequence
+T2I,0.03168,-0.49898,Neutral,,,0.648,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+E3K,-0.75167,-0.25782,Neutral,,,0.552,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E3G,1.09464,1.29014,Neutral,,,0.784,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y4C,4.01976,4.56361,Destabilizing,,,0.796,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+K5E,1.58361,1.5398,Neutral,,,0.892,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K5R,-0.81815,-0.14388,Neutral,,,0.829,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+K5N,0.49198,0.13503,Neutral,,,0.764,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L6V,1.04822,2.00136,Uncertain,3.1849162367e-05,,0.493,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L6H,4.24367,4.15544,Destabilizing,,,0.856,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L6P,6.97162,4.3051,Destabilizing,,,0.853,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V7A,3.68058,2.00374,Uncertain,,,0.721,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+V7G,5.46982,4.15986,Destabilizing,,,0.883,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+V7M,2.88759,2.13095,Uncertain,,,0.818,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V8E,3.71196,4.20646,Destabilizing,,,0.900,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+V8I,-0.59672,0.77857,Neutral,,,0.325,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V9D,-0.80799,2.05374,Uncertain,,,0.929,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V9I,0.46919,0.56871,Neutral,,,0.449,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G10R,31.36296,17.95646,Destabilizing,,,0.961,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G10V,14.3739,5.87619,Destabilizing,,,0.975,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G10E,18.83178,9.78571,Destabilizing,,,0.975,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A11T,1.00869,0.10476,Neutral,,,0.391,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A11G,0.52103,1.09932,Neutral,,,0.299,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+A11P,-3.02434,0.61735,Uncertain,,,0.484,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A11V,0.79611,1.00544,Neutral,,,0.646,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12S,-0.11122,-0.87313,Neutral,,0.0000000000000000,0.790,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12I,0.07629,-0.96361,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12C,-0.15547,-0.0517,Neutral,,0.0000000000000000,0.853,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12R,-0.4614,0.2102,Neutral,,0.0000000000000000,0.821,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12V,-0.12286,-0.42517,Neutral,,0.0000000000000000,0.910,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12W,-0.77457,-0.80646,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12A,-0.58266,-0.91156,Neutral,,0.0000000000000000,0.841,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12H,-0.20025,-0.12993,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12E,-0.52967,-0.7983,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12D,-0.19981,-0.55612,Neutral,,", 0.0000040107809793",0.875,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12Y,-0.7499,-0.25748,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12L,-0.68367,-0.33503,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12N,-0.11814,0.31293,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G12F,-0.78094,-0.46667,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13E,1.55709,1.19014,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13A,2.18885,1.53231,Uncertain,,,0.772,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13C,1.57609,1.68537,Neutral,,0.0000000000000000,0.868,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13P,4.02615,18.69728,Destabilizing,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13D,1.78257,1.12211,Neutral,,0.0000000000000000,0.832,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13K,1.64557,0.74592,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13V,3.75298,5.03673,Destabilizing,,,0.906,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13R,1.57779,1.21633,Neutral,,,0.891,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13F,0.83532,0.15374,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13N,0.95815,0.48299,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13H,1.58785,0.55714,Neutral,,,,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13S,2.00994,0.90442,Uncertain,,,0.746,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13Y,1.38576,0.1619,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G13I,3.32162,4.63061,Destabilizing,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V14I,2.37812,1.13741,Uncertain,,0.0000000000000000,0.803,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V14A,1.323,0.47959,Neutral,,,0.906,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V14G,2.86635,2.25408,Uncertain,,,0.895,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V14L,4.15427,3.27313,Destabilizing,,,0.927,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G15D,4.80128,0.85306,Uncertain,,,0.961,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G15V,8.2975,6.24116,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G15S,5.16627,1.55442,Uncertain,,,0.963,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G15C,5.06157,1.31599,Uncertain,,,0.974,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+K16R,1.51354,0.11054,Neutral,,,0.894,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+S17G,1.49264,0.79048,Neutral,,,0.877,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+S17N,0.04835,-0.17007,Neutral,,,0.785,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+S17T,0.00418,-0.45782,Neutral,,,0.470,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A18V,1.17008,-0.37619,Neutral,,,0.840,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A18D,1.57507,1.15238,Neutral,,,0.876,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A18T,0.71355,0.3085,Neutral,,,0.692,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A18S,0.5407,1.09796,Neutral,,,0.480,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+A18G,1.18447,1.41973,Neutral,,,0.759,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L19F,7.172,1.14252,Uncertain,,0.0000000000000000,0.797,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T20P,3.22928,6.67551,Destabilizing,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+T20R,5.34579,5.82381,Destabilizing,,,0.902,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T20M,1.61186,0.74694,Neutral,,,0.839,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T20A,-0.62098,0.70374,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+T20S,1.35122,1.77211,Neutral,,,0.786,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+I21K,0.11934,1.33095,Neutral,,,0.899,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+I21R,0.4812,0.74388,Neutral,,,0.883,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q22K,0.7008,4.29796,Uncertain,,,0.805,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q22R,-0.35452,1.28741,Neutral,,,0.749,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q22L,-0.99402,0.18367,Neutral,,,0.888,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q22H,5.32587,2.52347,Uncertain,,,0.806,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q22E,1.51315,2.05918,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L23P,8.96352,11.55612,Destabilizing,,,0.897,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L23I,2.30933,2.99422,Uncertain,,,0.564,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+L23V,2.77844,0.87517,Uncertain,,,0.679,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L23R,3.92537,5.16327,Destabilizing,,,0.870,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+I24L,0.49011,1.52313,Neutral,,,0.529,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+I24N,2.18869,2.57687,Uncertain,,,0.824,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q25R,-0.60366,0.23129,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+Q25H,-0.20628,-0.59762,Neutral,,,0.595,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+N26K,-0.02763,0.8881,Neutral,,,0.227,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+N26I,2.88118,5.13469,Uncertain,,,0.822,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+N26Y,0.67266,0.90102,Neutral,,,0.846,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+N26S,0.6426,1.0983,Neutral,,,0.180,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+N26H,0.35907,0.23878,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+H27Y,-0.37497,-0.31769,Neutral,,,0.574,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+H27L,-0.27435,-0.34354,Neutral,,,0.489,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+F28S,2.74333,2.5534,Uncertain,,,0.918,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+F28L,1.23674,2.2051,Uncertain,,,0.897,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V29M,-0.62241,1.05238,Neutral,,,0.777,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D30N,0.09409,1.48265,Neutral,,,0.556,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+D30E,-0.13733,1.02041,Neutral,,,0.400,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E31Q,0.29093,-0.89456,Neutral,,,0.312,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E31K,0.37449,-0.92959,Neutral,,,0.254,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D33E,0.03448,-0.52721,Neutral,,,0.540,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+P34Q,1.26503,0.13639,Neutral,,,0.899,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+P34L,1.0871,-0.26565,Neutral,,,0.867,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+P34T,1.62802,0.76156,Neutral,,,0.833,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+P34S,1.07366,0.98231,Neutral,,,0.757,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+P34R,0.6882,0.54354,Neutral,,,0.905,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T35A,0.4815,0.26259,Neutral,,,0.928,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+T35I,0.4367,-0.70714,Neutral,,,0.942,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+I36L,0.2556,1.11122,Neutral,,,0.631,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+I36M,0.12316,2.20034,Uncertain,,,0.864,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+E37K,-0.77823,-0.10442,Neutral,,,0.809,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D38N,-0.3845,-0.19864,Neutral,,,0.626,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+D38Y,-0.80786,-0.50952,Neutral,,,0.948,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+S39Y,0.00159,-3.01224,Uncertain,,,0.850,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+R41K,0.02839,0.1381,Neutral,,,0.622,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+V44E,1.69889,3.77891,Uncertain,,,0.886,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+V44L,0.65695,1.92109,Neutral,,,0.494,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V44I,2.0078,2.03435,Uncertain,,,0.263,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+I46M,4.65787,2.83435,Uncertain,,,0.632,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+D47G,0.56119,3.02211,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D47Y,0.6718,3.22959,Uncertain,,,0.814,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G48A,2.50156,1.47721,Uncertain,,,0.656,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E49K,0.17177,1.2915,Neutral,,,0.450,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T50P,-0.93677,-0.03333,Neutral,,,0.619,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+T50S,0.70873,0.82143,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+T50I,-0.50131,-0.46463,Neutral,3.1849162367e-05,,0.563,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T50A,0.31544,0.56667,Neutral,,,0.411,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+C51R,12.42383,5.86156,Destabilizing,,,0.816,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+L52F,1.7615,1.21769,Neutral,,,0.486,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+L52R,1.88959,2.41463,Uncertain,,,0.779,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D54N,-0.08325,0.61837,Neutral,,,0.576,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+I55S,6.12581,4.4466,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D57Y,8.80924,3.9034,Destabilizing,,,0.863,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D57N,0.23659,0.23027,Neutral,,,0.838,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+T58K,5.48363,6.11531,Destabilizing,,,0.843,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T58R,5.68371,5.49048,Destabilizing,,,0.873,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T58I,1.35915,0.96905,Neutral,,,0.921,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A59T,2.34652,0.51531,Uncertain,,,0.869,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A59G,1.59366,2.47007,Uncertain,,,0.704,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+A59S,0.78171,0.9432,Neutral,,,0.783,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+A59V,2.7994,-0.12687,Uncertain,,,0.841,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A59E,2.98257,6.11939,Uncertain,,,0.886,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G60V,12.00262,-0.5,Uncertain,,0.0000039788642730,0.879,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G60S,6.45192,-0.61395,Uncertain,,,0.943,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G60R,12.82076,1.32483,Uncertain,,,0.938,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G60A,3.61003,-0.11361,Uncertain,,,0.921,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G60D,8.04715,-0.60204,Uncertain,,,0.934,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q61L,-1.17082,-0.64048,Neutral,,,0.885,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q61H,0.06588,-0.41837,Neutral,,0.0000039791809254,"0.644, 0.647","cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q61E,-0.14724,0.10816,Neutral,,,0.714,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q61K,-0.3736,-0.32755,Neutral,,,0.630,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q61A,-0.45313,0.18741,Neutral,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q61D,-0.1663,0.47449,Neutral,,,,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q61P,-1.01032,3.26531,Uncertain,,,0.896,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q61R,-0.42808,-0.31667,Neutral,,,0.799,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E62D,0.20842,0.10204,Neutral,,,0.559,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+E62G,0.4547,1.06088,Neutral,,,0.837,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+E62K,-0.25536,0.62993,Neutral,,,0.734,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E62Q,-0.07041,0.69966,Neutral,,,0.750,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E63K,-0.19945,-0.1483,Neutral,,,0.799,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E63D,0.51228,0.02959,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y64S,2.37894,1.67075,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+Y64D,2.48794,2.28333,Uncertain,,,0.886,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+Y64N,1.6986,1.12007,Neutral,,,0.855,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+Y64H,1.5338,0.88129,Neutral,,,0.876,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+S65I,-0.21452,1.36803,Neutral,,,0.600,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+S65N,-0.02259,0.71735,Neutral,,,0.456,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A66S,0.25799,-0.02381,Neutral,,,0.521,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+M67I,1.27833,-0.0398,Neutral,,,0.716,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+M67L,1.01733,-0.44592,Neutral,,,0.511,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R68K,1.33109,0.3619,Neutral,,,0.740,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R68M,0.06542,-0.30476,Neutral,,,0.820,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R68S,1.11406,1.46701,Neutral,,,0.788,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R68W,0.49481,-1.56463,Neutral,,,0.795,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D69G,0.89328,1.45544,Neutral,,,0.761,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Q70P,0.19782,5.67755,Uncertain,,,0.814,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y71D,4.9869,5.25952,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y71C,3.01839,3.03503,Destabilizing,,,0.892,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y71H,3.62949,2.56633,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+M72L,1.55714,1.91224,Neutral,,,0.658,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+M72K,3.86178,5.0034,Destabilizing,,,0.835,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+M72V,2.4453,3.33095,Uncertain,,,0.777,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+M72I,1.36116,1.52857,Neutral,,,0.658,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R73M,0.50416,0.86224,Neutral,,,0.799,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R73S,0.80125,0.84048,Neutral,,,0.769,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+T74P,1.37113,5.0551,Uncertain,,,0.858,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+T74A,0.0888,0.45272,Neutral,,0.0000039793709410,0.714,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+T74I,-0.99635,-0.52109,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E76D,0.38387,0.45714,Neutral,,,0.419,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+E76G,1.84159,4.13571,Uncertain,,,0.760,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+G77A,1.76645,0.00204,Neutral,,0.0000039799094173,0.669,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G77D,12.94128,5.78367,Destabilizing,,,0.876,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G77C,3.16238,2.09456,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G77S,3.55832,1.73878,Uncertain,,,0.891,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G77V,5.7747,5.87891,Destabilizing,,,0.790,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+L79H,5.06577,4.95714,Destabilizing,,,0.913,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L79I,0.88841,1.55578,Neutral,,,0.515,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+C80S,1.80635,1.71735,Neutral,,,0.652,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+A83V,1.15387,0.48537,Neutral,,,0.735,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+I84M,0.86205,-0.70408,Neutral,,,0.696,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+I84V,0.71981,0.17449,Neutral,,,0.294,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+N86K,0.37051,1.86497,Neutral,,,0.359,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+K88E,-0.80141,0.74558,Neutral,,,0.409,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+S89L,2.46965,0.64116,Uncertain,,,,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+E91G,1.2901,0.76939,Neutral,,,0.616,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D92V,1.93238,0.09456,Neutral,,,0.782,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+D92Y,0.82797,-0.20102,Neutral,,,0.755,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+I93F,1.72637,2.89932,Uncertain,,,0.846,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+H94P,-0.29513,5.38605,Uncertain,,,0.460,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+H95L,-0.52611,-0.45,Neutral,,,0.316,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+H95D,0.15838,-0.07687,Neutral,,,0.354,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R97I,-2.21508,-1.30714,Uncertain,,,0.648,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+R97K,-0.19381,1.21395,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+E98K,-0.65429,1.39898,Neutral,,,0.577,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q99E,0.20795,0.87245,Neutral,,,0.468,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V103A,1.28191,1.27755,Neutral,,,0.725,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+K104N,1.57027,1.48605,Neutral,,,0.633,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+E107K,0.78086,0.75748,Neutral,,,0.454,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D108N,0.18008,1.12415,Neutral,,,0.131,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+D108Y,0.57393,1.46361,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D108E,0.60648,0.92245,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V109L,2.69933,1.79388,Uncertain,,,0.699,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+V109I,0.20616,0.08163,Neutral,,,0.457,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+P110S,4.05841,2.66735,Uncertain,,,0.889,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+P110H,16.99726,4.46599,Destabilizing,,,0.899,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+M111V,1.35867,2.07925,Uncertain,,,0.587,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+M111L,1.14519,3.15476,Uncertain,,,0.484,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+M111T,1.23579,2.49592,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V112I,-0.0549,0.95476,Neutral,,0.0000039828260541,0.212,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V114L,-0.05395,1.54354,Neutral,,,0.782,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+V114I,-0.54888,1.08946,Neutral,,,0.565,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G115R,16.8311,2.83095,Uncertain,,,0.940,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G115E,9.04013,1.82211,Uncertain,,,0.922,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+N116S,1.60466,2.22279,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+N116H,6.73089,0.86803,Uncertain,,,0.878,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+K117E,0.70902,1.49082,Neutral,,,0.874,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K117N,0.59368,0.37585,Neutral,,0.0000039820330668,0.764,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K117T,3.92747,3.02857,Destabilizing,,,0.904,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K117Y,-0.73875,-0.68299,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+K117I,2.77134,5.47177,Uncertain,,,0.883,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+K117Q,0.23843,0.63197,Neutral,,,0.918,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K117R,-0.43661,0.42721,Neutral,,,0.884,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+C118R,0.4175,-0.67211,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+C118S,0.33443,0.76293,Neutral,,,0.552,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D119G,0.60223,1.78537,Neutral,,,0.924,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D119N,-0.23223,0.64456,Neutral,,,0.873,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+D119E,-0.11418,0.02551,Neutral,,,0.904,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D119Y,-1.76171,-0.63741,Neutral,,,0.944,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D119H,0.11514,-0.37993,Neutral,,,0.924,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+L120S,0.64956,1.19184,Neutral,,,0.948,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+P121H,1.31847,0.39592,Neutral,,,0.512,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+S122F,0.10889,-0.43912,Neutral,,,0.494,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+S122P,-1.1427,3.94456,Uncertain,,,0.446,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+R123I,1.79495,1.13435,Neutral,,,0.809,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R123K,1.09124,1.00918,Neutral,,,0.701,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+T124I,-0.39232,0.98095,Neutral,,,0.339,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+V125I,-0.80985,0.08912,Neutral,,,0.455,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D126V,4.20716,0.76361,Uncertain,,,0.606,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D126E,1.54051,0.50544,Neutral,,,0.325,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T127I,-0.81557,0.40952,Neutral,,,0.479,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,stabilizing
+A130T,2.6471,2.49932,Uncertain,,0.0000039813989043,0.813,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A130P,2.37856,8.47551,Uncertain,,,0.873,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A130S,1.50499,1.8398,Neutral,3.1901997065e-05,,0.695,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+A130I,5.06984,2.16837,Uncertain,,,,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A130V,3.85325,2.37993,Uncertain,,0.0000199069945216,0.633,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q131H,1.06307,0.37891,Neutral,,,0.363,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+Q131K,-0.42099,0.2551,Neutral,,,0.300,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D132A,-0.33997,0.49422,Neutral,,,0.289,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+A134T,3.75698,4.40408,Destabilizing,,,0.916,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A134G,1.97711,2.16871,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+A134V,4.42017,4.97007,Destabilizing,,,0.873,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+R135K,0.57481,-0.08095,Neutral,,,0.295,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R135I,0.76379,-0.17551,Neutral,,,0.586,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R135T,1.32632,-0.00476,Neutral,,,0.480,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R135G,1.349,0.87313,Neutral,,,0.576,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+S136N,0.3361,-0.06293,Neutral,,0.0000119440064975,0.274,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+S136R,-0.47899,0.00986,Neutral,,,0.446,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G138R,1.29948,-0.05748,Neutral,,0.0000039815574260,0.878,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G138V,3.89353,4.73129,Destabilizing,,,0.705,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+G138E,2.83426,0.50306,Uncertain,,0.0000039814940158,0.654,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+P140H,2.7202,1.25986,Uncertain,,,0.756,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+P140S,3.1247,1.49014,Uncertain,,,0.532,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+E143G,3.21052,2.87789,Uncertain,,,0.895,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+E143K,1.67233,1.20544,Neutral,,,0.883,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+T144P,5.82921,2.63639,Uncertain,,,0.907,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+S145L,5.26817,2.96429,Uncertain,,,0.860,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A146S,1.65732,1.12755,Neutral,,,0.875,"COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+A146V,-0.92024,1.25102,Neutral,,,0.890,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A146T,1.41668,1.77313,Neutral,,,0.909,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A146P,-1.2424,2.11259,Uncertain,,,0.935,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+A146I,-0.49893,2.11939,Uncertain,,,,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+K147E,1.03908,1.05714,Neutral,,,0.894,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+K147T,1.0748,1.23265,Neutral,,,0.916,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+K147N,0.73124,1.83503,Neutral,,,0.707,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+K147R,0.1845,0.3119,Neutral,,,0.686,"cBioPortal,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R149K,-0.69013,0.60816,Neutral,,,0.390,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+R149G,-0.82758,-0.34592,Neutral,,,0.675,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+R151S,1.48651,0.03878,Neutral,,,0.345,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+R151T,2.44007,2.22959,Uncertain,,,0.358,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+V152F,15.31454,7.93571,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+D154G,1.16263,1.61667,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+D154N,0.4668,0.62279,Neutral,,,0.190,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+A155D,5.06572,4.04864,Destabilizing,,,0.824,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+F156V,3.50929,3.94252,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+F156L,1.93413,2.97789,Uncertain,,,0.866,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+F156I,3.13519,3.84014,Destabilizing,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y157C,3.04404,2.54694,Uncertain,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+Y157D,3.56964,3.52381,Destabilizing,,,0.733,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+T158A,0.15399,0.39524,Neutral,,,0.375,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+L159S,3.73994,5.17449,Destabilizing,,,0.854,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V160A,2.39148,2.01803,Uncertain,,,0.581,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+V160M,2.59576,4.4983,Uncertain,3.18572793883e-05,0.0000199077871300,0.620,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+R161Q,0.19239,0.7915,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+R161G,1.49723,2.99558,Uncertain,,,0.798,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+E162Q,-0.24497,-0.19252,Neutral,,,0.420,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+E162K,-0.01461,-0.29694,Neutral,,,,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,UP,neutral
+I163S,3.44514,4.57347,Destabilizing,,,0.920,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+I163V,1.09715,1.37075,Neutral,,,,Manual annotations from clinvar.csv,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R164Q,0.53552,0.55782,Neutral,,0.0000199069945216,0.396,"cBioPortal,COSMIC,Manual annotations from clinvar.csv",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,stabilizing
+Y166H,1.49489,0.9,Neutral,,0.0000079621637976,0.248,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,destabilizing
+R167T,0.85101,2.7602,Uncertain,,,0.273,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+R167I,0.08583,1.64014,Neutral,,,0.412,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K170Q,0.29307,0.08401,Neutral,,,0.130,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K170N,-0.13154,0.44252,Neutral,,,0.144,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+I171M,-0.52799,0.59286,Neutral,3.18857215739e-05,0.0000159231865481,0.119,cBioPortal,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-
+K176Q,0.1939,0.09184,Neutral,,,0.108,"cBioPortal,COSMIC",https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K176T,0.35263,-0.38878,Neutral,,,0.214,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,DOWN,neutral
+K176R,-0.29195,-0.06633,Neutral,,,0.077,COSMIC,https://www.biorxiv.org/content/10.1101/2022.10.22.513328v1,-,-

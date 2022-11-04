@@ -1,2 +1,0 @@
-#ptm	SASA(%)	ddG(foldX5,kcal/mol)	effect_regulation	effect_stability	effect_function	notes			
-P	83.6	-0.255	neutral	neutral	unknown		

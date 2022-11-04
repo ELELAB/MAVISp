@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import streamlit as st
+import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-from mavisp.ingest import MAVISFileSystem
 import pandas as pd
 import argparse
 
@@ -34,16 +34,18 @@ args = parser.parse_args()
 st.set_page_config(layout="wide")
 
 @st.cache
-def load_data(data_dir):
-    return MAVISFileSystem(data_dir)
+def load_dataset(data_dir, protein, mode):
+    return pd.read_csv(os.path.join(data_dir, 'dataset_tables', f'{protein}-{mode}.csv'))
 
-mfs = load_data(args.database_dir)
+@st.cache
+def load_main_table(data_dir):
+    return pd.read_csv(os.path.join(data_dir, 'index.csv'))
+
+show_table = load_main_table(args.database_dir)
 
 st.image('assets/logo.png')
 
 st.write('Welcome to MAVISp!')
-
-show_table = mfs.dataset_table[['system', 'mode', 'curators']]
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 gb_datasets_grid.configure_auto_height()
@@ -57,19 +59,23 @@ datasets_grid = AgGrid(show_table,
                       fit_columns_on_grid_load = True)
 
 if len(datasets_grid["selected_rows"]) == 1:
-    selected_key = ( datasets_grid["selected_rows"][0]['system'],
-                     datasets_grid["selected_rows"][0]['mode']    )
-    this_dataset = mfs.mutation_datasets[selected_key]
 
-    st.download_button("Download dataset",
-                        this_dataset.to_csv().encode('utf-8'),
-                        f"{selected_key[0]}_{selected_key[1]}.csv",
-                        "text/csv",
-                        key='download-csv')
+    protein, mode = ( datasets_grid["selected_rows"][0]['Protein'],
+                      datasets_grid["selected_rows"][0]['Mode']    )
+
+    this_dataset = load_dataset(args.database_dir, protein, mode)
+
+    with open(os.path.join(args.database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+        st.download_button(label="Download dataset",
+                            data=data,
+                            file_name=f'{protein}-{mode}.csv',
+                            mime="text/csv",
+                            key='download-csv')
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
 
+    this_dataset = this_dataset.fillna(pd.NA)
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
                             width=3000)
