@@ -91,11 +91,6 @@ def main():
                         default=False,
                         action="store_true",
                         help="do not stop if output directory exists and overwrite files if necessary")
-    parser.add_argument("-v", "--verbose",
-                        dest="verbose",
-                        default=False,
-                        action="store_true",
-                        help="toggle verbose mode")
 
     args = parser.parse_args()
 
