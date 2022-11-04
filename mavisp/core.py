@@ -28,68 +28,6 @@ import yaml
 from termcolor import colored
 from tabulate import tabulate
 
-class DataType(object):
-    def __init__(self, data_dir=None, stop_at='critical'):
-
-        self.data_dir = data_dir
-        self.data = None
-
-        if data_dir is None:
-            return
-
-    def ingest(self, stop_at='critical'):
-        pass
-
-    def process(self):
-        pass
-
-    @property
-    def data_dir(self):
-        return self._data_dir
-
-    @data_dir.setter
-    def data_dir(self, val):
-        if val is None:
-            self._data_dir = val
-            return
-        if os.path.exists(val) and os.path.isdir(val):
-            self._data_dir = val
-        else:
-            raise MAVISpMultipleError(critical=[MAVISpCriticalError("the input directory pathway doesn't exist or is not a directory")],
-                                      warning=[])
-    @data_dir.getter
-    def data_dir(self):
-        return self._data_dir
-
-    def get_dataset_view(self):
-        return self.data
-
-class MultiMethodDataType(DataType):
-    def __init__(self, data_dir=None):
-
-        super().__init__(data_dir)
-
-    def ingest(self, mutations):
-
-        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
-
-        warnings = []
-
-        method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        
-        if not set(method_dirs).issubset(set(self.methods.keys())):
-            this_error = f"One or more {self.name} methods are not supported"
-            raise MAVISpMultipleError(warning=warnings, 
-                                      critical=[MAVISpCriticalError(this_error)])
-        
-        for method_dir in method_dirs:
-            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, method_dir))
-            self.data = self.data.join(self.methods[method_dir].data)
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
-                                      critical=[])
-
 class MAVISpFileSystem:
 
     supported_modes = ['simple_mode']
@@ -109,10 +47,10 @@ class MAVISpFileSystem:
         self.log.setLevel(level)
 
         if modes is None:
-            modes = self.supported_modes            
-        
+            modes = self.supported_modes
+
         modes_diff = set(modes).difference(set(self.supported_modes))
-        if len(modes_diff) > 0: 
+        if len(modes_diff) > 0:
             raise TypeError(f"the following modes are not supported: {modes_diff}")
 
         self.data_dir = data_dir
@@ -140,7 +78,7 @@ class MAVISpFileSystem:
                     continue
                 self.log.info(f"adding {[system, mode]} to dataset")
 
-                try: 
+                try:
                     mutation_list = self._parse_mutation_list(system, mode)
                 except:
                     self.log.error(f"Couldn't parse mutation list table")
@@ -188,7 +126,7 @@ class MAVISpFileSystem:
         return tree[os.path.basename(os.path.normpath(rootdir))]
 
     def _parse_mutation_list(self, system, mode):
-            
+
         log.info(f"Gathering mutation list for {system} {mode}")
 
         mutation_files = self._file_list(self._tree[system][mode]['mutation_list'])
@@ -209,7 +147,7 @@ class MAVISpFileSystem:
         mutations = list(filter(lambda x: len(x) != 0, lines))
 
         log.debug(f"found mutations: {mutations}")
-        
+
         return mutations
 
     def _parse_metadata(self, system, mode):
@@ -221,15 +159,15 @@ class MAVISpFileSystem:
             return yaml.safe_load(fh)
 
     def _select_most_recent_file(self, fnames):
-        
+
         dates = {}
 
         for fname in fnames:
 
             basename = os.path.splitext(fname)[0]
-            
+
             try:
-                dates[date(int(basename[-4:]), 
+                dates[date(int(basename[-4:]),
                            int(basename[-6:-4]),
                            int(basename[-8:-6]))] = fname
             except (ValueError, TypeError):
@@ -237,7 +175,7 @@ class MAVISpFileSystem:
                 raise TypeError
 
         selected_file = dates[max(dates.keys())]
-        
+
         log.debug(f"file names and their dates {dates}")
         log.debug(f"selected most recent file {selected_file} among {fnames}")
 
@@ -259,23 +197,23 @@ class MAVISpFileSystem:
             mavisp_modules = defaultdict(lambda: None)
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
-            
+
             log.info(f"Gathering data for {r['system']} {r['mode']}")
-            
+
             this_df = pd.DataFrame({'Mutation': mutations})
             this_df = this_df.set_index('Mutation')
-            
+
             analysis_basepath = os.path.join(self.data_dir, system, mode)
 
             # for every available module:
             for mod in self.supported_modules:
-                
+
                 # check if the dataset is available
                 if mod.module_dir in self._dir_list(self._tree[system][mode]):
                     try:
                         this_module = mod(analysis_basepath)
                         this_module.ingest(mutations)
-                        
+
                     except MAVISpMultipleError as e:
                         mavisp_errors[mod.name].extend(e.critical)
                         mavisp_warnings[mod.name].extend(e.warning)
@@ -285,12 +223,12 @@ class MAVISpFileSystem:
                         if len(e.warning) != 0 and stop_at == 'warning':
                             mavisp_modules[mod.name] = None
                             continue
-                    
+
                     mavisp_modules[mod.name] = this_module
             mavisp_dataset_column.append(mavisp_modules)
             mavisp_errors_column.append(mavisp_errors)
             mavisp_warnings_column.append(mavisp_warnings)
-        
+
         self.dataset_table['modules'] = mavisp_dataset_column
         self.dataset_table['errors'] = mavisp_errors_column
         self.dataset_table['warnings'] = mavisp_warnings_column
@@ -299,7 +237,7 @@ class MAVISpFileSystem:
         return self.dataset_table[['system', 'mode', 'curators']]
 
     def get_annotation_tables_view(self):
-        
+
         all_tables = {}
 
         for _, r in self.dataset_table.iterrows():
@@ -323,7 +261,7 @@ class MAVISpFileSystem:
                 data['Status'].append(colored("ERROR", 'red'))
             elif sum([ len(x) for x in list(r['warnings'].values())]) > 0:
                 data['Status'].append(colored("WARNING", 'yellow'))
-            else: 
+            else:
                 data['Status'].append(colored("OK", 'green'))
 
         return pd.DataFrame(data)
@@ -333,7 +271,7 @@ class MAVISpFileSystem:
         data = defaultdict(list)
 
         for _, r in self.dataset_table.iterrows():
-            
+
             for this_m in self.supported_modules:
 
                 data['system'].append(r['system'])
