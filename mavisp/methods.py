@@ -278,7 +278,7 @@ class AlloSigma(Method):
         allosigma2_dir = dir_path
 
         allosigma2_files = set(os.listdir(allosigma2_dir))
-        if len(allosigma2_files) not in [2, 3]:
+        if len(allosigma2_files) not in [1, 2, 3]:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("the AlloSigma2 folder should contain only 2 or 3 files")],
                                       warning=[])
                                       
