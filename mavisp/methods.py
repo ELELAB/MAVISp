@@ -335,8 +335,8 @@ class AlloSigma(Method):
 
         all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
 
-        all_mut = all_mut.rename(columns={'allosigma-mode': 'AlloSigma{self.version} mutation type',
-                                          'allosigma-consequence' : 'AlloSigma{self.version} predicted consequence'})
+        all_mut = all_mut.rename(columns={'allosigma-mode': f'AlloSigma{self.version} mutation type',
+                                          'allosigma-consequence' : f'AlloSigma{self.version} predicted consequence'})
 
         self.data = all_mut.fillna('-')
 
