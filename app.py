@@ -66,11 +66,12 @@ if len(datasets_grid["selected_rows"]) == 1:
 
     this_dataset = load_dataset(args.database_dir, protein, mode)
 
-    st.download_button("Download dataset",
-                        os.path.join(args.database_dir, 'dataset_tables', f'{protein}-{mode}.csv')   ,
-                        f'{protein}-{mode}.csv',
-                        "text/csv",
-                        key='download-csv')
+    with open(os.path.join(args.database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+        st.download_button(label="Download dataset",
+                            data=data,
+                            file_name=f'{protein}-{mode}.csv',
+                            mime="text/csv",
+                            key='download-csv')
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
