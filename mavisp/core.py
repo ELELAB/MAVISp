@@ -177,7 +177,7 @@ class LocalInteractions(MultiMethodDataType):
     module_dir = "local_interactions"
     name = "local_interactions"
     methods = {'foldx5'                      : MutateXBinding(version="FoldX5"),
-                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Flexddg Talaris2014')}
+                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014')}
 
     def ingest(self, mutations):
 

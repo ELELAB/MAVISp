@@ -134,7 +134,7 @@ class MutateXBinding(Method):
 
             # drop now useless columns, rename
             df = df.drop(['residue', 'level_1'], axis=1)
-            df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit})"})
+            df = df.rename(columns={0 : f"{self.type} (Binding with {interactor}, {self.version}, {self.unit})"})
 
             if all_data is None:
                 all_data = df
@@ -225,7 +225,7 @@ class RosettaDDGPredictionBinding(Method):
                 mutation_data = mutation_data[ mutation_data['mutation'].str[0] == self.chain ]
             mutation_data = mutation_data.set_index('mutation_label')
             mutation_data = mutation_data[['total_score']]
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
+            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.version}, {self.unit})'})
 
             if all_data is None:
                 all_data = mutation_data
