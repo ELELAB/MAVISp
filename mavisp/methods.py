@@ -20,7 +20,6 @@ import numpy as np
 from mavisp.error import *
 import os
 
-
 class Method(object):
     name = "name"
 
