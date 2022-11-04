@@ -17,7 +17,6 @@
 import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-from mavisp.ingest import MAVISFileSystem
 import pandas as pd
 import argparse
 
