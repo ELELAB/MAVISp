@@ -86,7 +86,7 @@ class MAVISpFileSystem:
                 try:
                     metadata = self._parse_metadata(system, mode)
                 except IOError:
-                    log.error("Couldn't parse metadata file")
+                    self.log.error("Couldn't parse metadata file")
                     raise IOError
 
                 curators= ', '.join(
@@ -96,7 +96,7 @@ class MAVISpFileSystem:
                 df_list.append((system, mode, mutation_list, curators))
 
         main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations', 'curators'])
-        log.debug(f"identified datasets:\n{main_df}")
+        self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
 
@@ -110,7 +110,7 @@ class MAVISpFileSystem:
 
     def _traverse(self, rootdir):
 
-        log.info(f"building directory tree for {rootdir}")
+        self.log.info(f"building directory tree for {rootdir}")
 
         rootdir = str(rootdir)
 
@@ -127,11 +127,11 @@ class MAVISpFileSystem:
 
     def _parse_mutation_list(self, system, mode):
 
-        log.info(f"Gathering mutation list for {system} {mode}")
+        self.log.info(f"Gathering mutation list for {system} {mode}")
 
         mutation_files = self._file_list(self._tree[system][mode]['mutation_list'])
         most_recent_mut_file = self._select_most_recent_file(mutation_files)
-        log.info(f"selected {most_recent_mut_file} as mutation file")
+        self.log.info(f"selected {most_recent_mut_file} as mutation file")
 
         mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', most_recent_mut_file)
 
@@ -146,12 +146,12 @@ class MAVISpFileSystem:
         lines = sorted(list(set(lines)), key=lambda x: int(x[1:-1]))
         mutations = list(filter(lambda x: len(x) != 0, lines))
 
-        log.debug(f"found mutations: {mutations}")
+        self.log.debug(f"found mutations: {mutations}")
 
         return mutations
 
     def _parse_metadata(self, system, mode):
-        log.info("parsing metadata file")
+        self.log.info("parsing metadata file")
 
         metadata_path = os.path.join(self.data_dir, system, mode, 'metadata.yaml')
 
@@ -176,8 +176,8 @@ class MAVISpFileSystem:
 
         selected_file = dates[max(dates.keys())]
 
-        log.debug(f"file names and their dates {dates}")
-        log.debug(f"selected most recent file {selected_file} among {fnames}")
+        self.log.debug(f"file names and their dates {dates}")
+        self.log.debug(f"selected most recent file {selected_file} among {fnames}")
 
         return selected_file
 
@@ -198,7 +198,7 @@ class MAVISpFileSystem:
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
 
-            log.info(f"Gathering data for {r['system']} {r['mode']}")
+            self.log.info(f"Gathering data for {r['system']} {r['mode']}")
 
             this_df = pd.DataFrame({'Mutation': mutations})
             this_df = this_df.set_index('Mutation')
@@ -211,6 +211,7 @@ class MAVISpFileSystem:
                 # check if the dataset is available
                 if mod.module_dir in self._dir_list(self._tree[system][mode]):
                     try:
+                        self.log.info(f"processing module {mod.name} for {system}, {mode}")
                         this_module = mod(analysis_basepath)
                         this_module.ingest(mutations)
 
