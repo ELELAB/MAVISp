@@ -178,7 +178,7 @@ def main():
                     warning_count += 1
             if r['status'] == "not_available":
                 details_text += f"    = {r['module']}\n"
-        details_text += '\n\n'
+        details_text += '\n'
     
     if error_count == 0 and warning_count == 0:
         details_text += colored("ALL GOOD! 👏👏👏\n", "green")
