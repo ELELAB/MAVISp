@@ -26,9 +26,6 @@ class DataType(object):
         self.data_dir = data_dir
         self.data = None
 
-        if data_dir is None:
-            return
-
     def ingest(self, stop_at='critical'):
         pass
 
@@ -68,18 +65,18 @@ class MultiMethodDataType(DataType):
         warnings = []
 
         method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        
+
         if not set(method_dirs).issubset(set(self.methods.keys())):
             this_error = f"One or more {self.name} methods are not supported"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         for method_dir in method_dirs:
             self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, method_dir))
             self.data = self.data.join(self.methods[method_dir].data)
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class Stability(MultiMethodDataType):
@@ -99,20 +96,20 @@ class Stability(MultiMethodDataType):
         this_error = "Stability folder has to contain only 1 dataset"
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         structure_ID, residue_range = tmp[0].split("_", maxsplit=1)
 
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
         if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         method = tmp[0]
 
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
         if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         model = tmp[0]
 
@@ -120,7 +117,7 @@ class Stability(MultiMethodDataType):
 
         if not set(method_dirs).issubset(set(self.methods.keys())):
             this_error = f"One or more {self.name} methods are not supported"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         for method_dir in method_dirs:
@@ -130,11 +127,11 @@ class Stability(MultiMethodDataType):
         keys = self.data.keys().to_list()
         if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
             warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
-        
+
         self.data['Stability classification'] = self.data.apply(self._generate_stability_classification, axis=1)
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
     def _generate_stability_classification(self, row):
@@ -239,7 +236,7 @@ class References(DataType):
         pmid_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if len(pmid_files) != 1:
             this_error = f"multiple or no files found in {pmid_files}; only one expected"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         pmid_file = pmid_files[0]
@@ -250,12 +247,12 @@ class References(DataType):
             pmid = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pmid_file), delim_whitespace=True)
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         if 'mutation' not in pmid.columns or 'PMID' not in pmid.columns:
             this_error = f"The CSV file must contain the following columns: mutation, PMID"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         if len(pmid.columns) != 2:
@@ -267,7 +264,7 @@ class References(DataType):
         self.data = pmid.rename(columns={'PMID':'PMID / DOI'})
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class PTMs(DataType):
@@ -281,7 +278,7 @@ class PTMs(DataType):
         ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if len(ptm_files) == 0:
             this_error = f"no files found in {self.module_dir}; one or more expected"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         ptm_data = []
@@ -290,7 +287,7 @@ class PTMs(DataType):
                 ptms = pd.read_csv(os.path.join(self.data_dir, self.module_dir, fname), delim_whitespace=True)
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                           critical=[MAVISpCriticalError(this_error)])
 
             ptms['mutation'] = os.path.splitext(os.path.basename(fname))[0]
@@ -330,9 +327,9 @@ class CancermutsTable(DataType):
         cancermuts_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if len(cancermuts_files) != 1:
             this_error = f"multiple files found in {cancermuts_files}; only one expected"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         cancermuts_file = cancermuts_files[0]
 
         log.info(f"parsing Cancermuts file {cancermuts_file}")
@@ -342,14 +339,14 @@ class CancermutsTable(DataType):
             cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, cancermuts_file))
         except:
             this_error = f"Failed parsing Cancermuts table {cancermuts_file}"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         # check if all the required columns are present
         required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']
         if not set(required_columns).issubset(cancermuts.columns):
             this_error = f"input table doesn't have all the required columns"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         # process table
@@ -378,5 +375,67 @@ class CancermutsTable(DataType):
                                                 'sources'          : 'Mutation sources' })
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class ClinVar(DataType):
+
+    module_dir = "clinvar"
+    name = "clinvar"
+    found_fname = "variants_output.csv"
+    missing_fname = "entry_not_found.csv"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        clinvar_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
+        if len(clinvar_files) not in [1, 2] or not set(clinvar_files).issubset(set([self.found_fname, self.missing_fname])):
+            this_error = f"One or two files expected for Clinvar, they must be {self.found_fname} and/or {self.missing_fname}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+
+        if self.found_fname not in clinvar_files:
+            this_error = f"variants_output.csv expected for Clinvar"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        log.info(f"parsing ClinVar files")
+
+        try:
+            clinvar_found = pd.read_csv(os.path.join(self.data_dir, self.module_dir, self.found_fname), sep=';')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        missing_entries_path = os.path.join(self.data_dir, self.module_dir, self.missing_fname)
+        if os.path.isfile(missing_entries_path):
+            try:
+                clinvar_missing = pd.read_csv(missing_entries_path, sep=';')
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+            missing_muts = clinvar_missing['variant_name'].to_list()
+        else:
+            warnings.append(MAVISpWarningError(f"file {self.missing} not found in Clinvar module"))
+            missing_muts = []
+
+        if len(set(missing_muts).intersection(set(clinvar_found['variant_name']))) > 0:
+            warnings.append(MAVISpWarningError(f"some mutations are both in the ClinVar annotation and not found file"))
+
+        if 'clinvar_code' not in clinvar_found.columns or 'interpretation' not in clinvar_found.columns:
+            this_error = f"The variants_output.csv file must contain the following columns: clinvar_code, interpretation"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        print(clinvar_found)
+        clinvar_found['clinvar_code'] = clinvar_found['clinvar_code'].astype(str)
+        clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[['clinvar_code', 'interpretation']]
+        self.data = clinvar_found.rename({'clinvar_code'   : 'Clinvar Variation ID',
+                                          'interpretation' : 'ClinVar interpretation'}, axis=1)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])

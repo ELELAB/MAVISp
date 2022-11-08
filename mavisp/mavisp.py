@@ -55,7 +55,7 @@ legend = f"""legend:
 {colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
     = module_name    this module is not available for this protein"""
 
-module_order = ['stability', 'local_interactions', 'cancermuts', 'references', 'ptms', 'long_range']
+module_order = ['stability', 'local_interactions', 'cancermuts', 'references', 'ptms', 'long_range', 'clinvar']
 
 def main():
 
@@ -147,7 +147,6 @@ def main():
 
     error_count = 0
     warning_count = 0
-
 
     details['index'] = list(zip(details['system'], details['mode']))
     systems = details['index'].unique()
