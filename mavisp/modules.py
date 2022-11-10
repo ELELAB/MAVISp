@@ -18,6 +18,7 @@
 import os
 import pandas as pd
 from mavisp.methods import *
+from mavisp.utils import three_to_one
 import logging as log
 
 class DataType(object):
@@ -435,6 +436,56 @@ class ClinVar(DataType):
         clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[['clinvar_code', 'interpretation']]
         self.data = clinvar_found.rename({'clinvar_code'   : 'Clinvar Variation ID',
                                           'interpretation' : 'ClinVar interpretation'}, axis=1)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class AlphaFoldMetadata(DataType):
+
+    module_dir = "alphafold"
+    name = "alphafold"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        af_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(af_files) != 1:
+            this_error = f"multiple or no files found in {af_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        af_file = af_files[0]
+
+        log.info(f"parsing AlphaFold metadata file {af_file}")
+
+        try:
+            afmd = pd.read_csv(os.path.join(self.data_dir, self.module_dir, af_file))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['resnum', 'resname', 'pLDDT', 'secstruc']).issubset(set(afmd.columns)):
+            this_error = f"The CSV file must contain the following columns: resnum, resname, pLDDT, secstruc"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        afmd['resname'] = afmd.apply(lambda r: three_to_one[r['resname']], axis=1)
+        nres = afmd.shape[0]
+        afmd = afmd.iloc[np.arange(nres).repeat(len(three_to_one))]
+        afmd['alt_aa'] = list(three_to_one.values()) * nres
+        afmd['mutations'] = afmd['resname'] + afmd['resnum'].astype(str) + afmd['alt_aa']
+        afmd = afmd.set_index('mutations')
+        afmd = afmd[['pLDDT', 'secstruc']]
+        afmd = afmd.rename(columns={'pLDDT'    : 'AlphaFold2 model pLDDT score',
+                                    'secstruc' : 'AlphaFold2 model secondary structure'})
+
+        if not set(mutations).issubset(set(afmd.index)):
+            diff = set(mutations).difference(set(afmd.index))
+            warnings.append(MAVISpWarningError(f"The following mutations had a wild-type residue that did not correspond to the wild-type residue in the AF model: {diff}"))
+
+        self.data = afmd
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
