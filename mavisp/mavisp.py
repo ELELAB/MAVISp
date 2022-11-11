@@ -50,6 +50,7 @@ If you use MAVISp for your research, please cite:
 """
 
 legend = f"""legend:
+{colored("    ! error", 'magenta')}          the entry has errors in key components and will not be annotated at all
 {colored("    ✓ module_name", 'green')}    all good - no warnings or errors for this module
 {colored("    X module_name", 'red')}    errors detected in this module. There might be additional warnings as well
 {colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
@@ -124,14 +125,7 @@ def main():
             if out_path.is_dir() and not args.force_write:
                 log.error("Specified output directory already exists; exiting...")
                 exit(1)
-        try:
-            out_path.mkdir(exist_ok=True)
-        except FileNotFoundError:
-            log.error("Coudln't create the specified output directory; parent folder(s) doesn't exist; exiting...")
-            exit(1)
-        except PermissionError:
-            log.error("Coudln't create the specified output directory; exiting...")
-            exit(1)
+
     mfs = MAVISpFileSystem(data_dir=in_path, exclude_proteins=excluded_proteins, include_proteins=included_proteins)
 
     mfs.ingest()
@@ -147,12 +141,21 @@ def main():
 
     error_count = 0
     warning_count = 0
+    critical_count = 0
 
     details['index'] = list(zip(details['system'], details['mode']))
     systems = details['index'].unique()
 
     for s in systems:
-        this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])]
+        this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])].reset_index()
+        if 'critical' in this_system['status'].values:
+            critical_count += 1
+            details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'magenta', attrs=['bold'])
+            for crit in this_system.iloc[0]['details_crit']:
+                details_text += colored(f"    ! {str(crit)}\n", 'magenta')
+            details_text += '\n'
+            continue
+
         details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'cyan', attrs=['bold'])
         for _, r in this_system.iterrows():
             if r['status'] == "ok":
@@ -174,24 +177,25 @@ def main():
                 details_text += f"    = {r['module']}\n"
         details_text += '\n'
     
-    if error_count == 0 and warning_count == 0:
-        details_text += colored("ALL GOOD! 👏👏👏\n", "green")
+    if error_count == 0 and warning_count == 0 and critical_count == 0:
+        details_text += colored("*** ALL GOOD! 👏👏👏 ***\n", "green")
     else:
+        if critical_count > 0:
+            critical_text = colored(f"{critical_count} critical error(s)", 'magenta')
+        else:
+            critical_text = ""
+
         if error_count > 0:
             error_text = colored(f"{error_count} error(s)", 'red')
         else:
             error_text = ""
+
         if warning_count > 0:
             warning_text = colored(f"{warning_count} warning(s)", 'yellow')
         else:
             warning_text = ""
 
-        if error_text != "" and warning_text != "":
-            separator = ", "
-        else:
-            separator = ""
-
-        details_text += f"*** {error_text}{separator}{warning_text} ***\n"
+        details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
 
     print(details_text)
 
@@ -199,14 +203,25 @@ def main():
         log.info("Exiting without writing any file, as dry-run mode is active")
         exit()
 
-    if error_count > 0:
-        log.warning("One or more critical error detected. Will not proceed to generate the database. Exiting...")
+    if error_count > 0 or critical_count > 0:
+        log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
         exit(1)
 
     if args.stop_on_warnings and warning_count > 0:
-        log.warning("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
+        log.error("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
-    out_table = mfs.dataset_table[['system', 'mode', 'curators']]
+    try:
+        out_path.mkdir(exist_ok=True)
+    except FileNotFoundError:
+        log.error("Couldn't create the specified output directory; parent folder(s) doesn't exist; exiting...")
+        exit(1)
+    except PermissionError:
+        log.error("Couldn't create the specified output directory; exiting...")
+        exit(1)
+
+
+    out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
+    out_table = out_table[['system', 'mode', 'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
                                           'curators' : 'Curators'})
@@ -214,7 +229,11 @@ def main():
 
     dataset_tables_path = out_path / 'dataset_tables'
     dataset_tables_path.mkdir(exist_ok=True)
+
     for _, r in mfs.dataset_table.iterrows():
+
+        if len(r['criticals']) > 0:
+            continue
 
         this_df = pd.DataFrame({'Mutation': r['mutations']})
         this_df = this_df.set_index('Mutation')
