@@ -430,7 +430,7 @@ class ClinVar(DataType):
             this_error = f"The variants_output.csv file must contain the following columns: clinvar_code, interpretation"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        print(clinvar_found)
+
         clinvar_found['clinvar_code'] = clinvar_found['clinvar_code'].astype(str)
         clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[['clinvar_code', 'interpretation']]
         self.data = clinvar_found.rename({'clinvar_code'   : 'Clinvar Variation ID',
