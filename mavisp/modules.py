@@ -427,14 +427,25 @@ class ClinVar(DataType):
         if len(set(missing_muts).intersection(set(clinvar_found['variant_name']))) > 0:
             warnings.append(MAVISpWarningError(f"some mutations are both in the ClinVar annotation and not found file"))
 
-        if 'clinvar_code' not in clinvar_found.columns or 'interpretation' not in clinvar_found.columns:
-            this_error = f"The variants_output.csv file must contain the following columns: clinvar_code, interpretation"
+        if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns): 
+            this_error = f"The variants_output.csv file must contain either the clinvar_code or the variant_id column"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        print(clinvar_found)
-        clinvar_found['clinvar_code'] = clinvar_found['clinvar_code'].astype(str)
-        clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[['clinvar_code', 'interpretation']]
-        self.data = clinvar_found.rename({'clinvar_code'   : 'Clinvar Variation ID',
+
+        if 'clinvar_code' in clinvar_found.columns:
+            warnings.append(MAVISpWarningError(f"the input file has the old style clinvar_code column"))
+            id_col = 'clinvar_code'
+        else:
+            id_col = 'variant_id'
+
+        if 'interpretation' not in clinvar_found.columns:
+            this_error = f"The variants_output.csv file must contain the interpretation column"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        clinvar_found[id_col] = clinvar_found[id_col].astype(str)
+        clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation']]
+        self.data = clinvar_found.rename({ id_col          : 'Clinvar Variation ID',
                                           'interpretation' : 'ClinVar interpretation'}, axis=1)
 
         if len(warnings) > 0:
