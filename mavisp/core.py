@@ -88,17 +88,17 @@ class MAVISpFileSystem:
                 try:
                     mutation_list = self._parse_mutation_list(system, mode)
                 except:
-                    self.log.error(f"Couldn't parse mutation list table")
+                    self.log.error(f"Couldn't parse mutation list table for {system}, {mode}")
+                    mutation_list = None
 
                 try:
                     metadata = self._parse_metadata(system, mode)
-                except IOError:
-                    self.log.error("Couldn't parse metadata file")
-                    raise IOError
-
-                curators= ', '.join(
+                    curators= ', '.join(
                     [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
                     )
+                except IOError:
+                    self.log.error("Couldn't parse metadata file")
+                    curators = None
 
                 df_list.append((system, mode, mutation_list, curators))
 
@@ -193,17 +193,33 @@ class MAVISpFileSystem:
         # for every protein (and supported mode) in the dataset
         mavisp_warnings_column = []
         mavisp_errors_column = []
+        mavisp_criticals_column = []
         mavisp_dataset_column = []
 
         for _, r in self.dataset_table.iterrows():
 
-            system = r['system']
-            mode = r['mode']
-            mutations = r['mutations']
-
             mavisp_modules = defaultdict(lambda: None)
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
+            mavisp_criticals = []
+
+            system = r['system']
+            mode = r['mode']
+            mutations = r['mutations']
+            curators = r['curators']
+
+            if mutations is None:
+                mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
+            if curators is None:
+                mavisp_criticals.append(MAVISpCriticalError("the metadata file was not available, readable or in the expected format"))
+
+            if len(mavisp_criticals) > 0:
+                mavisp_dataset_column.append(mavisp_modules)
+                mavisp_errors_column.append(mavisp_errors)
+                mavisp_warnings_column.append(mavisp_warnings)
+                mavisp_criticals_column.append(mavisp_criticals)
+
+                continue
 
             self.log.info(f"Gathering data for {r['system']} {r['mode']}")
 
@@ -236,8 +252,10 @@ class MAVISpFileSystem:
             mavisp_dataset_column.append(mavisp_modules)
             mavisp_errors_column.append(mavisp_errors)
             mavisp_warnings_column.append(mavisp_warnings)
+            mavisp_criticals_column.append(mavisp_criticals)
 
         self.dataset_table['modules'] = mavisp_dataset_column
+        self.dataset_table['criticals'] = mavisp_criticals_column
         self.dataset_table['errors'] = mavisp_errors_column
         self.dataset_table['warnings'] = mavisp_warnings_column
 
@@ -265,7 +283,9 @@ class MAVISpFileSystem:
         for _, r in self.dataset_table.iterrows():
             data['System'].append(r['system'])
             data['Mode'].append(r['mode'])
-            if sum( [ len(x) for x in list(r['errors'].values())]) > 0:
+            if len(r['criticals']) > 0:
+                data['Status'].append(colored("CRITICAL", 'magenta'))
+            elif sum( [ len(x) for x in list(r['errors'].values())]) > 0:
                 data['Status'].append(colored("ERROR", 'red'))
             elif sum([ len(x) for x in list(r['warnings'].values())]) > 0:
                 data['Status'].append(colored("WARNING", 'yellow'))
@@ -280,6 +300,16 @@ class MAVISpFileSystem:
 
         for _, r in self.dataset_table.iterrows():
 
+            if len(r['criticals']) > 0:
+                data['system'].append(r['system'])
+                data['mode'].append(r['mode'])
+                data['module'].append(pd.NA)
+                data['details_crit'].append(r['criticals'])
+                data['details_warn'].append(list())
+                data['details_err'].append(list())
+                data['status'].append('critical')
+                continue
+
             for this_m in self.supported_modules:
 
                 data['system'].append(r['system'])
@@ -289,6 +319,7 @@ class MAVISpFileSystem:
                 # module not ran/available
                 if this_m.name not in r['modules'].keys():
                     data['status'].append("not_available")
+                    data['details_crit'].append(list())
                     data['details_warn'].append(list())
                     data['details_err'].append(list())
                     continue
@@ -296,6 +327,7 @@ class MAVISpFileSystem:
                 # all good
                 if len(r['errors'][this_m.name]) == 0 and len(r['warnings'][this_m.name]) == 0:
                     data['status'].append("ok")
+                    data['details_crit'].append(list())
                     data['details_warn'].append(list())
                     data['details_err'].append(list())
                     continue
@@ -303,6 +335,7 @@ class MAVISpFileSystem:
                 # errors
                 if len(r['errors'][this_m.name]) > 0:
                     data['status'].append("error")
+                    data['details_crit'].append(list())
                     data['details_err'].append([str(x).strip() for x in r['errors'][this_m.name]])
                     data['details_warn'].append([str(x).strip() for x in r['warnings'][this_m.name]])
                     continue
@@ -310,6 +343,7 @@ class MAVISpFileSystem:
                 # warnings
                 if len(r['warnings'][this_m.name]) > 0:
                     data['status'].append("warning")
+                    data['details_crit'].append(list())
                     data['details_err'].append(list())
                     data['details_warn'].append([str(x).strip() for x in r['warnings'][this_m.name]])
 
