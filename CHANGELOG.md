@@ -1,6 +1,6 @@
 # MAVISp database - UPDATES
 
-last update: 20/10/2022
+last update: 08/12/2022
 
 ## Entries released in the database - simple mode
 
@@ -15,7 +15,7 @@ last update: 20/10/2022
 - TRAP1;Q12931	(STABILITY,LONG RANGE,PTM)
 - ULK1;O75385	(STABILITY,LONG RANGE,PTM)
 
-## Entries to be released - enf of November 2022
+## Entries to be released - enf of December 2022
 
 - ARID3A;Q8IVW6   (LOCAL INTERACTION)
 - BCL2L1;Q07817   (LOCAL INTERACTION, PTM)
