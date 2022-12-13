@@ -9,5 +9,6 @@ Follows a list of all the people that contributed to the MAVISp database as cura
 - Simone Scrima, Danish Cancer Society Research Center
 - Elena Papaleo, Technical University of Denmark and Danish Cancer Society Research Center
 - Alberto Pettenella, Danish Cancer Society Research Center
+- Terézia Dorčaková, Danish Cancer Society Research Center
 - Mattia Utichi, Danish Cancer Society Research Center and Technical University of Denmark
 
