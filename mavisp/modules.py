@@ -272,45 +272,135 @@ class PTMs(DataType):
 
     module_dir = "ptm"
     name = "ptms"
+    allowed_ptms = ['s', 'p', 'y']
+    allowed_ptm_muts = {'S' : 's',
+                        'T' : 'p',
+                        'Y' : 'y'}
+
+    def _assign_regulation_class(self, row):
+        # case S to T or T to S
+        if set([row['alt'], row['ref']]) == set(['S', 'T']):
+            return 'neutral'
+        # cases:
+            # any mutation sas < 20% (excluding neutral cases)
+            # any T/S to Y
+            # any Y to T/S
+        elif row['sas_sc_rel'] < 20.0 or row['alt'] == 'Y' or (row['ref'] == 'Y' and (row['alt'] in ['S', 'T'])):
+            return 'unkown'
+
+        # cases:
+            # any mutation that is not T to S, S to T, T/S to Y or Y to T/S and SASA >=20%:
+        elif row['sas_sc_rel'] >= 20.0:
+            return 'damaging'
+
+        return '???'
+
+    def _assign_ddg_stability_class(self, row, ddg_col_name):
+
+        stab_co = 3.0
+        neut_co = 2.0
+
+        if row[ddg_col_name] > stab_co:
+            return 'Destabilizing'
+        elif row[ddg_col_name] < (- stab_co):
+            return 'Stabilizing'
+        elif (- neut_co) <= row[ddg_col_name] <= neut_co:
+            return 'Neutral'
+        else:
+            return 'Uncertain'
+
+    def _assign_stability_class(self, row, mut_col_name, ptm_col_name):
+
+        if pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
+            return pd.NA
+
+        if row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
+            return 'Uncertain'
+        elif row[mut_col_name] == row[ptm_col_name]:
+            return 'neutral'
+        else:
+            return 'damaging'
 
     def ingest(self, mutations):
         warnings = []
 
+        expected_files = ['summary.txt', 'sasa.rsa']
+
         ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        if len(ptm_files) == 0:
-            this_error = f"no files found in {self.module_dir}; one or more expected"
+
+        if not set(expected_files).issubset(ptm_files):
+            this_error = f"required summary.txt and sasa.rsa file not found in {self.module_dir}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        ptm_data = []
-        for fname in ptm_files:
-            try:
-                ptms = pd.read_csv(os.path.join(self.data_dir, self.module_dir, fname), delim_whitespace=True)
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings,
-                                          critical=[MAVISpCriticalError(this_error)])
+        try:
+            ptms = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'summary.txt'),
+                delim_whitespace=True,
+                header=None,
+                names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the summary.txt file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
 
-            ptms['mutation'] = os.path.splitext(os.path.basename(fname))[0]
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['rest', 'resn', 'sas_sc_rel'],
+                index_col = 'resn').fillna(pd.NA)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
 
-            if len(ptms) != 1:
-                tmp_data = {}
-                for c in ptms.columns:
-                    tmp_data[c] = ", ".join(map(str, ptms[c].to_list()))
-                ptms = pd.DataFrame(tmp_data)
+        ptms['ref'] = ptms['mutation'].str[0]
+        ptms['alt'] = ptms['mutation'].str[-1]
+        ptms['number'] = ptms['mutation'].str[2:-1].astype(int)
 
-            ptms = ptms.set_index('mutation')
-            ptms = ptms[~ ptms.index.duplicated(keep='first')]
-            ptm_data.append(ptms)
+        ptms = ptms.set_index('number')
+        ptms = ptms.join(rsa, on='number')
 
-        ptm_data = pd.concat(ptm_data)
-        self.data = ptm_data.rename(columns={   '#ptm'                 : "PTMs",
-                                                'SASA(%)'              : "PTM residue SASA (%)" ,
-                                                'ddG(foldX5,kcal/mol)' : "Change in stability with PTM (FoldX5, kcal/mol)",
-                                                'effect_regulation'    : "PTM effect in regulation",
-                                                'effect_stability'     : "PTM effect in stability" ,
-                                                'effect_function'      : "PTM effect in function",
-                                                'notes'                : "PTM notes"})
+        ptm_muts = ptms[ptms.apply(lambda r: r['alt'].islower(), axis=1)]
+        cancer_muts = ptms[~ ptms.apply(lambda r: r['alt'].islower(), axis=1)]
+
+        if not set(ptm_muts['alt']).issubset(set(self.allowed_ptms)):
+            warnings.append(MAVISpWarningError(f"in summary.txt, some of the mutations were not to {', '.join(self.allowed_ptms)}. These will be filtered out."))
+
+            cancer_muts = cancer_muts[cancer_muts.apply(lambda r: r['alt'] in self.allowed_ptms)]
+
+        print(ptm_muts)
+        print(cancer_muts)
+        if not set(ptm_muts.index).issubset(set(cancer_muts.index)):
+            this_error = f"in summary.txt, some cancer mutations had no corresponding PTM mutation"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        if not np.all(ptm_muts.apply(lambda r: self.allowed_ptm_muts[r['ref']] == r['alt'], axis=1)):
+            this_error = f"in summary.txt, the wild type residue and the wild type residue upon PTM didn't correspond"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        cancer_muts = cancer_muts.rename(columns={'ddg_avg' : 'ddg_mut'})
+        cancer_muts = cancer_muts.join(ptm_muts[['ddg_avg']]).rename(columns={'ddg_avg' : 'ddg_ptm'})
+
+        print(cancer_muts)
+        cancer_muts['regulation'] = cancer_muts.apply(self._assign_regulation_class, axis=1)
+
+        cancer_muts['cancer_mut_stab_class'] = cancer_muts.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_mut', axis=1)
+        cancer_muts['ptm_stab_class'] = cancer_muts.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_ptm', axis=1)
+        cancer_muts['stability'] = cancer_muts.apply(self._assign_stability_class, mut_col_name='cancer_mut_stab_class', ptm_col_name='ptm_stab_class', axis=1)
+
+        cancer_muts = cancer_muts[['mutation', 'sas_sc_rel', 'ddg_ptm', 'regulation', 'stability']]
+        cancer_muts['PTMs'] = 'P'
+
+        self.data = cancer_muts.rename(columns={'sas_sc_rel'              : "PTM residue SASA (%)" ,
+                                                'ddg_ptm' : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'regulation'    : "PTM effect in regulation",
+                                                'stability'     : "PTM effect in stability" ,
+                                                'effect_function'      : "PTM effect in function"})
 
 class CancermutsTable(DataType):
 
