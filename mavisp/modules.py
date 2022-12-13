@@ -501,3 +501,56 @@ class AlphaFoldMetadata(DataType):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class CancermutsTable(DataType):
+
+    module_dir = "demask"
+    name = "demask"
+
+    def _classify(self, row):
+        if row['score'] > 0:
+            return 'gain_of_function'
+        elif row['score'] < 0:
+            return 'loss_of_function'
+        else:
+            return 'neutral'
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        warnings = []
+
+        demask_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(demask_files) != 1:
+            this_error = f"multiple or no files found in {demask_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        demask_file = demask_files[0]
+
+        log.info(f"parsing DeMaSk data file {demask_file}")
+
+        try:
+            demask = pd.read_csv(os.path.join(self.data_dir, self.module_dir, demask_file), delim_whitespace=True)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['pos', 'WT', 'var', 'score', 'entropy', 'log2f_var', 'matrix']).issubset(set(demask.columns)):
+            this_error = f"The input file doesn't have the columns expected for a DeMaSk output file"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        demask['mutations'] = demask['WT'] + demask['pos'].astype(str) + demask['var']
+        demask = demask[['mutations', 'score', 'entropy', 'log2f_var']]
+        demask = demask.set_index('mutations')
+        demask['DeMaSk predicted consequence'] = demask.apply(self._classify, axis=1)
+
+        self.data = demask.rename(columns = {'score'     : 'DeMaSk delta fitness',
+                                             'entropy'   : 'DeMaSk Shannon entropy',
+                                             'log2f_var' : 'DeMaSk log2 variant frequency'})
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
