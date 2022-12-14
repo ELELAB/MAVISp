@@ -378,7 +378,6 @@ class PTMs(DataType):
 
         # process table
         in_slims = cancermuts[['aa_position', 'linear_motif']].drop_duplicates().set_index('aa_position')
-        print(in_slims)
         in_slims['site_in_slim'] = ~ pd.isna(in_slims['linear_motif'])
 
         ptms['ref'] = ptms['mutation'].str[0]
@@ -407,15 +406,11 @@ class PTMs(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        print(cancer_muts)
-        print(in_slims)
-
         cancer_muts = cancer_muts.join(in_slims)
-        print(cancer_muts)
 
         cancer_muts = cancer_muts.rename(columns={'ddg_avg' : 'ddg_mut'})
         cancer_muts = cancer_muts.join(ptm_muts[['ddg_avg']]).rename(columns={'ddg_avg' : 'ddg_ptm'})
-        
+
         cancer_muts = cancer_muts.set_index('mutation')
 
         cancer_muts['regulation'] = cancer_muts.apply(self._assign_regulation_class, axis=1)
@@ -427,8 +422,6 @@ class PTMs(DataType):
 
         cancer_muts['PTMs'] = 'P'
         pd.set_option('display.max_columns', None)
-
-        print(cancer_muts)
 
         cancer_muts = cancer_muts[['PTMs', 'sas_sc_rel', 'ddg_ptm', 'regulation', 'stability', 'function']]
 
