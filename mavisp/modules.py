@@ -502,7 +502,7 @@ class AlphaFoldMetadata(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class CancermutsTable(DataType):
+class DeMaSk(DataType):
 
     module_dir = "demask"
     name = "demask"
