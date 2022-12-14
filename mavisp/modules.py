@@ -519,8 +519,6 @@ class DeMaSk(DataType):
 
         warnings = []
 
-        warnings = []
-
         demask_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if len(demask_files) != 1:
             this_error = f"multiple or no files found in {demask_files}; only one expected"
