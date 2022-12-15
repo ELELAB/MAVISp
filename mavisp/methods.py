@@ -271,73 +271,88 @@ class AlloSigma(Method):
             return 'mixed_effects'
 
 
-    def parse(self, dir_path):
+    def parse(self, allosigma2_dir):
 
         warnings = []
 
-        allosigma2_dir = dir_path
-
+        # check what files are available
         allosigma2_files = set(os.listdir(allosigma2_dir))
-        if len(allosigma2_files) not in [1, 2, 3]:
-            raise MAVISpMultipleError(critical=[MAVISpCriticalError("the AlloSigma2 folder should contain only 2 or 3 files")],
-                                      warning=[])
-                                      
-        if 'allosigma_mut.txt' not in allosigma2_files:
-            raise MAVISpMultipleError(critical=[MAVISpCriticalError("the allosigma_mut.txt file must be present in the AlloSigma2 directory")],
-                                      warning=[])
+        if   np.all([ os.path.isfile(f"{allosigma2_dir}/{f}") for f in allosigma2_files ]):
+            allosigma2_domains = {'.' : allosigma2_files}
+        elif np.all([ os.path.isdir(f"{allosigma2_dir}/{d}")  for d in allosigma2_files ]):
+            allosigma2_domains = {}
+            for d in allosigma2_files:
+                allosigma2_domains[d] = set(os.listdir(f"{allosigma2_dir}/{d}"))
+        else:
+            print(allosigma2_files)
+            raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the AlloSigma2 directory should contain either only files or only directories")],
+                        warning=[])
 
-        if not allosigma2_files.issubset(self.allowed_fnames):
-            raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the only allowed file names in the allosigma2 directory are {', '.join(list(self.allowed_fnames))}")],
-                                      warning=[])
+        allosigma2_data = []
 
-        try:
-            all_mut = pd.read_csv(os.path.join(allosigma2_dir, 'allosigma_mut.txt'), sep='\t')
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings, 
-                                      critical=[MAVISpCriticalError(this_error)])
+        for dirname, allosigma2_files in allosigma2_domains.items():
 
-        all_mut = all_mut.drop_duplicates()
+            if len(allosigma2_files) not in [1, 2, 3]:
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the AlloSigma2 directory {allosigma2_dir}/{dirname} should contain only 2 or 3 files")],
+                                        warning=[])
+                                        
+            if 'allosigma_mut.txt' not in allosigma2_files:
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")],
+                                        warning=[])
 
-        all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
+            if not allosigma2_files.issubset(self.allowed_fnames):
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the only allowed file names in the allosigma2 directory {allosigma2_dir}/{dirname} are {', '.join(list(self.allowed_fnames))}")],
+                                        warning=[])
 
-        if 'filtered_down_mutations.tsv' in allosigma2_files:
             try:
-                filt_down = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_down_mutations.tsv'), sep='\t', index_col=0)
+                all_mut = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'allosigma_mut.txt'), sep='\t')
             except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing filtered_down_mutations.tsv. Arguments:{e.args}"
+                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings, 
                                         critical=[MAVISpCriticalError(this_error)])
 
-            filt_down['mutations'] = filt_down['mutations'].str.split()
-            filt_down = filt_down.explode('mutations')
-            filt_down = filt_down.set_index('mutations')
-        else:
-            filt_down = None
+            all_mut = all_mut.drop_duplicates()
 
-        if 'filtered_up_mutations.tsv' in allosigma2_files:
-            try:
-                filt_up   = pd.read_csv(os.path.join(allosigma2_dir, 'filtered_up_mutations.tsv'), sep='\t', index_col=0)
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing filtered_up_mutations.tsv. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
-                                        critical=[MAVISpCriticalError(this_error)])
+            all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
 
-            filt_up['mutations'] = filt_up['mutations'].str.split()
-            filt_up = filt_up.explode('mutations')
-            filt_up = filt_up.set_index('mutations')
-        else:
-            filt_up = None
+            if 'filtered_down_mutations.tsv' in allosigma2_files:
+                try:
+                    filt_down = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'filtered_down_mutations.tsv'), sep='\t', index_col=0)
+                except Exception as e:
+                    this_error = f"Exception {type(e).__name__} occurred when parsing filtered_down_mutations.tsv. Arguments:{e.args}"
+                    raise MAVISpMultipleError(warning=warnings, 
+                                            critical=[MAVISpCriticalError(this_error)])
 
+                filt_down['mutations'] = filt_down['mutations'].str.split()
+                filt_down = filt_down.explode('mutations')
+                filt_down = filt_down.set_index('mutations')
+            else:
+                filt_down = None
 
-        all_mut['allosigma-consequence'] = all_mut.apply(self._process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=1, axis=1)
+            if 'filtered_up_mutations.tsv' in allosigma2_files:
+                try:
+                    filt_up   = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'filtered_up_mutations.tsv'), sep='\t', index_col=0)
+                except Exception as e:
+                    this_error = f"Exception {type(e).__name__} occurred when parsing filtered_up_mutations.tsv. Arguments:{e.args}"
+                    raise MAVISpMultipleError(warning=warnings, 
+                                            critical=[MAVISpCriticalError(this_error)])
 
-        all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
+                filt_up['mutations'] = filt_up['mutations'].str.split()
+                filt_up = filt_up.explode('mutations')
+                filt_up = filt_up.set_index('mutations')
+            else:
+                filt_up = None
 
-        all_mut = all_mut.rename(columns={'allosigma-mode': f'AlloSigma{self.version} mutation type',
-                                          'allosigma-consequence' : f'AlloSigma{self.version} predicted consequence'})
+            all_mut['allosigma-consequence'] = all_mut.apply(self._process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=1, axis=1)
 
-        self.data = all_mut.fillna('-')
+            all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
+
+            all_mut = all_mut.rename(columns={'allosigma-mode': f'AlloSigma{self.version} mutation type',
+                                            'allosigma-consequence' : f'AlloSigma{self.version} predicted consequence'}).fillna('-')
+
+            allosigma2_data.append(all_mut)
+        
+        self.data = pd.concat(allosigma2_data)
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, 
