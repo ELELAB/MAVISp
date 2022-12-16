@@ -284,7 +284,6 @@ class AlloSigma(Method):
             for d in allosigma2_files:
                 allosigma2_domains[d] = set(os.listdir(f"{allosigma2_dir}/{d}"))
         else:
-            print(allosigma2_files)
             raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the AlloSigma2 directory should contain either only files or only directories")],
                         warning=[])
 
