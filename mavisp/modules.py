@@ -20,6 +20,7 @@ import pandas as pd
 from mavisp.methods import *
 from mavisp.utils import three_to_one
 import logging as log
+import re
 
 class DataType(object):
     def __init__(self, data_dir=None, stop_at='critical'):
@@ -442,6 +443,21 @@ class CancermutsTable(DataType):
 
         super().__init__(data_dir)
 
+    def _process_sources(self, row):
+
+        manual_pattern = 'Manual annotations from (.+)\..+'
+
+        sources = row['sources'].split(',')
+        for i,s in enumerate(sources):
+            match = re.search(manual_pattern, s)
+
+            if match is None:
+                continue
+            else:
+                sources[i] = match.groups()[0]
+
+        return ",".join(sources)
+
     def ingest(self, mutations):
         warnings = []
 
@@ -475,6 +491,7 @@ class CancermutsTable(DataType):
         cancermuts = cancermuts[ ~ pd.isna(cancermuts.alt_aa)]
         cancermuts['mutation_index'] = cancermuts.ref_aa + cancermuts.aa_position.astype(str) + cancermuts.alt_aa
         cancermuts = cancermuts.set_index('mutation_index')
+        cancermuts['sources'] = cancermuts.apply(self._process_sources, axis=1)
 
         # check if all mutations are present in the cancermuts table
         available_mutations = cancermuts.index.intersection(mutations)
