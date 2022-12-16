@@ -242,13 +242,17 @@ The MAVISp modules can have 4 possible states:
   i.e. a problem that couldn't be overcome
   - `NOT_AVAILABLE`, colored in the default terminal color, when the module was not present in the dataset
 
+Additionally, if the mutation list or metadata file are not available, the whole entry is flagged
+as being in a `CRITICAL` state - if this is the case, the corresponding modules will not be 
+processed and the detected error will be displayed in the report. 
+
 If any module generates at least one error or warning for a given dataset, the status of the corresponding
 dataset in the summary table is set accordingly.
 
-If any module returns an error, the script will not write the corresponding database file and exit.
+If any module generates an error, the script will not write the corresponding database file and exit.
 
 It is possible to process only some of the available proteins in the dataset, or exclude some, by
-using options `-p` or `-e` with a comma-separated list, e.g.
+using options `-p` or `-e` respectively, with a comma-separated list, e.g.
 
 ```
 mavisp -d input_data -o output_database -p MAP1LC3B,BCL2
