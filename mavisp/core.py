@@ -41,7 +41,8 @@ class MAVISpFileSystem:
                           LocalInteractions,
                           ClinVar,
                           AlphaFoldMetadata,
-                          DeMaSk]
+                          DeMaSk, 
+                          GEMME ]
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 

@@ -690,3 +690,64 @@ class DeMaSk(DataType):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class GEMME(DataType):
+
+    module_dir = "gemme"
+    name = "gemme"
+    accepted_filenames = ['normPred_evolCombi.txt']
+
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        gemme_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(gemme_files) != 1:
+            this_error = f"multiple or no files found in {gemme_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        gemme_file = gemme_files[0]
+
+        if gemme_file not in self.accepted_filenames:
+            this_error = f"the input file for GEMME must be named {gemme_file}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+
+        log.info(f"parsing GEMME data file {gemme_file}")
+
+        try:
+            gemme = pd.read_csv(os.path.join(self.data_dir, self.module_dir, gemme_file),
+                                sep=' ', index_col=None)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # rename columns and rows as better names
+        gemme = gemme.rename(columns={h:h[1:] for h in gemme.columns},
+                             index={r:r.upper() for r in gemme.index})
+
+        # melt matrix to one mutation per row
+        gemme = gemme.reset_index().melt('index').rename(columns={'index':'mut', 'variable':'res', 'value':'score'})
+
+        # calculate which residue is WT for each row (for every residue, this would
+        # be tone with score 'None')
+        wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0])
+        wts.name = 'wt'
+
+        # join WT definition on main dataframe
+        gemme = gemme.join(wts, on='res')
+
+        # reconstruct mutations in the usual format
+        gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
+
+        # drop unnecessary columns and rename for pretty
+        gemme = gemme.drop(columns=['wt', 'res', 'mut']).rename(columns={'score': 'GEMME Score'})
+        self.data = gemme.set_index('mutations')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
