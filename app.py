@@ -33,11 +33,11 @@ args = parser.parse_args()
 
 st.set_page_config(layout="wide")
 
-@st.cache
+@st.cache_data
 def load_dataset(data_dir, protein, mode):
     return pd.read_csv(os.path.join(data_dir, 'dataset_tables', f'{protein}-{mode}.csv'))
 
-@st.cache
+@st.cache_data
 def load_main_table(data_dir):
     return pd.read_csv(os.path.join(data_dir, 'index.csv'))
 
