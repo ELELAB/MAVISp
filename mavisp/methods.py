@@ -237,8 +237,6 @@ class RosettaDDGPredictionBinding(Method):
             raise MAVISpMultipleError(warning=warnings, 
                                       critical=[])
 
-
-
 class AlloSigma(Method):
     name = "AlloSigma"
 
@@ -355,4 +353,39 @@ class AlloSigma(Method):
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, 
+                                      critical=[])
+
+class RaSP(Method):
+
+    unit = "kcal/mol"
+    type = "Stability"
+
+    def parse(self, dir_path):
+
+        warnings = []
+
+        rasp_files = os.listdir(dir_path)
+
+        if len(rasp_files) != 1:
+            this_error = f"zero or multiple files found in {dir_path}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        rasp_file = rasp_files[0]
+
+        try:
+            mutation_data = pd.read_csv(os.path.join(dir_path, rasp_file),
+                                        usecols=['variant', 'RaSP_ddG'], index_col='variant')
+
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the RaSP csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        mutation_data = mutation_data.rename(columns={'RaSP_ddG' : f"{self.type} ({self.version}, {self.unit})"})
+
+        self.data = mutation_data
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
