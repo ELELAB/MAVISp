@@ -87,7 +87,8 @@ class Stability(MultiMethodDataType):
     name = "stability"
     methods = {'foldx5'                      : MutateXStability(version="FoldX5"),
                'rosetta_cartddg2020_ref2015' : RosettaDDGPredictionStability(version='Rosetta Flexddg2020'),
-               'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Flexddg')}
+               'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Flexddg'),
+               'rasp'                        : RaSP(version='RaSP')}
 
     def ingest(self, mutations):
 
@@ -126,35 +127,43 @@ class Stability(MultiMethodDataType):
             self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
             self.data = self.data.join(self.methods[method_dir].data)
 
-        keys = self.data.keys().to_list()
-        if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
-            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+        keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
-        self.data['Stability classification'] = self.data.apply(self._generate_stability_classification, axis=1)
+        # check if we have FoldX column
+        foldx_col = [k for k in keys if 'FoldX' in k]
+        if len(foldx_col) == 1:
+            foldx_header = foldx_col[0]
+        else:
+            foldx_header = None
+
+        # find if we have both Rosetta and RaSP
+        # give priority to Rosetta if possible
+        if any(['Rosetta' in k for k in keys]):
+            rosetta_col = [k for k in keys if 'Rosetta' in k]
+            assert len(rosetta_col) == 1
+            rosetta_header = rosetta_col[0]
+        elif any(['RaSP' in k for k in keys]):
+            rosetta_col = [k for k in keys if 'RaSP' in k]
+            assert len(rosetta_col) == 1
+            rosetta_header = rosetta_col[0]
+        else:
+            rosetta_header = None
+
+        # check if we have both FoldX and Rosetta/RaSP col
+        if rosetta_header is not None and foldx_header is not None:
+            self.data['Stability classification'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+        else:
+            self.data['Stability classification'] = pd.NA
+            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta/RaSP and one MutateX datasets are available"))
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-    def _generate_stability_classification(self, row):
-
-        keys = [ k for k in row.keys() if k.startswith('Stability') ]
-
-        if len(keys) == 2:
-            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
-                rosetta_header, foldx_header    = keys
-            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
-                foldx_header,   rosetta_header  = keys
-            else:
-                return pd.NA
-        else:
-            return pd.NA
+    def _generate_stability_classification(self, row, foldx_header, rosetta_header):
 
         stab_co = 3.0
         neut_co = 2.0
-
-        if rosetta_header not in row.index or foldx_header not in row.index:
-            return pd.NA
 
         if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
             return 'Destabilizing'
@@ -163,7 +172,6 @@ class Stability(MultiMethodDataType):
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
             return 'Neutral'
         return 'Uncertain'
-
 
 class LocalInteractions(MultiMethodDataType):
     module_dir = "local_interactions"
@@ -184,7 +192,7 @@ class LocalInteractions(MultiMethodDataType):
             e = None
         keys = self.data.keys().to_list()
         if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
-            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+            warnings.append(MAVISpWarningError("Local interaction classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
 
         self.data['Local Int. classification'] = self.data.apply(self._generate_local_interactions_classification, axis=1)
 
