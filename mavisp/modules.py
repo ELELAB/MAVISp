@@ -136,25 +136,32 @@ class Stability(MultiMethodDataType):
         else:
             foldx_header = None
 
-        # find if we have both Rosetta and RaSP
-        # give priority to Rosetta if possible
         if any(['Rosetta' in k for k in keys]):
             rosetta_col = [k for k in keys if 'Rosetta' in k]
-            assert len(rosetta_col) == 1
-            rosetta_header = rosetta_col[0]
-        elif any(['RaSP' in k for k in keys]):
-            rosetta_col = [k for k in keys if 'RaSP' in k]
             assert len(rosetta_col) == 1
             rosetta_header = rosetta_col[0]
         else:
             rosetta_header = None
 
+        if any(['RaSP' in k for k in keys]):
+            rasp_col = [k for k in keys if 'RaSP' in k]
+            assert len(rasp_col) == 1
+            rasp_header = rasp_col[0]
+        else:
+            rasp_header = None
+
+        print(foldx_header, rosetta_header, rasp_header)
+
         # check if we have both FoldX and Rosetta/RaSP col
         if rosetta_header is not None and foldx_header is not None:
-            self.data['Stability classification'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+            self.data['Stability classification (Rosetta, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
         else:
-            self.data['Stability classification'] = pd.NA
-            warnings.append(MAVISpWarningError("Stability classification can only be calculated if exactly one Rosetta/RaSP and one MutateX datasets are available"))
+            warnings.append(MAVISpWarningError("Stability classification (Rosetta, FoldX) can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+
+        if rasp_header is not None and foldx_header is not None:
+            self.data['Stability classification (RaSP, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+        else:
+            warnings.append(MAVISpWarningError("Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
