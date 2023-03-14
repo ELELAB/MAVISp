@@ -236,7 +236,7 @@ class LocalInteractions(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
-class DNAInteractions(MultiMethodDataType):
+class LocalInteractionsDNA(MultiMethodDataType):
     module_dir = "local_interactions_DNA"
     name = "local_interactions_DNA"
     methods = {'foldx5' : MutateXDNABinding(version="FoldX5")}
