@@ -82,6 +82,7 @@ class MutateXBinding(Method):
     unit = "kcal/mol"
     type = "Local Int."
     chain = "A"
+    measure = "Binding with"
 
     def parse(self, dir_path):
 
@@ -133,7 +134,14 @@ class MutateXBinding(Method):
 
             # drop now useless columns, rename
             df = df.drop(['residue', 'level_1'], axis=1)
-            df = df.rename(columns={0 : f"{self.type} (Binding with {interactor}, {self.version}, {self.unit})"})
+
+            # handle space around measure
+            if self.measure == "":
+                measure = ""
+            else:
+                measure = "{self.measure} "
+
+            df = df.rename(columns={0 : f"{self.type} ({self.measure}{interactor}, {self.version}, {self.unit})"})
 
             if all_data is None:
                 all_data = df
@@ -145,6 +153,15 @@ class MutateXBinding(Method):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, 
                                       critical=[])
+
+class MutateXDNABinding(Method):
+
+    unit = "kcal/mol"
+    type = "Local Int. With DNA"
+    chain = "A"
+    measure = ""
+
+    parse = MutateXBinding.parse
 
 class RosettaDDGPredictionStability(Method):
 
