@@ -236,6 +236,23 @@ class LocalInteractions(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
+class LocalInteractionsDNA(MultiMethodDataType):
+    module_dir = "local_interactions_DNA"
+    name = "local_interactions_DNA"
+    methods = {'foldx5' : MutateXDNABinding(version="FoldX5")}
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        try:
+            super().ingest(mutations)
+        except MAVISpMultipleError as e:
+            if len(e.critical) > 0:
+                raise
+        else:
+            e = None
+
 class LongRange(MultiMethodDataType):
 
     module_dir = "long_range"
