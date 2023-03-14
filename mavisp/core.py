@@ -39,6 +39,7 @@ class MAVISpFileSystem:
                           LongRange,
                           Stability,
                           LocalInteractions,
+                          DNAInteractions,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk, 
