@@ -38,7 +38,6 @@ class MAVISpFileSystem:
                           PTMs,
                           LongRange,
                           Stability,
-                          SAS,
                           LocalInteractions,
                           ClinVar,
                           AlphaFoldMetadata,
