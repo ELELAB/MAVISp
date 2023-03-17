@@ -602,7 +602,7 @@ class ClinVar(DataType):
                                             'interpretation' : 'ClinVar Interpretation',
                                             'number_of_stars': 'ClinVar Review Status'}, axis=1)
         else:
-            warnings.append(MAVISpWarningError(f"The variant_output_csv doesn't contain the number_of_stars_column"))
+            warnings.append(MAVISpWarningError(f"The variant_output_csv doesn't contain the number_of_stars column (ClinVar review status)"))
             clinvar_found[id_col] = clinvar_found[id_col].astype(str)
             clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation']]
             self.data = clinvar_found.rename({ id_col          : 'Clinvar Variation ID',
