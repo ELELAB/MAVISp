@@ -284,6 +284,42 @@ class References(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class SAS(DataType):
+
+    module_dir = "sas"
+    name = "sas"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        sas_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(sas_file) != 1:
+            this_error = f"multiple or no files found in {sas_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        sas_file = sas_file[0]
+
+        log.info(f"parsing sas file {sas_file}")
+
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['rest', 'resn', 'sas_sc_rel'],
+                index_col = 'resn').fillna(pd.NA)
+            self.data = rsa.rename(columns={'sas_sc_rel': 'Relative Total Side Percentage'})
+
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 class PTMs(DataType):
 
     module_dir = "ptm"
