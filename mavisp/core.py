@@ -98,13 +98,20 @@ class MAVISpFileSystem:
                     curators= ', '.join(
                     [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
                     )
+                    uniprot_ac = ""
+                    if metadata['uniprot_ac']:
+                        uniprot_ac = ",".join(metadata['uniprot_ac'])
+
+                    refseq_d = ""
+                    if metadata['refseq_d']:
+                        refseq_d = ",".join(metadata['refseq_d'])
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
 
-                df_list.append((system, mode, mutation_list, curators))
+                df_list.append((system ,uniprot_ac,refseq_d, mode, mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', "uniprot_ac","refseq_d",'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -162,7 +169,7 @@ class MAVISpFileSystem:
     def _parse_metadata(self, system, mode):
         self.log.info("parsing metadata file")
 
-        metadata_path = os.path.join(self.data_dir, system, mode, 'metadata.yaml')
+        metadata_path = os.path.join(self.data_dir, system, mode,'metadata.yaml')
 
         with open(metadata_path) as fh:
             return yaml.safe_load(fh)
@@ -209,7 +216,8 @@ class MAVISpFileSystem:
             mode = r['mode']
             mutations = r['mutations']
             curators = r['curators']
-
+            uniprot_ac= r["uniprot_ac"]
+            refseq_d= r["refseq_d"]
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
             if curators is None:
@@ -262,7 +270,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'mode', 'curators']]
+        return self.dataset_table[['system', "uniprot_ac","refseq_d",'mode', 'curators']]
 
     def get_annotation_tables_view(self):
 
