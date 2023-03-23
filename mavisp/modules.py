@@ -150,8 +150,6 @@ class Stability(MultiMethodDataType):
         else:
             rasp_header = None
 
-        print(foldx_header, rosetta_header, rasp_header)
-
         # check if we have both FoldX and Rosetta/RaSP col
         if rosetta_header is not None and foldx_header is not None:
             self.data['Stability classification (Rosetta, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
@@ -597,6 +595,7 @@ class ClinVar(DataType):
                                       critical=[MAVISpCriticalError(this_error)])
         clinvar_found[id_col] = clinvar_found[id_col].astype(str)
         if "number_of_stars" in clinvar_found.columns:
+            clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
             clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation',"number_of_stars"]]
             self.data = clinvar_found.rename({ id_col          : 'Clinvar Variation ID',
                                             'interpretation' : 'ClinVar Interpretation',
