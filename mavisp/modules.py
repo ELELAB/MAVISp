@@ -1,6 +1,6 @@
 # MAVISp - classes for handling different MAVISp modules
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
-#
+#           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -149,8 +149,6 @@ class Stability(MultiMethodDataType):
             rasp_header = rasp_col[0]
         else:
             rasp_header = None
-
-        print(foldx_header, rosetta_header, rasp_header)
 
         # check if we have both FoldX and Rosetta/RaSP col
         if rosetta_header is not None and foldx_header is not None:
@@ -562,13 +560,13 @@ class ClinVar(DataType):
         clinvar_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
         if len(clinvar_files) not in [1, 2] or not set(clinvar_files).issubset(set([self.found_fname, self.missing_fname])):
-            this_error = f"One or two files expected for Clinvar, they must be {self.found_fname} and/or {self.missing_fname}"
+            this_error = f"One or two files expected for ClinVar, they must be {self.found_fname} and/or {self.missing_fname}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
 
         if self.found_fname not in clinvar_files:
-            this_error = f"variants_output.csv expected for Clinvar"
+            this_error = f"variants_output.csv expected for ClinVar"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
@@ -591,7 +589,7 @@ class ClinVar(DataType):
                                         critical=[MAVISpCriticalError(this_error)])
             missing_muts = clinvar_missing['variant_name'].to_list()
         else:
-            warnings.append(MAVISpWarningError(f"file {self.missing} not found in Clinvar module"))
+            warnings.append(MAVISpWarningError(f"file {self.missing} not found in ClinVar module"))
             missing_muts = []
 
         if len(set(missing_muts).intersection(set(clinvar_found['variant_name']))) > 0:
@@ -612,11 +610,19 @@ class ClinVar(DataType):
             this_error = f"The variants_output.csv file must contain the interpretation column"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-
         clinvar_found[id_col] = clinvar_found[id_col].astype(str)
-        clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation']]
-        self.data = clinvar_found.rename({ id_col          : 'Clinvar Variation ID',
-                                          'interpretation' : 'ClinVar interpretation'}, axis=1)
+        if "number_of_stars" in clinvar_found.columns:
+            clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
+            clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation',"number_of_stars"]]
+            self.data = clinvar_found.rename({ id_col           : 'ClinVar Variation ID',
+                                               'interpretation' : 'ClinVar Interpretation',
+                                               'number_of_stars': 'ClinVar Review Status'}, axis=1)
+        else:
+            warnings.append(MAVISpWarningError(f"the variant_output.csv file doesn't contain the number_of_stars column (ClinVar review status)"))
+            clinvar_found[id_col] = clinvar_found[id_col].astype(str)
+            clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation']]
+            self.data = clinvar_found.rename({ id_col        : 'ClinVar Variation ID',
+                                            'interpretation' : 'ClinVar Interpretation',}, axis=1)
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
