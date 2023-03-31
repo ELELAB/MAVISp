@@ -84,7 +84,7 @@ pip install pandas streamlit streamlit-aggrid pyyaml osfclient
 to create a virtual environment:
 
 ```
-conda create -c conda-forge -n MAVISp_env python streamlit streamlit-aggrid pandas pyyaml osfclient
+conda create -n MAVISp_env python
 ```
 
 2. then you can activate it:
@@ -93,10 +93,10 @@ conda create -c conda-forge -n MAVISp_env python streamlit streamlit-aggrid pand
 conda activate MAVISp_env
 ```
 
-3. you need to install two of the requirements, which is currently not on conda, using `pip`:
+3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install streamlit-aggrid osfclient
+pip install streamlit pandas pyyaml streamlit-aggrid osfclient
 ```
 
 ## Downloading the required files
@@ -136,10 +136,10 @@ In the following instructions
 
 ### Running the app locally
 
-With your Python environment still active and from inside the `MAVISp` folder, run:
+With your Python environment still active and from inside the `MAVISp` repository
+directory, run:
 
 ```
-cd MAVISp
 streamlit run app.py
 ```
 
