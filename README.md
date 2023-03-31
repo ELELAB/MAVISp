@@ -84,7 +84,7 @@ pip install pandas streamlit streamlit-aggrid pyyaml osfclient
 to create a virtual environment:
 
 ```
-conda create -n MAVISp_env python==3.8 streamlit pandas pyyaml
+conda create -c conda-forge -n MAVISp_env python streamlit streamlit-aggrid pandas pyyaml osfclient
 ```
 
 2. then you can activate it:
