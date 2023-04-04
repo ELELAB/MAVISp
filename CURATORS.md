@@ -11,4 +11,11 @@ Follows a list of all the people that contributed to the MAVISp database as cura
 - Alberto Pettenella, Danish Cancer Society Research Center
 - Terézia Dorčaková, Danish Cancer Society Research Center
 - Mattia Utichi, Danish Cancer Society Research Center and Technical University of Denmark
+- Pablo Sánchez-Izquierdo, Danish Cancer Society Research Center and Technical University of Denmark
+- Francesca Maselli, Danish Cancer Society Research Center and National Research Council (IBFM-CNR, Italy)
+- Karolina Krzesińska, Danish Cancer Society Research Center and Technical University of Denmark
+- Katrine Meldgård, Danish Cancer Society Research Center and Technical University of Denmark
+- Julie Bruun Brockhoff, Danish Cancer Society Research Center and Technical University of Denmark
+- Amalie Drud Nielsen, Danish Cancer Society Research Center and Technical University of Denmark
+- Jérémy Vinhas, Danish Cancer Society Research Center 
 
