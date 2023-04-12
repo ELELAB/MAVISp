@@ -1,8 +1,8 @@
 # MAVISp database - UPDATES
 
-last update: 08/12/2022
+last update: 28/03/2023
 
-## Entries released in the database - simple mode
+## Entries released in the database - simple mode 
 
 - ARID3A;Q8IVW6   (STABILITY,LONG RANGE,PTM,ensemble mode)
 - BCL2;P10415	(STABILITY,LOCAL INTERACTION,LONG RANGE, PTM)
@@ -15,40 +15,13 @@ last update: 08/12/2022
 - TRAP1;Q12931	(STABILITY,LONG RANGE,PTM)
 - ULK1;O75385	(STABILITY,LONG RANGE,PTM)
 
-## Entries to be released - end of December 2022
+## Entries to be released for second version of biorxiv
+We plan to release annoations for 100 proteins overall. The full list can be fund in the file 
+MAVISp_target_list.txt in this repository.
 
-- BCL2L1;Q07817   (PTM)
-- BLM;P54132      (PTM)
-- KRAS;P01116     (PTM)
-- MAP1LC3B;Q9C0C7 (ensemble mode)
-- MLH1;P40692     (PTM)
-- FKBP1A;P62942   (STABILITY,LONG RANGE,PTM, LOCAL_INTERACTION)
-- HRAS;P01112     (STABILITY,LONG RANGE,PTM)
-- TP53;P04637     (STABILITY)
-- GRIN2A;Q12879   (STABILITY)  
-- EGFR;P00533     (STABILITY)
-- CALR;P27797     (STABILITY)
-- CBFB;Q13951     (STABILITY)  
-From the release of December 2022, we also included CLINVAR annotations for each entry
+From this release we also included CLINVAR, GEMME and DeMask annotations for each entry
+In case of alphafold models we also included hte pLDDT score
 
-
-## Entries to be relased - end of February 2023
-
-- BCL2L1;Q07817   (LOCAL INTERACTION)
-- CDK10;Q15131    (STABILITY,LONG RANGE,PTM)
-- MZF1;P28698     (STABILITY,LONG RANGE,PTM)
-- PTEN;P60484     (LOCAL_INTERACTION) 
-- PTK2;Q05397     (STABILITY,LONG RANGE,PTM)
-
-
-## Other proteins currently under analysis
-
-- PTEN;P60484
-- TP53;Q12888
-- ERCC4;Q92889
-- MCL1;Q07820
-- MSH2;P43246
-- SMPD1;P17405
 
 # MAVISp software - changelog
 

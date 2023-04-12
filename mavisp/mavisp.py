@@ -56,7 +56,7 @@ legend = f"""legend:
 {colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
     = module_name    this module is not available for this protein"""
 
-module_order = ['stability', 'local_interactions', 'sas', 'cancermuts', 'references', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme']
+module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'sas', 'cancermuts', 'references', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme']
 
 def main():
 

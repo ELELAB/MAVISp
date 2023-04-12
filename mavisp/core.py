@@ -40,6 +40,7 @@ class MAVISpFileSystem:
                           Stability,
                           LocalInteractions,
                           SAS,
+                          LocalInteractionsDNA,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk, 
