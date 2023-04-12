@@ -325,7 +325,7 @@ class SAS(DataType):
                 'sas_ap_rel'],
                 usecols = ['rest', 'resn', 'sas_sc_rel'],
                 index_col = 'resn').fillna(pd.NA)
-            self.data = rsa.rename(columns={'sas_sc_rel': 'Relative Total Side Percentage'})
+            self.data = rsa.rename(columns={'sas_sc_rel': 'Relative Side Chain Accessibility'})
 
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
