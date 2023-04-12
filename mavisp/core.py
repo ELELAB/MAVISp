@@ -98,20 +98,23 @@ class MAVISpFileSystem:
                     curators= ', '.join(
                     [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
                     )
-                    uniprot_ac = ""
-                    if metadata['uniprot_ac']:
-                        uniprot_ac = ",".join(metadata['uniprot_ac'])
-
-                    refseq_d = ""
-                    if metadata['refseq_d']:
-                        refseq_d = ",".join(metadata['refseq_d'])
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
+                try:
+                    uniprot_ac = metadata['uniprot_ac']
+                except KeyError:
+                    self.log.error("Couldn't parse uniprot_ac from metadata file")
+                    uniprot_ac = None
+                try:
+                    refseq_id = metadata['refseq_id']
+                except KeyError:
+                    self.log.error("Couldn't parse refseq_id from metadata file")
+                    refseq_id = None
 
-                df_list.append((system ,uniprot_ac,refseq_d, mode, mutation_list, curators))
+                df_list.append((system ,uniprot_ac,refseq_id, mode, mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', "uniprot_ac","refseq_d",'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', "uniprot_ac","refseq_id",'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -217,11 +220,15 @@ class MAVISpFileSystem:
             mutations = r['mutations']
             curators = r['curators']
             uniprot_ac= r["uniprot_ac"]
-            refseq_d= r["refseq_d"]
+            refseq_id= r["refseq_id"]
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
             if curators is None:
                 mavisp_criticals.append(MAVISpCriticalError("the metadata file was not available, readable or in the expected format"))
+            if uniprot_ac is None:
+                mavisp_criticals.append(MAVISpCriticalError("the uniprot_ac was not available, readable or in the expected format"))
+            if refseq_id is None:
+                mavisp_criticals.append(MAVISpCriticalError("the refseq_id was not available, readable or in the expected format"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
