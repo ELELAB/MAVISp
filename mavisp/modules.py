@@ -1,13 +1,13 @@
 # MAVISp - classes for handling different MAVISp modules
-# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -195,6 +195,7 @@ class LocalInteractions(MultiMethodDataType):
                 raise
         else:
             e = None
+
         keys = self.data.keys().to_list()
         if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
             warnings.append(MAVISpWarningError("Local interaction classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
@@ -250,6 +251,41 @@ class LocalInteractionsDNA(MultiMethodDataType):
                 raise
         else:
             e = None
+
+        keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
+
+        if len(keys) != 1:
+            warnings.append(MAVISpWarningError("Exactly one data column expected to calculate classification"))
+
+        self.data['Local Int. classification With DNA'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1)
+
+        if e is None and len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+        elif len(warnings) > 0:
+            e.warning.extend(warnings)
+            raise e
+
+    def _generate_local_interactions_DNA_classification(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('Local Int. With DNA') ]
+
+        if len(keys) != 1:
+            return pd.NA
+
+        stab_co =  1.0
+
+        header = keys[0]
+
+        if pd.isna(row[header]):
+            return pd.NA
+
+        if row[header] > stab_co:
+            return 'Destabilizing'
+        elif row[header] < (- stab_co):
+            return 'Stabilizing'
+        else:
+            return 'Neutral'
 
 class LongRange(MultiMethodDataType):
 
