@@ -104,12 +104,12 @@ class MAVISpFileSystem:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
                 try:
-                    review_status = ",".join(metadata["review_status"])
+                    review_status = metadata["review_status"]
                 except KeyError:
                     self.log.error("There is no review status in the metadata file")
                     review_status = None
 
-                df_list.append((system, mode, mutation_list, curators))
+                df_list.append((system, mode, review_status, mutation_list, curators))
 
         main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode',"review_status", 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
