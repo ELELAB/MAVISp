@@ -101,6 +101,7 @@ class MAVISpFileSystem:
                     curators = None
                     uniprot_ac = None
                     refseq_id = None
+                    review_status = None
                 else:
                     try:
                         curators= ', '.join(
@@ -121,10 +122,17 @@ class MAVISpFileSystem:
                     except KeyError:
                         self.log.debug("There is no RefSeq ID field in metadata file")
                         refseq_id = None
+                    try:
+                        review_status = metadata["review_status"]
 
-                df_list.append((system, uniprot_ac, refseq_id, mode, mutation_list, curators))
+                    except KeyError:
+                        self.log.debug("There is no review status field in metadata file")
+                        review_status = None
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id', 'mode', 'mutations', 'curators'])
+
+                df_list.append((system, uniprot_ac, refseq_id, review_status, mode, mutation_list, curators))
+
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id','review_status', 'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -231,11 +239,12 @@ class MAVISpFileSystem:
             curators = r['curators']
             uniprot_ac = r['uniprot_ac']
             refseq_id = r['refseq_id']
+            review_status = r['review_status']
 
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
 
-            if curators is None and uniprot_ac is None and refseq_id is None:
+            if curators is None and uniprot_ac is None and refseq_id is None and review_status is None:
                 mavisp_criticals.append(MAVISpCriticalError("No useful information was found in metadata file, or metadata file not readable"))
             else:
                 if curators is None:
@@ -244,6 +253,10 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
+                if review_status is not int or review_status < 0 or review_status > 4:
+                    mavisp_criticals.append("Review status is not an integer or is not in the range 0-4")
+                if review_status is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
@@ -292,7 +305,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'mode', 'curators']]
+        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'review_status','mode', 'curators']]
 
     def get_annotation_tables_view(self):
 
