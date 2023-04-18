@@ -221,7 +221,7 @@ def main():
 
 
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system','uniprot_ac','refseq_id', 'mode', 'curators']]
+    out_table = out_table[['system', 'uniprot_ac', 'refseq_id', 'mode', 'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
                                           'uniprot_ac' : 'Uniprot AC',
