@@ -317,7 +317,7 @@ class PTMs(DataType):
             # any T/S to Y
             # any Y to T/S
         elif row['sas_sc_rel'] < 20.0 or row['alt'] == 'Y' or (row['ref'] == 'Y' and (row['alt'] in ['S', 'T'])):
-            return 'unkown'
+            return 'unknown'
 
         # cases:
             # any mutation that is not T to S, S to T, T/S to Y or Y to T/S and SASA >=20%:
