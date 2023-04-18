@@ -123,7 +123,7 @@ class MAVISpFileSystem:
 
                 df_list.append((system, uniprot_ac, refseq_id, mode, mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', "uniprot_ac","refseq_id",'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id', 'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -291,7 +291,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', "uniprot_ac","refseq_id",'mode', 'curators']]
+        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'mode', 'curators']]
 
     def get_annotation_tables_view(self):
 
