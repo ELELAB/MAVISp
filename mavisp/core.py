@@ -96,16 +96,35 @@ class MAVISpFileSystem:
 
                 try:
                     metadata = self._parse_metadata(system, mode)
-                    curators= ', '.join(
-                    [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
-                    )
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
+                    uniprot_ac = None
+                    refseq_id = None
+                else:
+                    try:
+                        curators= ', '.join(
+                            [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+                        )
+                    except KeyError:
+                        self.log.debug("There is no curators field in metadata file")
+                        curators = None
 
-                df_list.append((system, mode, mutation_list, curators))
+                    try:
+                        uniprot_ac = str(metadata['uniprot_ac'])
+                    except KeyError:
+                        self.log.debug("There is no Uniprot AC field in metadata file")
+                        uniprot_ac = None
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations', 'curators'])
+                    try:
+                        refseq_id = str(metadata['refseq_id'])
+                    except KeyError:
+                        self.log.debug("There is no RefSeq ID field in metadata file")
+                        refseq_id = None
+
+                df_list.append((system, uniprot_ac, refseq_id, mode, mutation_list, curators))
+
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id', 'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -210,11 +229,21 @@ class MAVISpFileSystem:
             mode = r['mode']
             mutations = r['mutations']
             curators = r['curators']
+            uniprot_ac = r['uniprot_ac']
+            refseq_id = r['refseq_id']
 
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
-            if curators is None:
-                mavisp_criticals.append(MAVISpCriticalError("the metadata file was not available, readable or in the expected format"))
+
+            if curators is None and uniprot_ac is None and refseq_id is None:
+                mavisp_criticals.append(MAVISpCriticalError("No useful information was found in metadata file, or metadata file not readable"))
+            else:
+                if curators is None:
+                    mavisp_criticals.append(MAVISpCriticalError("information about curators was not found in the metadata file"))
+                if uniprot_ac is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
+                if refseq_id is None:
+                    mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
@@ -263,7 +292,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'mode', 'curators']]
+        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'mode', 'curators']]
 
     def get_annotation_tables_view(self):
 

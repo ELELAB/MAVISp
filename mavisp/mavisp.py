@@ -221,10 +221,14 @@ def main():
 
 
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system', 'mode', 'curators']]
+    out_table = out_table[['system', 'uniprot_ac', 'refseq_id', 'mode', 'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
-                                          'curators' : 'Curators'})
+                                          'uniprot_ac' : 'Uniprot AC',
+                                          'refseq_id' : "RefSeq ID",
+                                          'curators' : 'Curators',
+                                          })
+
     out_table.to_csv(out_path / 'index.csv', index=False)
 
     dataset_tables_path = out_path / 'dataset_tables'
