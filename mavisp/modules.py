@@ -1,13 +1,13 @@
 # MAVISp - classes for handling different MAVISp modules
-# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -195,6 +195,7 @@ class LocalInteractions(MultiMethodDataType):
                 raise
         else:
             e = None
+
         keys = self.data.keys().to_list()
         if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
             warnings.append(MAVISpWarningError("Local interaction classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
