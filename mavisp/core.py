@@ -110,15 +110,13 @@ class MAVISpFileSystem:
                         curators = None
 
                     try:
-                        print(metadata['uniprot_ac'])
-                        uniprot_ac = metadata['uniprot_ac']
+                        uniprot_ac = str(metadata['uniprot_ac'])
                     except KeyError:
                         self.log.debug("There is no Uniprot AC field in metadata file")
                         uniprot_ac = None
 
                     try:
-                        print(metadata['refseq_id'])
-                        refseq_id = metadata['refseq_id']
+                        refseq_id = str(metadata['refseq_id'])
                     except KeyError:
                         self.log.debug("There is no RefSeq ID field in metadata file")
                         refseq_id = None
