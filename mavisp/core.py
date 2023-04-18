@@ -95,28 +95,35 @@ class MAVISpFileSystem:
 
                 try:
                     metadata = self._parse_metadata(system, mode)
-                    curators= ', '.join(
-                    [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
-                    )
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
-                except KeyError:
-                    self.log.error("There is no curators field in metadata file")
-                    curators = None
-
-                try:
-                    uniprot_ac = "".join(metadata['uniprot_ac'])
-                except KeyError:
-                    self.log.error("There is no Uniprot AC field in metadata file")
                     uniprot_ac = None
-                try:
-                    refseq_id = "".join(metadata['refseq_id'])
-                except KeyError:
-                    self.log.error("There is no RefSeq ID field in metadata file")
                     refseq_id = None
+                else:
+                    try:
+                        curators= ', '.join(
+                            [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+                        )
+                    except KeyError:
+                        self.log.debug("There is no curators field in metadata file")
+                        curators = None
 
-                df_list.append((system ,uniprot_ac,refseq_id, mode, mutation_list, curators))
+                    try:
+                        print(metadata['uniprot_ac'])
+                        uniprot_ac = metadata['uniprot_ac']
+                    except KeyError:
+                        self.log.debug("There is no Uniprot AC field in metadata file")
+                        uniprot_ac = None
+
+                    try:
+                        print(metadata['refseq_id'])
+                        refseq_id = metadata['refseq_id']
+                    except KeyError:
+                        self.log.debug("There is no RefSeq ID field in metadata file")
+                        refseq_id = None
+
+                df_list.append((system, uniprot_ac, refseq_id, mode, mutation_list, curators))
 
         main_df = pd.DataFrame.from_records(df_list, columns=['system', "uniprot_ac","refseq_id",'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
@@ -225,14 +232,19 @@ class MAVISpFileSystem:
             curators = r['curators']
             uniprot_ac = r['uniprot_ac']
             refseq_id = r['refseq_id']
+
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
-            if curators is None:
-                mavisp_criticals.append(MAVISpCriticalError("the metadata file was not available, readable or in the expected format"))
-            if uniprot_ac is None:
-                mavisp_criticals.append(MAVISpCriticalError("Information about the Uniprot AC was not available, readable or in the expected format"))
-            if refseq_id is None:
-                mavisp_criticals.append(MAVISpCriticalError("Information about the RefSeq ID was not available, readable or in the expected format"))
+
+            if curators is None and uniprot_ac is None and refseq_id is None:
+                mavisp_criticals.append(MAVISpCriticalError("No useful information was found in metadata file, or metadata file not readable"))
+            else:
+                if curators is None:
+                    mavisp_criticals.append(MAVISpCriticalError("information about curators was not found in the metadata file"))
+                if uniprot_ac is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
+                if refseq_id is None:
+                    mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
