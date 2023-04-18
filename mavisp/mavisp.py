@@ -221,10 +221,11 @@ def main():
 
 
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system', 'mode', 'curators']]
+    out_table = out_table[['system', 'mode', "review_status",'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
-                                          'curators' : 'Curators'})
+                                          'curators' : 'Curators',
+                                          'review_status' : 'Review Status'})
     out_table.to_csv(out_path / 'index.csv', index=False)
 
     dataset_tables_path = out_path / 'dataset_tables'

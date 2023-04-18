@@ -103,10 +103,15 @@ class MAVISpFileSystem:
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
                     curators = None
+                try:
+                    review_status = ",".join(metadata["review_status"])
+                except KeyError:
+                    self.log.error("There is no review status in the metadata file")
+                    review_status = None
 
                 df_list.append((system, mode, mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'mode',"review_status", 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -211,11 +216,14 @@ class MAVISpFileSystem:
             mode = r['mode']
             mutations = r['mutations']
             curators = r['curators']
+            review_status = r['review_status']
 
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
             if curators is None:
                 mavisp_criticals.append(MAVISpCriticalError("the metadata file was not available, readable or in the expected format"))
+            if review_status is None:
+                mavisp_criticals.append(MAVISpCriticalError("the review status was not available, readable or in the expected format"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
@@ -264,7 +272,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'mode', 'curators']]
+        return self.dataset_table[['system', 'mode', "review_status",'curators']]
 
     def get_annotation_tables_view(self):
 
