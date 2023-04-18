@@ -252,6 +252,41 @@ class LocalInteractionsDNA(MultiMethodDataType):
         else:
             e = None
 
+        keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
+
+        if len(keys) != 1:
+            warnings.append(MAVISpWarningError("Exactly one data column expected to calculate classification"))
+
+        self.data['Local Int. classification With DNA'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1)
+
+        if e is None and len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+        elif len(warnings) > 0:
+            e.warning.extend(warnings)
+            raise e
+
+    def _generate_local_interactions_DNA_classification(self, row):
+
+        keys = [ k for k in row.keys() if k.startswith('Local Int. With DNA') ]
+
+        if len(keys) != 1:
+            return pd.NA
+
+        stab_co =  1.0
+
+        header = keys[0]
+
+        if pd.isna(row[header]):
+            return pd.NA
+
+        if row[header] > stab_co:
+            return 'Destabilizing'
+        elif row[header] < (- stab_co):
+            return 'Stabilizing'
+        else:
+            return 'Neutral'
+
 class LongRange(MultiMethodDataType):
 
     module_dir = "long_range"
