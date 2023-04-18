@@ -95,28 +95,23 @@ class MAVISpFileSystem:
 
                 try:
                     metadata = self._parse_metadata(system, mode)
+                    curators= ', '.join(
+                    [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+                    )
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
-                    metadata = None
-                if metadata is None:
-                    self.log.error("Couldn't parse metadata file")
                     curators = None
-                    uniprot_ac = None
-                    refseq_id = None
-                try:
-                    curators= ', '.join(
-                    [ f"{curators} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
-                    )
                 except KeyError:
                     self.log.error("There is no curators field in metadata file")
                     curators = None
+
                 try:
-                    uniprot_ac = ",".join(metadata['uniprot_ac'])
+                    uniprot_ac = "".join(metadata['uniprot_ac'])
                 except KeyError:
                     self.log.error("There is no Uniprot AC field in metadata file")
                     uniprot_ac = None
                 try:
-                    refseq_id = ",".join(metadata['refseq_id'])
+                    refseq_id = "".join(metadata['refseq_id'])
                 except KeyError:
                     self.log.error("There is no RefSeq ID field in metadata file")
                     refseq_id = None

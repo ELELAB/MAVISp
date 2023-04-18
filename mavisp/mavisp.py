@@ -225,7 +225,7 @@ def main():
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
                                           'uniprot_ac' : 'Uniprot AC',
-                                          'refseq_id' : "RefSeq",
+                                          'refseq_id' : "RefSeq ID",
                                           'curators' : 'Curators',
                                           })
 
