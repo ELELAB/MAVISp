@@ -255,11 +255,11 @@ class MAVISpFileSystem:
                 if review_status is None:
                     mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
                 else:
-                    if str.isdigit(review_status) is False:
-                        mavisp_criticals.append("Review status is not an integer")
+                    if not str.isdigit(review_status):
+                        mavisp_criticals.append(MAVISpCriticalError("Review status is not an integer"))
                     else:
                         if int(review_status) < 0 or int(review_status) > 4:
-                            mavisp_criticals.append("Review status is not in the range 0-4")
+                            mavisp_criticals.append(MAVISpCriticalError("Review status is not in the range 0-4"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
