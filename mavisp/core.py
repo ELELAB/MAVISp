@@ -122,13 +122,12 @@ class MAVISpFileSystem:
                     except KeyError:
                         self.log.debug("There is no RefSeq ID field in metadata file")
                         refseq_id = None
-                    try:
-                        review_status = metadata["review_status"]
 
+                    try:
+                        review_status = str(metadata["review_status"])
                     except KeyError:
                         self.log.debug("There is no review status field in metadata file")
                         review_status = None
-
 
                 df_list.append((system, uniprot_ac, refseq_id, review_status, mode, mutation_list, curators))
 
@@ -253,10 +252,14 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
-                if review_status is not int or review_status < 0 or review_status > 4:
-                    mavisp_criticals.append("Review status is not an integer or is not in the range 0-4")
                 if review_status is None:
                     mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
+                else:
+                    if str.isdigit(review_status) is False:
+                        mavisp_criticals.append("Review status is not an integer")
+                    else:
+                        if int(review_status) < 0 or int(review_status) > 4:
+                            mavisp_criticals.append("Review status is not in the range 0-4")
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
