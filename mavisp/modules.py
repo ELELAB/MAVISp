@@ -182,7 +182,7 @@ class LocalInteractions(MultiMethodDataType):
     module_dir = "local_interactions"
     name = "local_interactions"
     methods = {'foldx5'                      : MutateXBinding(version="FoldX5"),
-                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014')}
+               'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014')}
 
     def ingest(self, mutations):
 
@@ -196,11 +196,12 @@ class LocalInteractions(MultiMethodDataType):
         else:
             e = None
 
-        keys = self.data.keys().to_list()
-        if len(keys) != 2 or not ( 'Rosetta' in keys[0] and 'FoldX' in keys[1] or 'Rosetta' in keys[1] and 'FoldX' in keys[0]):
-            warnings.append(MAVISpWarningError("Local interaction classification can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+        common_interactors = set.intersection(*[ set(m.interactors) for k, m in self.methods.items() ])
+        if np.any([ len(m.interactors) != len(common_interactors) for k, m in self.methods.items()]):
+            warnings.append(MAVISpWarningError("All supported methods must be available to generate the classification for a specific interactor"))
 
-        self.data['Local Int. classification'] = self.data.apply(self._generate_local_interactions_classification, axis=1)
+        for ci in common_interactors:
+            self.data[f'Local Int. classification ({ci})'] = self.data.apply(self._generate_local_interactions_classification, axis=1, ci=ci)
 
         if e is None and len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -209,29 +210,17 @@ class LocalInteractions(MultiMethodDataType):
             e.warning.extend(warnings)
             raise e
 
-    def _generate_local_interactions_classification(self, row):
+    def _generate_local_interactions_classification(self, row, ci, stab_co=1.0):
 
-        keys = [ k for k in row.keys() if k.startswith('Local Int.') ]
+        colnames = [ f"{m.type} (Binding with {ci}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
-        if len(keys) == 2:
-            if   'Rosetta' in keys[0] and 'FoldX' in keys[1]:
-                rosetta_header, foldx_header    = keys
-            elif 'Rosetta' in keys[1] and 'FoldX' in keys[0]:
-                foldx_header,   rosetta_header  = keys
-            else:
-                return pd.NA
-        else:
+        if np.any( [ pd.isna(row[h]) for h in colnames ] ):
             return pd.NA
-
-        stab_co =  1.0
-
-        if rosetta_header not in row.index or foldx_header not in row.index:
-            return pd.NA
-        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+        if np.all( [ row[h] > stab_co for h in colnames ] ):
             return 'Destabilizing'
-        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+        if np.all( [ row[h] < (-stab_co) for h in colnames ] ):
             return 'Stabilizing'
-        if (- stab_co) <= row[foldx_header] <= stab_co and (- stab_co) <= row[rosetta_header] <= stab_co:
+        if np.all( [ (- stab_co) <= row[h] <= stab_co for h in colnames ] ):
             return 'Neutral'
         return 'Uncertain'
 
