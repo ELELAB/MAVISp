@@ -84,11 +84,18 @@ class MutateXBinding(Method):
     chain = "A"
     measure = "Binding with"
 
+    def __init__(self, version):
+
+        super().__init__(version)
+
+        self.interactors = None
+
     def parse(self, dir_path):
 
         warnings = []
 
         interactors = os.listdir(dir_path)
+        self.interactors = interactors
 
         if len(interactors) == 0:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("no interactor folders found")],
@@ -103,7 +110,7 @@ class MutateXBinding(Method):
             mutatex_files = os.listdir(interactor_dir)
 
             if len(mutatex_files) != 1:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError("zero or multiple files found in {interactor_dir}; exactly one expected")],
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"zero or multiple files found in {interactor_dir}; exactly one expected")],
                                         warning=[])
 
             mutatex_file = mutatex_files[0]
@@ -139,14 +146,14 @@ class MutateXBinding(Method):
             if self.measure == "":
                 measure = ""
             else:
-                measure = "{self.measure} "
+                measure = f"{self.measure} "
 
-            df = df.rename(columns={0 : f"{self.type} ({self.measure}{interactor}, {self.version}, {self.unit})"})
+            df = df.rename(columns={0 : f"{self.type} ({measure}{interactor}, {self.version}, {self.unit})"})
 
             if all_data is None:
                 all_data = df
             else:
-                all_data = all_data.join(df)
+                all_data = all_data.join(df, how='outer')
 
         self.data = all_data
 
@@ -205,11 +212,18 @@ class RosettaDDGPredictionBinding(Method):
     type = "Local Int."
     chain = 'A'
 
+    def __init__(self, version):
+
+        super().__init__(version)
+
+        self.interactors = None
+
     def parse(self, dir_path):
 
         warnings = []
 
         interactors = os.listdir(dir_path)
+        self.interactors = interactors
 
         if len(interactors) == 0:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("no interactor folders found")],
@@ -224,7 +238,7 @@ class RosettaDDGPredictionBinding(Method):
             rosetta_files = os.listdir(interactor_dir)
 
             if len(rosetta_files) != 1:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError("zero or multiple files found in {interactor_dir}; exactly one expected")],
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"zero or multiple files found in {interactor_dir}; exactly one expected")],
                                         warning=[])
 
             rosetta_file = rosetta_files[0]
@@ -246,7 +260,7 @@ class RosettaDDGPredictionBinding(Method):
             if all_data is None:
                 all_data = mutation_data
             else:
-                all_data = all_data.join(mutation_data)
+                all_data = all_data.join(mutation_data, how='outer')
 
         self.data = all_data
 
