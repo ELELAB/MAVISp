@@ -146,7 +146,7 @@ class MutateXBinding(Method):
             if all_data is None:
                 all_data = df
             else:
-                all_data.join(df)
+                all_data = all_data.join(df)
 
         self.data = all_data
 
@@ -246,7 +246,7 @@ class RosettaDDGPredictionBinding(Method):
             if all_data is None:
                 all_data = mutation_data
             else:
-                all_data.join(mutation_data)
+                all_data = all_data.join(mutation_data)
 
         self.data = all_data
 
