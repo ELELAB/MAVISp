@@ -318,15 +318,16 @@ class SAS(DataType):
         log.info(f"parsing sas file {sas_file}")
 
         try:
-            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, sas_file),
                 skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
                 names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
                 'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
                 'sas_ap_rel'],
                 usecols = ['rest', 'resn', 'sas_sc_rel'],
                 index_col = 'resn').fillna(pd.NA)
-            self.data = rsa.rename(columns={'sas_sc_rel': 'Relative Side Chain Accessibility'})
-
+            mutation_series = pd.Series(mutations)
+            rsa = rsa.assign(mutation=mutation_series)
+            self.data = rsa = rsa[['mutation', 'sas_sc_rel']].rename(columns={'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type'})
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
