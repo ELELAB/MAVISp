@@ -86,8 +86,8 @@ class Stability(MultiMethodDataType):
     module_dir = "stability"
     name = "stability"
     methods = {'foldx5'                      : MutateXStability(version="FoldX5"),
-               'rosetta_cartddg2020_ref2015' : RosettaDDGPredictionStability(version='Rosetta Flexddg2020'),
-               'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Flexddg'),
+               'rosetta_cartddg2020_ref2015' : RosettaDDGPredictionStability(version='Rosetta Cartddg2020'),
+               'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Cartddg'),
                'rasp'                        : RaSP(version='RaSP')}
 
     def ingest(self, mutations):
