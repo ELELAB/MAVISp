@@ -325,25 +325,23 @@ class SAS(DataType):
                 'sas_ap_rel'],
                 usecols = ['resn', 'sas_sc_rel'],
                 )
-            mutation_series = pd.Series(mutations)
-            df = mutation_series.to_frame()
-            df = df.rename(columns={0: "mutation"})
-            df["mutation"] = df["mutation"].astype(str)
-            df = pd.DataFrame.apply(df, lambda x: x["mutation"][1:-1], axis=1)
-            df = df.to_frame()
-            df = df.rename(columns={0: "position_mutation"})
-            rsa["resn"]= rsa["resn"].astype(str)
-            rsa = rsa.set_index("resn")
-            result = pd.merge(df, rsa, left_on="position_mutation", right_on="resn" ,how="inner")
-            result["mutation"] = mutation_series
-            result = result[['mutation', 'sas_sc_rel']]
-            self.data = result.rename(columns={'mutation' : 'mutation',
-                                               'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type'})
-            self.data = self.data.set_index('mutation')
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
+
+        mut_resn = [ mut[1:-1] for mut in mutations ]
+        df = pd.DataFrame({'mutation' : mutations, 'position_mutation' : mut_resn})
+
+        rsa["resn"]= rsa["resn"].astype(str)
+        rsa = rsa.set_index("resn")
+
+        result = pd.merge(df, rsa, left_on="position_mutation", right_on="resn", how="left")
+        result = result[['mutation', 'sas_sc_rel']]
+        self.data = result.rename(columns={'mutation' : 'mutation',
+                                           'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type'})
+        self.data = self.data.set_index('mutation')
+
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
