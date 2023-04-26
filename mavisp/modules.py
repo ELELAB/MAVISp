@@ -324,6 +324,53 @@ class References(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class SAS(DataType):
+
+    module_dir = "sas"
+    name = "sas"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        sas_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(sas_file) != 1:
+            this_error = f"multiple or no files found in {sas_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        sas_file = sas_file[0]
+
+        log.info(f"parsing sas file {sas_file}")
+
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, sas_file),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                )
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        mut_resn = [ mut[1:-1] for mut in mutations ]
+        df = pd.DataFrame({'mutation' : mutations, 'position_mutation' : mut_resn})
+
+        rsa["resn"]= rsa["resn"].astype(str)
+        rsa = rsa.set_index("resn")
+
+        result = pd.merge(df, rsa, left_on="position_mutation", right_on="resn", how="left")
+        result = result[['mutation', 'sas_sc_rel']]
+        self.data = result.rename(columns={'mutation' : 'mutation',
+                                           'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type'})
+        self.data = self.data.set_index('mutation')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 class PTMs(DataType):
 
     module_dir = "ptm"
