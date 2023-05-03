@@ -169,7 +169,6 @@ class MutateXDNABinding(Method):
     measure = ""
 
     parse = MutateXBinding.parse
-
 class RosettaDDGPredictionStability(Method):
 
     unit = "kcal/mol"
@@ -210,22 +209,23 @@ class RosettaDDGPredictionStability(Method):
         else:
             csv_files = []
             rosetta_folder = os.listdir(dir_path)
+            # In order to browse the rosetta file, and access the cl folders
             for folder in rosetta_folder:
                 ddg_file = os.listdir(os.path.join(dir_path, folder))
                 if len(ddg_file)!=1:
                     this_error = f"multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
-                    
+            # Gather all csv files
                 csv_files.extend([os.path.join(dir_path, folder, file) for file in ddg_file if file.endswith(".csv")])
             try:
-                dfs = []
+                mutation_data = pd.DataFrame()
                 for file in csv_files:
                     tmp = pd.read_csv(file)
-                    dfs.append(tmp)
-                combined_csv = pd.concat(dfs)
-                mutation_data = pd.DataFrame(combined_csv)
+                    mutation_data = pd.concat([mutation_data,tmp])
+                    # Allow to merge the data from the different cl folders
                 mutation_data = mutation_data.groupby(["mutation_label","state"])[mutation_data.columns[6:]].agg('mean')
+                # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
                 mutation_data.sort_values(by=['mutation_label','state'], inplace=True)
                 mutation_data = mutation_data.reset_index()
                 mutation_data = mutation_data[['total_score', 'mutation_label']]
@@ -234,11 +234,12 @@ class RosettaDDGPredictionStability(Method):
 
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
             if len(warnings) > 0:
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
+
 
 
 class RosettaDDGPredictionBinding(Method):

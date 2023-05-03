@@ -80,7 +80,6 @@ class MultiMethodDataType(DataType):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
-
 class Stability(MultiMethodDataType):
 
     module_dir = "stability"
@@ -111,21 +110,20 @@ class Stability(MultiMethodDataType):
         method = tmp[0]
 
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
-        if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-        model = tmp[0]
+        results = []
+        for technique in tmp:
+            model = technique
+            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
 
-        method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+            if not set(method_dirs).issubset(set(self.methods.keys())):
+                this_error = f"One or more {self.name} methods are not supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
 
-        if not set(method_dirs).issubset(set(self.methods.keys())):
-            this_error = f"One or more {self.name} methods are not supported"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
+            for method_dir in method_dirs:
+                self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                self.data = self.data.join(self.methods[method_dir].data)
 
-        for method_dir in method_dirs:
-            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-            self.data = self.data.join(self.methods[method_dir].data)
 
         keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
