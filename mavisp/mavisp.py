@@ -22,7 +22,8 @@ import pandas as pd
 from mavisp.core import MAVISpFileSystem
 import logging as log
 from termcolor import colored
-
+from time import strftime
+from time import gmtime
 header = """
                         .__                 
   _____  _____   ___  __|__|  ____________  
@@ -234,6 +235,13 @@ def main():
 
     dataset_tables_path = out_path / 'dataset_tables'
     dataset_tables_path.mkdir(exist_ok=True)
+
+    # Generate a csv file that contains the number of mutations and the date of the run
+    time = strftime("%Y-%m-%d", gmtime())
+    nb_mutations = len(mfs.dataset_table['mutations'].explode().unique())
+    mutation_table = pd.DataFrame({'Number of mutations': nb_mutations, 'Date of run': time}, index=[0])
+    mutation_table.to_csv(out_path / 'mutations.csv', index=False)
+
 
     for _, r in mfs.dataset_table.iterrows():
 
