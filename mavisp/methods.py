@@ -177,16 +177,8 @@ class RosettaDDGPredictionStability(Method):
     def parse(self, dir_path):
 
         warnings = []
-        tmp = str(os.path.split(dir_path))
-        mode = list(tmp.strip().split('/'))
-        if "simple_mode" in mode:
-            rosetta_files = os.listdir(dir_path)
-
-            if len(rosetta_files) != 1:
-                this_error = f"multiple files found in {dir_path}; only one expected"
-                raise MAVISpMultipleError(warning=warnings, 
-                                        critical=[MAVISpCriticalError(this_error)])
-
+        rosetta_files = os.listdir(dir_path)
+        if len(rosetta_files) == 1:
             rosetta_file = rosetta_files[0]
 
             try:
@@ -217,16 +209,25 @@ class RosettaDDGPredictionStability(Method):
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
             # Gather all csv files
+
                 csv_files.extend([os.path.join(dir_path, folder, file) for file in ddg_file if file.endswith(".csv")])
             try:
                 mutation_data = pd.DataFrame()
+                list_mutation_label = None
                 for file in csv_files:
                     tmp = pd.read_csv(file)
+                    tmp = tmp[tmp['state'] == 'ddg']
+                    if list_mutation_label is None:
+                        list_mutation_label = tmp['mutation_label']
+                    if not list_mutation_label.equals(tmp['mutation_label']):
+                        this_error = f"the mutation labels are not the same in the different csv files"
+                        raise MAVISpMultipleError(warning=warnings,
+                                                  critical=[MAVISpCriticalError(this_error)])
                     mutation_data = pd.concat([mutation_data,tmp])
-                    # Allow to merge the data from the different cl folders
-                mutation_data = mutation_data.groupby(["mutation_label","state"])[mutation_data.columns[6:]].agg('mean')
+                # Allow to merge the data from the different cl folders
+                mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
                 # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
-                mutation_data.sort_values(by=['mutation_label','state'], inplace=True)
+                mutation_data.sort_values(by=['mutation_label'], inplace=True)
                 mutation_data = mutation_data.reset_index()
                 mutation_data = mutation_data[['total_score', 'mutation_label']]
                 self.data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
