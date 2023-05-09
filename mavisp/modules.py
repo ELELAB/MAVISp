@@ -323,9 +323,7 @@ class LocalInteractionsDNA(MultiMethodDataType):
 
         if pd.isna(row[header]):
             if row['sas_sc_rel'] >= 20:
-                print("unc", row, '\n---')
                 return 'Uncertain'
-            print("na", row, '\n---')
             return pd.NA
 
         if row[header] > stab_co:
