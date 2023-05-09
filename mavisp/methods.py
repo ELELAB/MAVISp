@@ -178,7 +178,7 @@ class RosettaDDGPredictionStability(Method):
 
         warnings = []
         rosetta_files = os.listdir(dir_path)
-        if len(rosetta_files) == 1:
+        if len(rosetta_files) == 1 and os.path.isfile(os.path.join(dir_path, rosetta_files[0])):
             rosetta_file = rosetta_files[0]
 
             try:
@@ -203,7 +203,12 @@ class RosettaDDGPredictionStability(Method):
             rosetta_folder = os.listdir(dir_path)
             # In order to browse the rosetta file, and access the cl folders
             for folder in rosetta_folder:
-                ddg_file = os.listdir(os.path.join(dir_path, folder))
+                if os.path.isdir(os.path.join(dir_path, folder)):
+                    ddg_file = os.listdir(os.path.join(dir_path, folder))
+                else:
+                    this_error = f"the folder {folder} is not a directory"
+                    raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
                 if len(ddg_file)!=1:
                     this_error = f"multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
@@ -211,32 +216,38 @@ class RosettaDDGPredictionStability(Method):
             # Gather all csv files
 
                 csv_files.extend([os.path.join(dir_path, folder, file) for file in ddg_file if file.endswith(".csv")])
-            try:
-                mutation_data = pd.DataFrame()
-                list_mutation_label = None
-                for file in csv_files:
+
+            mutation_data = pd.DataFrame()
+            list_mutation_label = None
+
+            for file in csv_files:
+                try:
                     tmp = pd.read_csv(file)
                     tmp = tmp[tmp['state'] == 'ddg']
+                    # Check if the mutation labels are the same in the different csv files
                     if list_mutation_label is None:
-                        list_mutation_label = tmp['mutation_label']
-                    if not list_mutation_label.equals(tmp['mutation_label']):
+                        list_mutation_label = set(tmp['mutation_label'])
+                    if not list_mutation_label == set((tmp['mutation_label'])):
                         this_error = f"the mutation labels are not the same in the different csv files"
                         raise MAVISpMultipleError(warning=warnings,
-                                                  critical=[MAVISpCriticalError(this_error)])
-                    mutation_data = pd.concat([mutation_data,tmp])
-                # Allow to merge the data from the different cl folders
-                mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
-                # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
-                mutation_data.sort_values(by=['mutation_label'], inplace=True)
-                mutation_data = mutation_data.reset_index()
-                mutation_data = mutation_data[['total_score', 'mutation_label']]
-                self.data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
-                self.data = self.data.set_index('mutation_label')
+                                                critical=[MAVISpCriticalError(this_error)])
 
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                    # Allow to merge the data from the different cl folders
+                    mutation_data = pd.concat([mutation_data,tmp])
+                except Exception as e:
+                    this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv files. Arguments:{e.args}"
+                    raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+            # Allow to merge the data from the different cl folders
+            mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
+            # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
+            mutation_data.sort_values(by=['mutation_label'], inplace=True)
+            mutation_data = mutation_data.reset_index()
+            mutation_data = mutation_data[['total_score', 'mutation_label']]
+            self.data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
+            self.data = self.data.set_index('mutation_label')
+
+
             if len(warnings) > 0:
                 raise MAVISpMultipleError(warning=warnings,
                                         critical=[])

@@ -111,19 +111,28 @@ class Stability(MultiMethodDataType):
 
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
         results = []
-        for technique in tmp:
-            model = technique
+        model = tmp[0]
+        directory = None
+
+        for model in tmp:
             method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
 
             if not set(method_dirs).issubset(set(self.methods.keys())):
                 this_error = f"One or more {self.name} methods are not supported"
                 raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
-
             for method_dir in method_dirs:
+                # check if we have multiple directories with the same name
+                if directory is None:
+                    directory = method_dir
+                else:
+                    if directory in method_dir:
+                        this_error = f"Multiple directories with the same name : {directory}, in {self.name} folder"
+                        raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+
                 self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
                 self.data = self.data.join(self.methods[method_dir].data)
-
 
         keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
