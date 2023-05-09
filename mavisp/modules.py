@@ -270,12 +270,38 @@ class LocalInteractionsDNA(MultiMethodDataType):
         else:
             e = None
 
+        module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if 'sasa.rsa' not in module_dir_files:
+            this_error = f"required sasa.rsa file not found in {self.module_dir}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                )
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        rsa['resn'] = rsa['resn'].astype("string")
+        rsa = rsa.set_index('resn')
+        self.data['res_num'] = self.data.index.str[1:-1]
+        self.data = self.data.join(rsa, on='res_num')
+
         keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
 
         if len(keys) != 1:
             warnings.append(MAVISpWarningError("Exactly one data column expected to calculate classification"))
 
         self.data['Local Int. classification With DNA'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1)
+
+        self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
         if e is None and len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -296,6 +322,10 @@ class LocalInteractionsDNA(MultiMethodDataType):
         header = keys[0]
 
         if pd.isna(row[header]):
+            if row['sas_sc_rel'] >= 20:
+                print("unc", row, '\n---')
+                return 'Uncertain'
+            print("na", row, '\n---')
             return pd.NA
 
         if row[header] > stab_co:
