@@ -237,26 +237,29 @@ def main():
     dataset_tables_path.mkdir(exist_ok=True)
 
    # Generate a csv file that contains the number of mutations and the date of the run
-    time = strftime("%Y-%m-%d", gmtime())
-    nb_mutations = len(mfs.dataset_table['mutations'].explode())
-        # Group the rows by the "system" column and count the number of unique modes for each group
+     time = strftime("%Y-%m-%d", gmtime())
+
+           # Group the rows by the "system" column and count the number of unique modes for each group
     grouped = mfs.dataset_table.groupby('system')['mode'].nunique()
 
     # Grouping when a protein is found to have two modes
     both_modes = grouped[grouped == 2]
     # Count the number of protein that has two modes
     nb_both_modes = len(both_modes)
+    if nb_both_modes == 0:
+        nb_mutations = len(mfs.dataset_table['mutations'].explode())
+    else:
+        nb_mutations = len(mfs.dataset_table['mutations'].explode().unique())
+    nb_simple_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
+    nb_ensemble_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
 
-    nb_simple_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'simple_mode'])
-    nb_ensemble_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'ensemble_mode'])
-
-    nb_proteins = nb_simple_mode + nb_ensemble_mode - nb_both_modes
+    nb_proteins = nb_simple_mode + nb_ensemble_mode + nb_both_modes
 
     mutation_table = pd.DataFrame({'Number of mutations': nb_mutations,
                                    'Date of run': time,
                                    'Number of proteins': nb_proteins,
-                                   'Number of proteins in simple mode' : nb_simple_mode,
-                                   'Number of proteins in ensemble mode': nb_ensemble_mode,
+                                   'Number of proteins in simple mode only' : nb_simple_mode,
+                                   'Number of proteins in ensemble mode only': nb_ensemble_mode,
                                    'Number of proteins in both modes': nb_both_modes,
                                    }, index=[0])
     mutation_table.to_csv(out_path / 'dataset_info.csv', index=False)
