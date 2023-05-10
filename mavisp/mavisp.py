@@ -240,7 +240,9 @@ def main():
         if len(r['criticals']) > 0:
             continue
 
-        this_df = pd.DataFrame({'Mutation': r['mutations']})
+        this_df = r['mutations']
+        this_df = this_df.rename(columns={'mutation' : 'Mutation',
+                                          'PMID'     : 'References'})
         this_df = this_df.set_index('Mutation')
 
         for mod_name in module_order:
@@ -249,5 +251,12 @@ def main():
                 continue
             this_df = this_df.join(mod.get_dataset_view())
 
+        # move Reference column to last
+        print(this_df.columns)
+        this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
+
+        # fill NAs
         this_df = this_df.fillna(pd.NA)
+
+        # save final dataframe
         this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")
