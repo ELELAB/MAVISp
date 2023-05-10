@@ -239,17 +239,15 @@ def main():
     # Generate a csv file that contains the number of mutations and the date of the run
     time = strftime("%Y-%m-%d", gmtime())
 
-           # Group the rows by the "system" column and count the number of unique modes for each group
+    # Count number of unique mutations
+    nb_mutations = mfs.dataset_table.explode('mutations').drop_duplicates(['system', 'mutations']).shape[0]
+
+    # Group the rows by the "system" column and count the number of unique modes for each group
     grouped = mfs.dataset_table.groupby('system')['mode'].nunique()
 
-    # Grouping when a protein is found to have two modes
-    both_modes = grouped[grouped == 2]
-    # Count the number of protein that has two modes
-    nb_both_modes = len(both_modes)
-    if nb_both_modes == 0:
-        nb_mutations = len(mfs.dataset_table['mutations'].explode())
-    else:
-        nb_mutations = len(mfs.dataset_table['mutations'].explode().unique())
+    # Group and count instances in which a protein is found to have two modes
+    nb_both_modes = grouped[grouped == 2].shape[0]
+
     nb_simple_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
     nb_ensemble_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
 
@@ -263,8 +261,6 @@ def main():
                                    'Number of proteins in both modes': nb_both_modes,
                                    }, index=[0])
     mutation_table.to_csv(out_path / 'dataset_info.csv', index=False)
-
-
 
     for _, r in mfs.dataset_table.iterrows():
 
