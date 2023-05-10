@@ -22,7 +22,8 @@ import pandas as pd
 from mavisp.core import MAVISpFileSystem
 import logging as log
 from termcolor import colored
-
+from time import strftime
+from time import gmtime
 header = """
                         .__                 
   _____  _____   ___  __|__|  ____________  
@@ -234,6 +235,32 @@ def main():
 
     dataset_tables_path = out_path / 'dataset_tables'
     dataset_tables_path.mkdir(exist_ok=True)
+
+    # Generate a csv file that contains the number of mutations and the date of the run
+    time = strftime("%Y-%m-%d", gmtime())
+
+    # Count number of unique mutations
+    nb_mutations = mfs.dataset_table.explode('mutations').drop_duplicates(['system', 'mutations']).shape[0]
+
+    # Group the rows by the "system" column and count the number of unique modes for each group
+    grouped = mfs.dataset_table.groupby('system')['mode'].nunique()
+
+    # Group and count instances in which a protein is found to have two modes
+    nb_both_modes = grouped[grouped == 2].shape[0]
+
+    nb_simple_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
+    nb_ensemble_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
+
+    nb_proteins = nb_simple_mode + nb_ensemble_mode + nb_both_modes
+
+    mutation_table = pd.DataFrame({'Number of mutations': nb_mutations,
+                                   'Date of run': time,
+                                   'Number of proteins': nb_proteins,
+                                   'Number of proteins in simple mode only' : nb_simple_mode,
+                                   'Number of proteins in ensemble mode only': nb_ensemble_mode,
+                                   'Number of proteins in both modes': nb_both_modes,
+                                   }, index=[0])
+    mutation_table.to_csv(out_path / 'dataset_info.csv', index=False)
 
     for _, r in mfs.dataset_table.iterrows():
 
