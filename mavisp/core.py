@@ -90,8 +90,8 @@ class MAVISpFileSystem:
 
                 try:
                     mutation_list = self._parse_mutation_list(system, mode)
-                except:
-                    self.log.error(f"Couldn't parse mutation list table for {system}, {mode}")
+                except Exception as e:
+                    self.log.error(e)
                     mutation_list = None
 
                 try:
@@ -172,16 +172,14 @@ class MAVISpFileSystem:
         mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', most_recent_mut_file)
 
         try:
-            mutations = pd.read_csv(mut_path, sep='\t')
+            mutations = pd.read_csv(mut_path, delim_whitespace=True)
         except Exception as e:
-            self.log.error("Couldn't parse mutation list {mut_path}")
-            raise e
+            raise TypeError(f"Couldn't parse mutation list {mut_path} with error {e}")
 
         # remove duplicates, sort
         mutations = mutations.drop_duplicates(ignore_index=True)
         if len(mutations['mutation']) != mutations['mutation'].unique().shape[0]:
-            self.log.error("Duplicate mutations with inconsistent references in the mutation list")
-            raise TypeError
+            raise TypeError(f"{system}, {mode}: Duplicate mutations with inconsistent references in the mutation list")
 
         mutations['res_num'] = mutations['mutation'].str[1:-1].astype(int)
         mutations['alt'] = mutations['mutation'].str[-1]
