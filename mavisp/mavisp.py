@@ -252,7 +252,6 @@ def main():
             this_df = this_df.join(mod.get_dataset_view())
 
         # move Reference column to last
-        print(this_df.columns)
         this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
 
         # fill NAs
