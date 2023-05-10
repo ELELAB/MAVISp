@@ -34,7 +34,6 @@ class MAVISpFileSystem:
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
     supported_modules = [ CancermutsTable,
-                          References,
                           PTMs,
                           LongRange,
                           Stability,

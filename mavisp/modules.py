@@ -339,48 +339,6 @@ class LongRange(MultiMethodDataType):
     name = "long_range"
     methods = {'allosigma2' : AlloSigma(version=2)}
 
-class References(DataType):
-
-    module_dir = "pmid_list"
-    name = "references"
-
-    def ingest(self, mutations):
-        warnings = []
-
-        pmid_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        if len(pmid_files) != 1:
-            this_error = f"multiple or no files found in {pmid_files}; only one expected"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        pmid_file = pmid_files[0]
-
-        log.info(f"parsing PMID file {pmid_file}")
-
-        try:
-            pmid = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pmid_file), delim_whitespace=True)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        if 'mutation' not in pmid.columns or 'PMID' not in pmid.columns:
-            this_error = f"The CSV file must contain the following columns: mutation, PMID"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        if len(pmid.columns) != 2:
-            warnings.append(MAVISpWarningError("The CSV file has more than two columns"))
-
-        pmid = pmid[['mutation', 'PMID']]
-        pmid = pmid.set_index('mutation')
-        pmid = pmid[~ pmid.index.duplicated(keep='first')]
-        self.data = pmid.rename(columns={'PMID':'PMID / DOI'})
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
-
 class SAS(DataType):
 
     module_dir = "sas"
