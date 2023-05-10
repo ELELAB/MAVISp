@@ -41,7 +41,7 @@ class MutateXStability(Method):
 
         if len(mutatex_files) != 1:
             this_error = f"zero or multiple files found in {dir_path}; only one expected"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         mutatex_file = mutatex_files[0]
@@ -50,7 +50,7 @@ class MutateXStability(Method):
             df = pd.read_csv(os.path.join(dir_path, mutatex_file))
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         # create residue column
@@ -74,7 +74,7 @@ class MutateXStability(Method):
         self.data = df
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class MutateXBinding(Method):
@@ -114,12 +114,12 @@ class MutateXBinding(Method):
                                         warning=[])
 
             mutatex_file = mutatex_files[0]
-        
+
             try:
                 df = pd.read_csv(os.path.join(interactor_dir, mutatex_file))
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
             # create residue column
@@ -158,7 +158,7 @@ class MutateXBinding(Method):
         self.data = all_data
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class MutateXDNABinding(Method):
@@ -185,7 +185,7 @@ class RosettaDDGPredictionStability(Method):
                 mutation_data = pd.read_csv(os.path.join(dir_path, rosetta_file))
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv file. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
             mutation_data = mutation_data[mutation_data['state'] == 'ddg']
@@ -195,27 +195,33 @@ class RosettaDDGPredictionStability(Method):
 
             self.data = mutation_data
 
-            if len(warnings) > 0:
-                raise MAVISpMultipleError(warning=warnings, 
-                                        critical=[])
         else:
             csv_files = []
             rosetta_folder = os.listdir(dir_path)
-            # In order to browse the rosetta file, and access the cl folders
+
+            # Check if all available files are directories
             for folder in rosetta_folder:
-                if os.path.isdir(os.path.join(dir_path, folder)):
-                    ddg_file = os.listdir(os.path.join(dir_path, folder))
-                else:
-                    this_error = f"the folder {folder} is not a directory"
+                if not os.path.isdir(os.path.join(dir_path, folder)):
+                    this_error = f"{folder} in {dir_path} is not a directory"
                     raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
-                if len(ddg_file)!=1:
+
+                ddg_files = os.listdir(os.path.join(dir_path, folder))
+
+                # check one file per directory is available
+                if len(ddg_files) != 1:
                     this_error = f"multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
-            # Gather all csv files
 
-                csv_files.extend([os.path.join(dir_path, folder, file) for file in ddg_file if file.endswith(".csv")])
+                ddg_file = ddg_files[0]
+
+                if not os.path.splitext(ddg_file)[-1] == '.csv':
+                    this_error = f"file {ddg_file} in {dir_path}/{folder} doesn't have csv as extension"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                csv_files.append(os.path.join(dir_path, folder, ddg_file))
 
             mutation_data = pd.DataFrame()
             list_mutation_label = None
@@ -232,25 +238,26 @@ class RosettaDDGPredictionStability(Method):
                         raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
 
-                    # Allow to merge the data from the different cl folders
-                    mutation_data = pd.concat([mutation_data,tmp])
                 except Exception as e:
                     this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv files. Arguments:{e.args}"
                     raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
-            # Allow to merge the data from the different cl folders
+                # Allow to merge the data from the different cl folders
+                mutation_data = pd.concat([mutation_data, tmp])
+
+            # merge the data from the different cl folders
             mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
             # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
             mutation_data.sort_values(by=['mutation_label'], inplace=True)
             mutation_data = mutation_data.reset_index()
             mutation_data = mutation_data[['total_score', 'mutation_label']]
-            self.data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
-            self.data = self.data.set_index('mutation_label')
+            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
 
+            self.data = mutation_data.set_index('mutation_label')
 
-            if len(warnings) > 0:
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[])
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                    critical=[])
 
 
 
@@ -290,12 +297,12 @@ class RosettaDDGPredictionBinding(Method):
                                         warning=[])
 
             rosetta_file = rosetta_files[0]
-        
+
             try:
                 mutation_data = pd.read_csv(os.path.join(interactor_dir, rosetta_file))
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv file. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
             mutation_data = mutation_data[mutation_data['state'] == 'ddg']
@@ -313,7 +320,7 @@ class RosettaDDGPredictionBinding(Method):
         self.data = all_data
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class AlloSigma(Method):
@@ -371,7 +378,7 @@ class AlloSigma(Method):
             if len(allosigma2_files) not in [1, 2, 3]:
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the AlloSigma2 directory {allosigma2_dir}/{dirname} should contain only 2 or 3 files")],
                                         warning=[])
-                                        
+
             if 'allosigma_mut.txt' not in allosigma2_files:
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")],
                                         warning=[])
@@ -384,7 +391,7 @@ class AlloSigma(Method):
                 all_mut = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'allosigma_mut.txt'), sep='\t')
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings, 
+                raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
             all_mut = all_mut.drop_duplicates()
@@ -396,7 +403,7 @@ class AlloSigma(Method):
                     filt_down = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'filtered_down_mutations.tsv'), sep='\t', index_col=0)
                 except Exception as e:
                     this_error = f"Exception {type(e).__name__} occurred when parsing filtered_down_mutations.tsv. Arguments:{e.args}"
-                    raise MAVISpMultipleError(warning=warnings, 
+                    raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
 
                 filt_down['mutations'] = filt_down['mutations'].str.split()
@@ -410,7 +417,7 @@ class AlloSigma(Method):
                     filt_up   = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'filtered_up_mutations.tsv'), sep='\t', index_col=0)
                 except Exception as e:
                     this_error = f"Exception {type(e).__name__} occurred when parsing filtered_up_mutations.tsv. Arguments:{e.args}"
-                    raise MAVISpMultipleError(warning=warnings, 
+                    raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
 
                 filt_up['mutations'] = filt_up['mutations'].str.split()
@@ -427,11 +434,11 @@ class AlloSigma(Method):
                                             'allosigma-consequence' : f'AlloSigma{self.version} predicted consequence'}).fillna('-')
 
             allosigma2_data.append(all_mut)
-        
+
         self.data = pd.concat(allosigma2_data)
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings, 
+            raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
 class RaSP(Method):
