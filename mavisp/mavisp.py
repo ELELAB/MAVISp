@@ -236,8 +236,8 @@ def main():
     dataset_tables_path = out_path / 'dataset_tables'
     dataset_tables_path.mkdir(exist_ok=True)
 
-   # Generate a csv file that contains the number of mutations and the date of the run
-     time = strftime("%Y-%m-%d", gmtime())
+    # Generate a csv file that contains the number of mutations and the date of the run
+    time = strftime("%Y-%m-%d", gmtime())
 
            # Group the rows by the "system" column and count the number of unique modes for each group
     grouped = mfs.dataset_table.groupby('system')['mode'].nunique()
