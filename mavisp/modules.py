@@ -67,6 +67,7 @@ class MultiMethodDataType(DataType):
         warnings = []
 
         method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        method_dirs = [ d for d in method_dirs if os.path.isdir(os.path.join(self.data_dir, self.module_dir, d)) ]
 
         if not set(method_dirs).issubset(set(self.methods.keys())):
             this_error = f"One or more {self.name} methods are not supported"
@@ -196,12 +197,38 @@ class LocalInteractions(MultiMethodDataType):
         else:
             e = None
 
+        module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if 'sasa.rsa' not in module_dir_files:
+            this_error = f"required sasa.rsa file not found in {self.module_dir}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                )
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        rsa['resn'] = rsa['resn'].astype("string")
+        rsa = rsa.set_index('resn')
+        self.data['res_num'] = self.data.index.str[1:-1]
+        self.data = self.data.join(rsa, on='res_num')
+
         common_interactors = set.intersection(*[ set(m.interactors) for k, m in self.methods.items() ])
         if np.any([ len(m.interactors) != len(common_interactors) for k, m in self.methods.items()]):
             warnings.append(MAVISpWarningError("All supported methods must be available to generate the classification for a specific interactor"))
 
         for ci in common_interactors:
             self.data[f'Local Int. classification ({ci})'] = self.data.apply(self._generate_local_interactions_classification, axis=1, ci=ci)
+
+        self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
         if e is None and len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -215,6 +242,8 @@ class LocalInteractions(MultiMethodDataType):
         colnames = [ f"{m.type} (Binding with {ci}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
+            if row['sas_sc_rel'] >= 20:
+                return 'Uncertain'
             return pd.NA
         if np.all( [ row[h] > stab_co for h in colnames ] ):
             return 'Destabilizing'
@@ -241,12 +270,38 @@ class LocalInteractionsDNA(MultiMethodDataType):
         else:
             e = None
 
+        module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if 'sasa.rsa' not in module_dir_files:
+            this_error = f"required sasa.rsa file not found in {self.module_dir}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                )
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        rsa['resn'] = rsa['resn'].astype("string")
+        rsa = rsa.set_index('resn')
+        self.data['res_num'] = self.data.index.str[1:-1]
+        self.data = self.data.join(rsa, on='res_num')
+
         keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
 
         if len(keys) != 1:
             warnings.append(MAVISpWarningError("Exactly one data column expected to calculate classification"))
 
         self.data['Local Int. classification With DNA'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1)
+
+        self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
         if e is None and len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -267,6 +322,8 @@ class LocalInteractionsDNA(MultiMethodDataType):
         header = keys[0]
 
         if pd.isna(row[header]):
+            if row['sas_sc_rel'] >= 20:
+                return 'Uncertain'
             return pd.NA
 
         if row[header] > stab_co:
