@@ -111,22 +111,36 @@ class Stability(MultiMethodDataType):
                                       critical=[MAVISpCriticalError(this_error)])
         method = tmp[0]
 
-        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
+        models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
         if len(tmp) != 1:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        model = tmp[0]
 
-        method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+        all_methods = []
 
-        if not set(method_dirs).issubset(set(self.methods.keys())):
-            this_error = f"One or more {self.name} methods are not supported"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
+        # check that:
+            # all methods are supported
+            # there are no duplicated methods (possible since they are in different model dirs)
+        for model in models:
+            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+            if not set(method_dirs).issubset(set(self.methods.keys())):
+                this_error = f"One or more {self.name} methods are not supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+            all_methods.extend(method_dirs)
 
-        for method_dir in method_dirs:
-            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-            self.data = self.data.join(self.methods[method_dir].data)
+        if len(all_methods) != len(set(all_methods)):
+                this_error = f"Only using one single instance of any given method is supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        for model in models:
+
+            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+
+            for method_dir in method_dirs:
+                self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                self.data = self.data.join(self.methods[method_dir].data)
 
         keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
@@ -682,7 +696,7 @@ class ClinVar(DataType):
         if len(set(missing_muts).intersection(set(clinvar_found['variant_name']))) > 0:
             warnings.append(MAVISpWarningError(f"some mutations are both in the ClinVar annotation and not found file"))
 
-        if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns): 
+        if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns):
             this_error = f"The variants_output.csv file must contain either the clinvar_code or the variant_id column"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
