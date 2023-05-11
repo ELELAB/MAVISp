@@ -57,7 +57,7 @@ legend = f"""legend:
 {colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
     = module_name    this module is not available for this protein"""
 
-module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'sas', 'cancermuts', 'references', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme']
+module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme']
 
 def main():
 
@@ -267,7 +267,9 @@ def main():
         if len(r['criticals']) > 0:
             continue
 
-        this_df = pd.DataFrame({'Mutation': r['mutations']})
+        this_df = r['mutations']
+        this_df = this_df.rename(columns={'mutation' : 'Mutation',
+                                          'PMID'     : 'References'})
         this_df = this_df.set_index('Mutation')
 
         for mod_name in module_order:
@@ -276,5 +278,11 @@ def main():
                 continue
             this_df = this_df.join(mod.get_dataset_view())
 
+        # move Reference column to last
+        this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
+
+        # fill NAs
         this_df = this_df.fillna(pd.NA)
+
+        # save final dataframe
         this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")

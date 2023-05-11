@@ -34,7 +34,6 @@ class MAVISpFileSystem:
     supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
     supported_interaction_methods = ['foldx5']
     supported_modules = [ CancermutsTable,
-                          References,
                           PTMs,
                           LongRange,
                           Stability,
@@ -91,8 +90,8 @@ class MAVISpFileSystem:
 
                 try:
                     mutation_list = self._parse_mutation_list(system, mode)
-                except:
-                    self.log.error(f"Couldn't parse mutation list table for {system}, {mode}")
+                except Exception as e:
+                    self.log.error(e)
                     mutation_list = None
 
                 try:
@@ -173,17 +172,21 @@ class MAVISpFileSystem:
         mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', most_recent_mut_file)
 
         try:
-            with open(mut_path) as fh:
-                lines = fh.read().splitlines()
-        except IOError:
-            log.error("Couldn't parse mutation list {mut_path}")
-            raise IOError
+            mutations = pd.read_csv(mut_path, delim_whitespace=True)
+        except Exception as e:
+            raise TypeError(f"Couldn't parse mutation list {mut_path} with error {e}")
 
-        # remove duplicates, sort, remove empty lines
-        lines = sorted(list(set(lines)), key=lambda x: int(x[1:-1]))
-        mutations = list(filter(lambda x: len(x) != 0, lines))
+        # remove duplicates, sort
+        mutations = mutations.drop_duplicates(ignore_index=True)
+        if len(mutations['mutation']) != mutations['mutation'].unique().shape[0]:
+            raise TypeError(f"{system}, {mode}: Duplicate mutations with inconsistent references in the mutation list")
 
-        self.log.debug(f"found mutations: {mutations}")
+        mutations['res_num'] = mutations['mutation'].str[1:-1].astype(int)
+        mutations['alt'] = mutations['mutation'].str[-1]
+        mutations = mutations.sort_values(['res_num', 'alt'])
+        mutations = mutations.drop(columns=['res_num', 'alt'])
+
+        self.log.debug(f"found mutations: {mutations['mutation'].tolist()}")
 
         return mutations
 
@@ -272,9 +275,6 @@ class MAVISpFileSystem:
 
             self.log.info(f"Gathering data for {r['system']} {r['mode']}")
 
-            this_df = pd.DataFrame({'Mutation': mutations})
-            this_df = this_df.set_index('Mutation')
-
             analysis_basepath = os.path.join(self.data_dir, system, mode)
 
             # for every available module:
@@ -285,7 +285,7 @@ class MAVISpFileSystem:
                     try:
                         self.log.info(f"processing module {mod.name} for {system}, {mode}")
                         this_module = mod(analysis_basepath)
-                        this_module.ingest(mutations)
+                        this_module.ingest(mutations['mutation'].tolist())
 
                     except MAVISpMultipleError as e:
                         mavisp_errors[mod.name].extend(e.critical)
