@@ -460,6 +460,7 @@ class PTMs(DataType):
             return 'unknown'
 
     def ingest(self, mutations):
+
         warnings = []
 
         expected_files = ['summary_stability.txt', 'sasa.rsa', 'metatable.csv']
@@ -504,31 +505,51 @@ class PTMs(DataType):
         # check if all the required columns are present
         required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'linear_motif']
         if not set(required_columns).issubset(cancermuts.columns):
-            this_error = f"input table doesn't have all the required columns"
+            this_error = f"input Cancermuts table doesn't have all the required columns"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        # process table
-        in_slims = cancermuts[['aa_position', 'linear_motif']].drop_duplicates().set_index('aa_position')
-        in_slims['site_in_slim'] = ~ pd.isna(in_slims['linear_motif'])
 
+        # create final table
+        final_table = pd.DataFrame({'mutation' : mutations})
+        final_table['position'] = final_table['mutation'].str[1:-1].astype(int)
+        final_table = final_table.set_index('mutation')
+
+        # join cancermuts info
+        cancermuts['mutation']  = cancermuts['ref_aa']\
+                                + cancermuts['aa_position'].astype(str)\
+                                + cancermuts['alt_aa']
+
+        # remove rows with no mutation defined
+        cancermuts = cancermuts[~ pd.isna(cancermuts['mutation'])]
+        cancermuts = cancermuts.set_index('mutation')
+
+        # define columns of interest and drop all the others
+        cancermuts['site_in_slim'] = ~ pd.isna(cancermuts['linear_motif'])
+        cancermuts = cancermuts[['phosphorylation_site', 'site_in_slim']]
+
+        # join cancermuts table to final table
+        final_table = final_table.join(cancermuts)
+
+        # join RSA data
+        final_table = final_table.join(rsa, on='position')
+
+        # process DDG information
         ptms['ref'] = ptms['mutation'].str[0]
         ptms['alt'] = ptms['mutation'].str[-1]
         ptms['number'] = ptms['mutation'].str[2:-1].astype(int)
         ptms['mutation'] = ptms['ref'] + ptms['number'].astype(str) + ptms['alt']
 
-        ptms = ptms.set_index('number')
-        ptms = ptms.join(rsa, on='number')
+        is_ptm = ptms.apply(lambda r: r['alt'].islower(), axis=1)
+        ptm_muts    = ptms[  is_ptm]
+        cancer_muts = ptms[~ is_ptm]
 
-        ptm_muts = ptms[ptms.apply(lambda r: r['alt'].islower(), axis=1)]
-        cancer_muts = ptms[~ ptms.apply(lambda r: r['alt'].islower(), axis=1)]
-
+        # process DDG PTM information
         if not set(ptm_muts['alt']).issubset(set(self.allowed_ptms)):
             warnings.append(MAVISpWarningError(f"in summary.txt, some of the mutations were not to {', '.join(self.allowed_ptms)}. These will be filtered out."))
-
             cancer_muts = cancer_muts[cancer_muts.apply(lambda r: r['alt'] in self.allowed_ptms)]
 
-        if not set(ptm_muts.index).issubset(set(cancer_muts.index)):
+        if not set(ptm_muts.number.unique()).issubset(set(cancer_muts.number.unique())):
             this_error = f"in summary.txt, some cancer mutations had no corresponding PTM mutation"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
@@ -538,32 +559,38 @@ class PTMs(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        cancer_muts = cancer_muts.join(in_slims)
 
-        cancer_muts = cancer_muts.rename(columns={'ddg_avg' : 'ddg_mut'})
-        cancer_muts = cancer_muts.join(ptm_muts[['ddg_avg']]).rename(columns={'ddg_avg' : 'ddg_ptm'})
+        ptm_muts = ptm_muts.set_index('number')
+        ptm_muts = ptm_muts[['ddg_avg']].rename(columns={'ddg_avg' : 'ddg_ptm'})
+        final_table = final_table.join(ptm_muts, on='position')
 
-        cancer_muts = cancer_muts.set_index('mutation')
+        # process DDG mutation information
+        cancer_muts = cancer_muts[['mutation', 'ddg_avg']].rename(columns={'ddg_avg' : 'ddg_mut'}).set_index('mutation')
+        final_table = final_table.join(cancer_muts, on='mutation')
 
-        cancer_muts['regulation'] = cancer_muts.apply(self._assign_regulation_class, axis=1)
+        final_table['cancer_mut_stab_class'] = final_table.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_mut', axis=1)
+        final_table['ptm_stab_class']        = final_table.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_ptm', axis=1)
 
-        cancer_muts['cancer_mut_stab_class'] = cancer_muts.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_mut', axis=1)
-        cancer_muts['ptm_stab_class'] = cancer_muts.apply(self._assign_ddg_stability_class, ddg_col_name='ddg_ptm', axis=1)
-        cancer_muts['stability'] = cancer_muts.apply(self._assign_stability_class, mut_col_name='cancer_mut_stab_class', ptm_col_name='ptm_stab_class', axis=1)
-        cancer_muts['function'] = cancer_muts.apply(self._assign_function_class, axis=1)
+        final_table['regulation'] = final_table.apply(self._assign_regulation_class, axis=1)
+        final_table['stability'] = final_table.apply(self._assign_stability_class,
+                                                    mut_col_name='cancer_mut_stab_class',
+                                                    ptm_col_name='ptm_stab_class',
+                                                    axis=1)
+        final_table['function'] = final_table.apply(self._assign_function_class, axis=1)
 
-        cancer_muts['PTMs'] = 'P'
-        pd.set_option('display.max_columns', None)
+        final_table = final_table[[ 'phosphorylation_site', 'sas_sc_rel',
+                                    'ddg_ptm', 'site_in_slim', 'regulation',
+                                    'stability', 'function' ]]
 
-        cancer_muts = cancer_muts[['PTMs', 'sas_sc_rel', 'ddg_ptm', 'regulation', 'stability', 'function']]
 
-        self.data = cancer_muts.rename(columns={'sas_sc_rel'      : "PTM residue SASA (%)" ,
-                                                'ddg_ptm'         : "Change in stability with PTM (FoldX5, kcal/mol)",
-                                                'regulation'      : "PTM effect in regulation",
-                                                'stability'       : "PTM effect in stability" ,
-                                                'function'        : "PTM effect in function",
-                                                'site in slim'    : "is PTM site part of SLiM",
-                                                'effect_function' : "PTM effect in function"})
+        self.data = final_table.rename(columns={'phosphorylation_site' : 'PTMs',
+                                                'sas_sc_rel'           : "PTM residue SASA (%)" ,
+                                                'ddg_ptm'              : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'regulation'           : "PTM effect in regulation",
+                                                'stability'            : "PTM effect in stability" ,
+                                                'function'             : "PTM effect in function",
+                                                'site_in_slim'         : "is PTM site part of SLiM",
+                                                'effect_function'      : "PTM effect in function"})
 
 class CancermutsTable(DataType):
 
