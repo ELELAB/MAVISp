@@ -410,20 +410,40 @@ class PTMs(DataType):
                         'Y' : 'y'}
 
     def _assign_regulation_class(self, row):
-        # case S to T or T to S
-        if set([row['alt'], row['ref']]) == set(['S', 'T']):
-            return 'neutral'
-        # cases:
-            # any mutation sas < 20% (excluding neutral cases)
-            # any T/S to Y
-            # any Y to T/S
-        elif row['sas_sc_rel'] < 20.0 or row['alt'] == 'Y' or (row['ref'] == 'Y' and (row['alt'] in ['S', 'T'])):
-            return 'unknown'
+        ref = row.name[0]
+        alt = row.name[-1]
+        r_a = set([ref, alt]) # set of WT and mutation residue types
+        S_T = set(['S', 'T']) # set of S and T residue types
+        allowed_wt_res = self.allowed_ptm_muts.keys()
 
-        # cases:
-            # any mutation that is not T to S, S to T, T/S to Y or Y to T/S and SASA >=20%:
-        elif row['sas_sc_rel'] >= 20.0:
-            return 'damaging'
+        # if site is not a known PTM
+        if row['phosphorylation_site'] != 'P':
+            # if wt residue is S,T,Y or mutation is NOT S->T or T->S
+            # return unknown, otherwise neutral
+            if ref in allowed_wt_res and not r_a == S_T:
+                return 'unkown'
+            else:
+                return 'neutral'
+
+        # if site is a known PTM,
+        else:
+            # if S to T or T to S, return neutral
+            if r_a == S_T:
+                return 'neutral'
+
+            # otherwise, cases:
+                # any mutation sas < 20% or
+                # any T/S to Y or
+                # any Y to T/S
+                # then return unknown
+            elif row['sas_sc_rel'] < 20.0 or\
+            (ref in S_T and alt == 'Y') or\
+            (ref == 'Y' and (alt in S_T)):
+                return 'unknown'
+
+            # otherwise, if mutation sas >= 20% return damaging
+            elif row['sas_sc_rel'] >= 20.0:
+                return 'damaging'
 
         return '???'
 
