@@ -105,63 +105,57 @@ class Stability(MultiMethodDataType):
 
         structure_ID, residue_range = tmp[0].split("_", maxsplit=1)
 
+        # tmp is equal to the list of methods
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
-        if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-        method = tmp[0]
 
-        models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
-        if len(tmp) != 1:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        all_methods = []
+        # We loop over the methods
+        for method in tmp:
+            # all_methods is a list of all the methods in the folder, it is define for every method, so it is reset to empty list and we can checc if there is no duplicated methods
+            all_methods = []
+            models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
 
         # check that:
             # all methods are supported
             # there are no duplicated methods (possible since they are in different model dirs)
-        for model in models:
-            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
-            if not set(method_dirs).issubset(set(self.methods.keys())):
-                this_error = f"One or more {self.name} methods are not supported"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-            all_methods.extend(method_dirs)
+            for model in models:
+                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+                if not set(method_dirs).issubset(set(self.methods.keys())):
+                    this_error = f"One or more {self.name} methods are not supported"
+                    raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+                all_methods.extend(method_dirs)
+                if len(all_methods) != len(set(all_methods)):
+                                this_error = f"Only using one single instance of any given method is supported"
+                                raise MAVISpMultipleError(warning=warnings,
+                                                        critical=[MAVISpCriticalError(this_error)])
+            for model in models:
 
-        if len(all_methods) != len(set(all_methods)):
-                this_error = f"Only using one single instance of any given method is supported"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-        for model in models:
-
-            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
-
-            for method_dir in method_dirs:
-                self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-                self.data = self.data.join(self.methods[method_dir].data)
+                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+                for method_dir in method_dirs:
+                    self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    self.data = self.data.join(self.methods[method_dir].data, rsuffix=" with  " + f'{method}' + " method")
 
         keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
         # check if we have FoldX column
-        foldx_col = [k for k in keys if 'FoldX' in k]
-        if len(foldx_col) == 1:
-            foldx_header = foldx_col[0]
+        if any(['FoldX' in k for k in keys]):
+            # We have multiple methods now, so we have multiple FoldX columns and we need to collect each of them (same for Rosetta and RaSP)
+            foldx_cols = [k for k in keys if 'FoldX' in k]
+            for foldx_col in foldx_cols:
+                foldx_header = foldx_col
         else:
             foldx_header = None
 
         if any(['Rosetta' in k for k in keys]):
-            rosetta_col = [k for k in keys if 'Rosetta' in k]
-            assert len(rosetta_col) == 1
-            rosetta_header = rosetta_col[0]
+            rosetta_cols = [k for k in keys if 'Rosetta' in k]
+            for rosetta_col in rosetta_cols:
+                rosetta_header = rosetta_col
         else:
             rosetta_header = None
-
         if any(['RaSP' in k for k in keys]):
-            rasp_col = [k for k in keys if 'RaSP' in k]
-            assert len(rasp_col) == 1
-            rasp_header = rasp_col[0]
+            rasp_cols = [k for k in keys if 'RaSP' in k]
+            for rasp_col in rasp_cols:
+                rasp_header = rasp_col
         else:
             rasp_header = None
 

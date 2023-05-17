@@ -207,10 +207,9 @@ class RosettaDDGPredictionStability(Method):
                                                 critical=[MAVISpCriticalError(this_error)])
 
                 ddg_files = os.listdir(os.path.join(dir_path, folder))
-
                 # check one file per directory is available
                 if len(ddg_files) != 1:
-                    this_error = f"multiples files found in {dir_path}; only one expected"
+                    this_error = f"zero or multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
