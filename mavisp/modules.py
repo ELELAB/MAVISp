@@ -463,15 +463,30 @@ class PTMs(DataType):
 
     def _assign_stability_class(self, row, mut_col_name, ptm_col_name):
 
-        if pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
+        # if WT residue is not PTMable, mutation is neutral
+        if not row.name[0] in self.allowed_ptm_muts.keys():
+            return 'neutral'
+
+        # otherwise if site is not a known PTM, return NA
+        elif row['phosphorylation_site'] != 'P':
             return pd.NA
 
-        if row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
-            return 'Uncertain'
+        # otherwise if either classification is NA, return NA
+        elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
+            return pd.NA
+
+        # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
+        elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
+            return 'uncertain'
+
+        # otherwise, if PTM and mut they are classified the same, return Neutral.
+        # if they are not classified the same, return damaging
         elif row[mut_col_name] == row[ptm_col_name]:
-            return 'Neutral'
+            return 'neutral'
         else:
-            return 'Damaging'
+            return 'damaging'
+
+        return '???'
 
     def _assign_function_class(self, row):
         if row['site_in_slim']:
