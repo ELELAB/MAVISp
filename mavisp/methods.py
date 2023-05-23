@@ -81,14 +81,20 @@ class MutateXBinding(Method):
 
     unit = "kcal/mol"
     type = "Local Int."
-    chain = "A"
+    heterodimer_chains = set(['A'])
+    homodimer_chains   = set(['AB'])
+    target_chain       = 'A'
     measure = "Binding with"
+    complex_status = "heterodimer"
 
-    def __init__(self, version):
+    def __init__(self, version, complex_status=None):
 
         super().__init__(version)
 
-        self.interactors = None
+        if complex_status is not None:
+            self.complex_status = complex_status
+
+        self.interactors = []
 
     def parse(self, dir_path):
 
@@ -99,7 +105,7 @@ class MutateXBinding(Method):
 
         if len(interactors) == 0:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("no interactor folders found")],
-                                      warning=[])
+                                      warning=warnings)
 
         all_data = None
 
@@ -111,7 +117,7 @@ class MutateXBinding(Method):
 
             if len(mutatex_files) != 1:
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"zero or multiple files found in {interactor_dir}; exactly one expected")],
-                                        warning=[])
+                                        warning=warnings)
 
             mutatex_file = mutatex_files[0]
 
@@ -125,8 +131,17 @@ class MutateXBinding(Method):
             # create residue column
             df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
 
-            if self.chain is not None:
-                df = df[ df['chain ID'] == self.chain ]
+            # detect and handle homodimer case
+            chains = set(df['chain ID'].unique())
+
+            if self.target_chain in chains:
+                df = df[ df['chain ID'] == self.target_chain ]
+
+            elif set(df['chain ID'].unique()) != self.homodimer_chains:
+                message = "chain ID in FoldX energy file must be either A or B (heterodimer case) or AB (homodimer case)"
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(message)],
+                                          warning=[])
+
 
             df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
@@ -148,7 +163,7 @@ class MutateXBinding(Method):
             else:
                 measure = f"{self.measure} "
 
-            df = df.rename(columns={0 : f"{self.type} ({measure}{interactor}, {self.version}, {self.unit})"})
+            df = df.rename(columns={0 : f"{self.type} ({measure}{interactor}, {self.complex_status}, {self.version}, {self.unit})"})
 
             if all_data is None:
                 all_data = df
@@ -156,6 +171,7 @@ class MutateXBinding(Method):
                 all_data = all_data.join(df, how='outer')
 
         self.data = all_data
+
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -165,35 +181,61 @@ class MutateXDNABinding(Method):
 
     unit = "kcal/mol"
     type = "Local Int. With DNA"
-    chain = "A"
+    heterodimer_chains = set(['A'])
+    homodimer_chains   = set(['AB'])
+    target_chain       = 'A'
     measure = ""
+    complex_status = "heterodimer"
 
     parse = MutateXBinding.parse
+
 class RosettaDDGPredictionStability(Method):
 
     unit = "kcal/mol"
     type = "Stability"
 
+    def _parse_aggregate_csv(self, csvf, warnings):
+        try:
+            df = pd.read_csv(csvf)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        df = df[df['state'] == 'ddg']
+        df = df[['total_score', 'mutation_label']]
+
+        # homodimer mode and heterodimer mode can be treated similarly
+        df['mutation_label'] = df['mutation_label'].str.split('_')
+
+        # check if all mutation labels have the same number of residues
+        if len(set(df['mutation_label'].apply(len))) != 1:
+            this_error = f"RosettaDDG aggregate file contains values for both homodimer and heterodimer modes"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # check if all homodimer modes refer to the same residue (e.g. there are no pairs with different mutations)
+        if not np.all(df['mutation_label'].apply(lambda r: len(set(r))) == 1):
+            this_error = f"RosettaDDG aggregate file contains entries that refer to residues with different numbering"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        df['mutation_label'] = df['mutation_label'].str[0]
+        df = df.set_index('mutation_label')
+        df = df[['total_score']]
+
+        return df
+
     def parse(self, dir_path):
 
         warnings = []
+
         rosetta_files = os.listdir(dir_path)
+
         if len(rosetta_files) == 1 and os.path.isfile(os.path.join(dir_path, rosetta_files[0])):
             rosetta_file = rosetta_files[0]
 
-            try:
-                mutation_data = pd.read_csv(os.path.join(dir_path, rosetta_file))
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv file. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-            mutation_data = mutation_data[mutation_data['state'] == 'ddg']
-            mutation_data = mutation_data.set_index('mutation_label')
-            mutation_data = mutation_data[['total_score']]
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
-
-            self.data = mutation_data
+            mutation_data = self._parse_aggregate_csv(os.path.join(dir_path, rosetta_file), warnings)
 
         else:
             csv_files = []
@@ -207,10 +249,9 @@ class RosettaDDGPredictionStability(Method):
                                                 critical=[MAVISpCriticalError(this_error)])
 
                 ddg_files = os.listdir(os.path.join(dir_path, folder))
-
                 # check one file per directory is available
                 if len(ddg_files) != 1:
-                    this_error = f"multiples files found in {dir_path}; only one expected"
+                    this_error = f"zero or multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
@@ -223,61 +264,62 @@ class RosettaDDGPredictionStability(Method):
 
                 csv_files.append(os.path.join(dir_path, folder, ddg_file))
 
-            mutation_data = pd.DataFrame()
             list_mutation_label = None
+            mutation_data = pd.DataFrame()
 
-            for file in csv_files:
-                try:
-                    tmp = pd.read_csv(file)
-                    tmp = tmp[tmp['state'] == 'ddg']
-                    # Check if the mutation labels are the same in the different csv files
-                    if list_mutation_label is None:
-                        list_mutation_label = set(tmp['mutation_label'])
-                    if not list_mutation_label == set((tmp['mutation_label'])):
-                        this_error = f"the mutation labels are not the same in the different csv files"
-                        raise MAVISpMultipleError(warning=warnings,
-                                                critical=[MAVISpCriticalError(this_error)])
+            for fname in csv_files:
+                tmp = self._parse_aggregate_csv(fname, warnings)
 
-                except Exception as e:
-                    this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv files. Arguments:{e.args}"
+                # Check if the mutation labels are the same in the different csv files
+                if list_mutation_label is None:
+                    list_mutation_label = set(tmp['mutation_label'])
+                elif list_mutation_label != set((tmp['mutation_label'])):
+                    this_error = f"the mutation labels are not the same in the different csv files"
                     raise MAVISpMultipleError(warning=warnings,
-                                                critical=[MAVISpCriticalError(this_error)])
+                                            critical=[MAVISpCriticalError(this_error)])
+
                 # Allow to merge the data from the different cl folders
                 mutation_data = pd.concat([mutation_data, tmp])
 
             # merge the data from the different cl folders
             mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
-            # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
-            mutation_data.sort_values(by=['mutation_label'], inplace=True)
-            mutation_data = mutation_data.reset_index()
-            mutation_data = mutation_data[['total_score', 'mutation_label']]
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
 
-            self.data = mutation_data.set_index('mutation_label')
+        # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
+        mutation_data = mutation_data.sort_values(by=['mutation_label'])
+        mutation_data = mutation_data.reset_index()
+        mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
+
+        self.data = mutation_data.set_index('mutation_label')
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
-                                    critical=[])
-
-
+                                      critical=[])
 
 class RosettaDDGPredictionBinding(Method):
 
     unit = "kcal/mol"
     type = "Local Int."
     chain = 'A'
+    complex_status = 'heterodimer'
 
-    def __init__(self, version):
+    _parse_aggregate_csv = RosettaDDGPredictionStability._parse_aggregate_csv
+
+    def __init__(self, version, complex_status=None):
 
         super().__init__(version)
 
-        self.interactors = None
+        if complex_status is not None:
+            self.complex_status = complex_status
+
+        self.interactors = []
 
     def parse(self, dir_path):
+        print("AAAAHUMEINAAAA")
 
         warnings = []
 
         interactors = os.listdir(dir_path)
+        print(dir_path, interactors)
         self.interactors = interactors
 
         if len(interactors) == 0:
@@ -289,7 +331,6 @@ class RosettaDDGPredictionBinding(Method):
         for interactor in interactors:
 
             interactor_dir = os.path.join(dir_path, interactor)
-
             rosetta_files = os.listdir(interactor_dir)
 
             if len(rosetta_files) != 1:
@@ -297,20 +338,8 @@ class RosettaDDGPredictionBinding(Method):
                                         warning=[])
 
             rosetta_file = rosetta_files[0]
-
-            try:
-                mutation_data = pd.read_csv(os.path.join(interactor_dir, rosetta_file))
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the Rosetta csv file. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-            mutation_data = mutation_data[mutation_data['state'] == 'ddg']
-            if self.chain is not None:
-                mutation_data = mutation_data[ mutation_data['mutation'].str[0] == self.chain ]
-            mutation_data = mutation_data.set_index('mutation_label')
-            mutation_data = mutation_data[['total_score']]
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.version}, {self.unit})'})
+            mutation_data = self._parse_aggregate_csv(os.path.join(interactor_dir, rosetta_file), warnings)
+            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
             if all_data is None:
                 all_data = mutation_data
