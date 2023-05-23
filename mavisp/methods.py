@@ -314,7 +314,6 @@ class RosettaDDGPredictionBinding(Method):
         self.interactors = []
 
     def parse(self, dir_path):
-        print("AAAAHUMEINAAAA")
 
         warnings = []
 
