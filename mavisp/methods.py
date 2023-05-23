@@ -318,7 +318,6 @@ class RosettaDDGPredictionBinding(Method):
         warnings = []
 
         interactors = os.listdir(dir_path)
-        print(dir_path, interactors)
         self.interactors = interactors
 
         if len(interactors) == 0:
