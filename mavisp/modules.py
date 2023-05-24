@@ -132,43 +132,42 @@ class Stability(MultiMethodDataType):
 
                 method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
                 for method_dir in method_dirs:
-                    self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-                    self.data = self.data.join(self.methods[method_dir].data, rsuffix=" with  " + f'{method}' + " method")
+                    parsed_data = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    self.data = self.data.join(parsed_data, rsuffix= " using " + f'{method}' + " method")
 
-        keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
+            keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
-        # check if we have FoldX column
-        if any(['FoldX' in k for k in keys]):
-            # We have multiple methods now, so we have multiple FoldX columns and we need to collect each of them (same for Rosetta and RaSP)
-            foldx_cols = [k for k in keys if 'FoldX' in k]
-            for foldx_col in foldx_cols:
-                foldx_header = foldx_col
-        else:
-            foldx_header = None
+            # check if we have FoldX column
+            if any(['FoldX' in k for k in keys]):
+                foldx_cols = [k for k in keys if 'FoldX' in k]
+                for foldx_col in foldx_cols:
+                    foldx_header = foldx_col
+            else:
+                foldx_header = None
 
-        if any(['Rosetta' in k for k in keys]):
-            rosetta_cols = [k for k in keys if 'Rosetta' in k]
-            for rosetta_col in rosetta_cols:
-                rosetta_header = rosetta_col
-        else:
-            rosetta_header = None
-        if any(['RaSP' in k for k in keys]):
-            rasp_cols = [k for k in keys if 'RaSP' in k]
-            for rasp_col in rasp_cols:
-                rasp_header = rasp_col
-        else:
-            rasp_header = None
+            if any(['Rosetta' in k for k in keys]):
+                rosetta_cols = [k for k in keys if 'Rosetta' in k]
+                for rosetta_col in rosetta_cols:
+                    rosetta_header = rosetta_col
+            else:
+                rosetta_header = None
+            if any(['RaSP' in k for k in keys]):
+                rasp_cols = [k for k in keys if 'RaSP' in k]
+                for rasp_col in rasp_cols:
+                    rasp_header = rasp_col
+            else:
+                rasp_header = None
 
-        # check if we have both FoldX and Rosetta/RaSP col
-        if rosetta_header is not None and foldx_header is not None:
-            self.data['Stability classification (Rosetta, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
-        else:
-            warnings.append(MAVISpWarningError("Stability classification (Rosetta, FoldX) can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+            # check if we have both FoldX and Rosetta/RaSP col
+            if rosetta_header is not None and foldx_header is not None:
+                self.data['Stability classification (Rosetta, FoldX) with  ' + f'{method}' + " method"] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+            else:
+                warnings.append(MAVISpWarningError("Stability classification (Rosetta, FoldX) for " + f'{method}' + " method can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
 
-        if rasp_header is not None and foldx_header is not None:
-            self.data['Stability classification (RaSP, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
-        else:
-            warnings.append(MAVISpWarningError("Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+            if rasp_header is not None and foldx_header is not None:
+                self.data['Stability classification (RaSP, FoldX)  with  ' + f'{method}' + " method"] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+            else:
+                warnings.append(MAVISpWarningError("Stability classification (RaSP, FoldX) for " + f'{method}' + " method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,

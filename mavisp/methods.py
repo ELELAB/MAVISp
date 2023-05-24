@@ -71,11 +71,10 @@ class MutateXStability(Method):
         df = df.drop(['residue', 'level_1'], axis=1)
         df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit})"})
 
-        self.data = df
-
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        return df
 
 class MutateXBinding(Method):
 
@@ -155,11 +154,10 @@ class MutateXBinding(Method):
             else:
                 all_data = all_data.join(df, how='outer')
 
-        self.data = all_data
-
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        return all_data
 
 class MutateXDNABinding(Method):
 
@@ -251,12 +249,14 @@ class RosettaDDGPredictionStability(Method):
             mutation_data = mutation_data.reset_index()
             mutation_data = mutation_data[['total_score', 'mutation_label']]
             mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
-
-            self.data = mutation_data.set_index('mutation_label')
+            mutation_data = mutation_data.set_index('mutation_label')
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                     critical=[])
+
+        return mutation_data
+
 
 
 
@@ -316,11 +316,10 @@ class RosettaDDGPredictionBinding(Method):
             else:
                 all_data = all_data.join(mutation_data, how='outer')
 
-        self.data = all_data
-
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        return all_data
 
 class AlloSigma(Method):
     name = "AlloSigma"
@@ -434,11 +433,10 @@ class AlloSigma(Method):
 
             allosigma2_data.append(all_mut)
 
-        self.data = pd.concat(allosigma2_data)
-
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        return pd.concat(allosigma2_data, axis=0)
 
 class RaSP(Method):
 
@@ -469,8 +467,7 @@ class RaSP(Method):
 
         mutation_data = mutation_data.rename(columns={'RaSP_ddG' : f"{self.type} ({self.version}, {self.unit})"})
 
-        self.data = mutation_data
-
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        return mutation_data
