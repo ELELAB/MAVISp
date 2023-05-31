@@ -110,7 +110,7 @@ class Stability(MultiMethodDataType):
 
         # We loop over the methods
         for method in tmp:
-            # all_methods is a list of all the methods in the folder, it is define for every method, so it is reset to empty list and we can checc if there is no duplicated methods
+            # all_methods is a list of all the methods (Rosetta,FoldX,RaSP) in the folder, it is defined for every method (nmr, cabsflex...), so it is reset to an empty list and we can check if there are no duplicated methods (FoldX,Rosetta).
             all_methods = []
             models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
 
@@ -124,6 +124,7 @@ class Stability(MultiMethodDataType):
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
                 all_methods.extend(method_dirs)
+
                 if len(all_methods) != len(set(all_methods)):
                                 this_error = f"Only using one single instance of any given method is supported"
                                 raise MAVISpMultipleError(warning=warnings,
@@ -132,42 +133,40 @@ class Stability(MultiMethodDataType):
 
                 method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
                 for method_dir in method_dirs:
-                    parsed_data = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-                    self.data = self.data.join(parsed_data, rsuffix= " using " + f'{method}' + " method")
+                    parsed_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    warnings += this_warnings
+                    self.data = self.data.join(parsed_data,rsuffix = f" using {method} method")
 
             keys = [ k for k in self.data.keys() if k.startswith('Stability') ]
 
             # check if we have FoldX column
             if any(['FoldX' in k for k in keys]):
                 foldx_cols = [k for k in keys if 'FoldX' in k]
-                for foldx_col in foldx_cols:
-                    foldx_header = foldx_col
+                foldx_header = foldx_cols[-1]
             else:
                 foldx_header = None
 
             if any(['Rosetta' in k for k in keys]):
                 rosetta_cols = [k for k in keys if 'Rosetta' in k]
-                for rosetta_col in rosetta_cols:
-                    rosetta_header = rosetta_col
+                rosetta_header =  rosetta_cols[-1]
             else:
                 rosetta_header = None
             if any(['RaSP' in k for k in keys]):
                 rasp_cols = [k for k in keys if 'RaSP' in k]
-                for rasp_col in rasp_cols:
-                    rasp_header = rasp_col
+                rasp_header = rasp_cols[-1]
             else:
                 rasp_header = None
 
             # check if we have both FoldX and Rosetta/RaSP col
             if rosetta_header is not None and foldx_header is not None:
-                self.data['Stability classification (Rosetta, FoldX) with  ' + f'{method}' + " method"] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+                self.data[f'Stability classification, {method}, (Rosetta, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
             else:
-                warnings.append(MAVISpWarningError("Stability classification (Rosetta, FoldX) for " + f'{method}' + " method can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+                warnings.append(MAVISpWarningError("Stability classification (Rosetta, FoldX) for {method} method can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
 
             if rasp_header is not None and foldx_header is not None:
-                self.data['Stability classification (RaSP, FoldX)  with  ' + f'{method}' + " method"] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+                self.data[f'Stability classification, {method}, (RaSP, FoldX)'] = self.data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
             else:
-                warnings.append(MAVISpWarningError("Stability classification (RaSP, FoldX) for " + f'{method}' + " method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+                warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
