@@ -426,7 +426,7 @@ class AlloSigma(Method):
             else:
                 filt_up = None
 
-            all_mut['allosigma-consequence'] = all_mut.apply(self._process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=1, axis=1)
+            all_mut['allosigma-consequence'] = all_mut.apply(self._process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=2, axis=1)
 
             all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
 
