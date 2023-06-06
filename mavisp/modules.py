@@ -75,8 +75,9 @@ class MultiMethodDataType(DataType):
                                       critical=[MAVISpCriticalError(this_error)])
 
         for method_dir in method_dirs:
-            self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, method_dir))
-            self.data = self.data.join(self.methods[method_dir].data)
+            data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, method_dir))
+            self.data = self.data.join(data)
+            warnings += this_warnings
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -175,7 +176,6 @@ class Stability(MultiMethodDataType):
                 warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
             self.data = self.data.join(model_data)
-
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
