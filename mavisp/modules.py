@@ -421,7 +421,7 @@ class PTMs(DataType):
             # if wt residue is S,T,Y or mutation is NOT S->T or T->S
             # return unknown, otherwise neutral
             if ref in allowed_wt_res and not r_a == S_T:
-                return 'unkown'
+                return 'unknown'
             else:
                 return 'neutral'
 
