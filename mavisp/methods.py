@@ -26,8 +26,6 @@ class Method(object):
     def __init__(self, version):
         self.version = version
 
-        self.data = None
-
 class MutateXStability(Method):
 
     unit = "kcal/mol"
@@ -71,11 +69,7 @@ class MutateXStability(Method):
         df = df.drop(['residue', 'level_1'], axis=1)
         df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit})"})
 
-        self.data = df
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        return df, warnings
 
 class MutateXBinding(Method):
 
@@ -155,11 +149,7 @@ class MutateXBinding(Method):
             else:
                 all_data = all_data.join(df, how='outer')
 
-        self.data = all_data
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        return all_data, warnings
 
 class MutateXDNABinding(Method):
 
@@ -193,8 +183,6 @@ class RosettaDDGPredictionStability(Method):
             mutation_data = mutation_data[['total_score']]
             mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
 
-            self.data = mutation_data
-
         else:
             csv_files = []
             rosetta_folder = os.listdir(dir_path)
@@ -207,10 +195,9 @@ class RosettaDDGPredictionStability(Method):
                                                 critical=[MAVISpCriticalError(this_error)])
 
                 ddg_files = os.listdir(os.path.join(dir_path, folder))
-
                 # check one file per directory is available
                 if len(ddg_files) != 1:
-                    this_error = f"multiples files found in {dir_path}; only one expected"
+                    this_error = f"zero or multiples files found in {dir_path}; only one expected"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
@@ -252,12 +239,10 @@ class RosettaDDGPredictionStability(Method):
             mutation_data = mutation_data.reset_index()
             mutation_data = mutation_data[['total_score', 'mutation_label']]
             mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
+            mutation_data = mutation_data.set_index('mutation_label')
 
-            self.data = mutation_data.set_index('mutation_label')
+        return mutation_data, warnings
 
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                    critical=[])
 
 
 
@@ -317,11 +302,7 @@ class RosettaDDGPredictionBinding(Method):
             else:
                 all_data = all_data.join(mutation_data, how='outer')
 
-        self.data = all_data
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        return all_data, warnings
 
 class AlloSigma(Method):
     name = "AlloSigma"
@@ -435,11 +416,7 @@ class AlloSigma(Method):
 
             allosigma2_data.append(all_mut)
 
-        self.data = pd.concat(allosigma2_data)
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        return pd.concat(allosigma2_data, axis=0), warnings
 
 class RaSP(Method):
 
@@ -470,8 +447,4 @@ class RaSP(Method):
 
         mutation_data = mutation_data.rename(columns={'RaSP_ddG' : f"{self.type} ({self.version}, {self.unit})"})
 
-        self.data = mutation_data
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        return mutation_data, warnings
