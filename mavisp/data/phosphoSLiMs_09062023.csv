@@ -22,7 +22,7 @@ LIG_FHA_2,FHA phosphopeptide ligands,T
 LIG_IRF3_LxIS_1,IRF-3 interaction and dimerisation motif,S
 LIG_LEDGF_IBM_1,LEDGF/P75 IBD binding site,S;T
 LIG_LIR_Gen_1,Atg8 protein family ligands,S;T;Y
-LIG_LIR_LC3C_4,Atg8 protein family ligands,"S,T,Y"
+LIG_LIR_LC3C_4,Atg8 protein family ligands,S;T;Y
 LIG_SH2_PTP2,Phosphotyrosine ligands bound by SH2 domains,Y
 LIG_SH2_SRC,Phosphotyrosine ligands bound by SH2 domains,Y
 LIG_SH2_STAT3,Phosphotyrosine ligands bound by SH2 domains,Y
