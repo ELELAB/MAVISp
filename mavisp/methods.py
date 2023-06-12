@@ -261,23 +261,22 @@ class RosettaDDGPredictionStability(Method):
 
                 # Check if the mutation labels are the same in the different csv files
                 if list_mutation_label is None:
-                    list_mutation_label = set(tmp['mutation_label'])
-                elif list_mutation_label != set((tmp['mutation_label'])):
+                    list_mutation_label = set(tmp.index)
+                elif list_mutation_label != set(tmp.index):
                     this_error = f"the mutation labels are not the same in the different csv files"
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
 
                 # Allow to merge the data from the different cl folders
-                mutation_data = pd.concat([mutation_data, tmp])
+                mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-            # merge the data from the different cl folders
-            mutation_data = mutation_data.groupby(["mutation_label"])[mutation_data.columns[1:]].agg('mean')
+            # merge the data from the different cl folders and keep average
+            ddg_colname = f'{self.type} ({self.version}, {self.unit})'
+            mutation_data[ddg_colname] = mutation_data.mean(axis=1)
+            mutation_data = mutation_data[[ddg_colname]]
+
             # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
-            mutation_data.sort_values(by=['mutation_label'], inplace=True)
-            mutation_data = mutation_data.reset_index()
-            mutation_data = mutation_data[['total_score', 'mutation_label']]
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} ({self.version}, {self.unit})'})
-            mutation_data = mutation_data.set_index('mutation_label')
+            mutation_data = mutation_data.sort_index()
 
         return mutation_data, warnings
 
