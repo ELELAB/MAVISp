@@ -1,0 +1,42 @@
+ELM_Identifier,Description,Residues
+DEG_SCF_FBW7_1,SCF ubiquitin ligase binding Phosphodegrons,T
+DEG_SCF_FBW7_2,SCF ubiquitin ligase binding Phosphodegrons,T
+DEG_SCF_FBXO31_1,SCF ubiquitin E3 ligase FBXO31 degron,S;T
+DOC_AGCK_PIF_1,AGC Kinase docking motif,S;T
+DOC_CKS1_1,Cks1 ligand,T
+DOC_PP2A_B56_1,PP2A holoenzyme B56-docking site,S;T
+DOC_PP4_MxPP_1,PP4 EVH1-binding docking motifs,S;T;Y
+DOC_USP7_MATH_1,USP7 binding motif,S
+DOC_USP7_MATH_2,USP7 binding motif,S
+DOC_USP7_UBL2_3,USP7 binding motif,S
+DOC_WW_Pin1_4,WW domain ligands,S;T
+LIG_14-3-3_CanoR_1,14-3-3 binding phosphopeptide motif,S;T
+LIG_14-3-3_ChREBP_3,14-3-3 binding phosphopeptide motif,S;T
+LIG_14-3-3_CterR_2,14-3-3 binding phosphopeptide motif,S;T
+LIG_BRCT_BRCA1_1,BRCT phosphopeptide ligands,S
+LIG_BRCT_BRCA1_2,BRCT phosphopeptide ligands,S
+LIG_BRCT_MDC1_1,BRCT phosphopeptide ligands,S
+LIG_CSK_EPIYA_1,EPIYA ligand motif for CSK-SH2,Y
+LIG_FHA_1,FHA phosphopeptide ligands,T
+LIG_FHA_2,FHA phosphopeptide ligands,T
+LIG_IRF3_LxIS_1,IRF-3 interaction and dimerisation motif,S
+LIG_LEDGF_IBM_1,LEDGF/P75 IBD binding site,S;T
+LIG_LIR_Gen_1,Atg8 protein family ligands,S;T;Y
+LIG_LIR_LC3C_4,Atg8 protein family ligands,S;T;Y
+LIG_SH2_PTP2,Phosphotyrosine ligands bound by SH2 domains,Y
+LIG_SH2_SRC,Phosphotyrosine ligands bound by SH2 domains,Y
+LIG_SH2_STAT3,Phosphotyrosine ligands bound by SH2 domains,Y
+LIG_SH2_STAT5,Phosphotyrosine ligands bound by SH2 domains,Y
+LIG_SH2_STAT6,Phosphotyrosine ligands bound by SH2 domains,Y
+LIG_SUMO_SIM_anti_2,SUMO interaction site,S;T
+LIG_SUMO_SIM_par_1,SUMO interaction site,S;T
+LIG_SxIP_EBH_1,SxIP motif,S
+LIG_TYR_ITIM,Immunoreceptor tyrosine-based motif,Y
+LIG_TYR_ITAM,Immunoreceptor tyrosine-based motif,Y
+LIG_TYR_ITSM,Immunoreceptor tyrosine-based motif,Y
+LIG_ULM_U2AF65_1,UHM domain Ligand Motif,S
+LIG_WW_1,WW domain ligands,S;T
+LIG_WW_2,WW domain ligands,S;T
+LIG_WW_3,WW domain ligands,S;T
+MOD_CDC14_SPxK_1,Cdc14 phosphatase dephosphorylation site,S
+MOD_CDK_SPK_2,CDK Phosphorylation Site,S;T
