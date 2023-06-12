@@ -42,7 +42,7 @@ class MAVISpFileSystem:
                           LocalInteractionsDNA,
                           ClinVar,
                           AlphaFoldMetadata,
-                          DeMaSk, 
+                          DeMaSk,
                           GEMME ]
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
@@ -102,6 +102,9 @@ class MAVISpFileSystem:
                     uniprot_ac = None
                     refseq_id = None
                     review_status = None
+                    ensemble_source = None
+                    ensemble_size_foldx = None
+                    ensemble_size_rosetta = None
                 else:
                     try:
                         curators= ', '.join(
@@ -128,10 +131,25 @@ class MAVISpFileSystem:
                     except KeyError:
                         self.log.debug("There is no review status field in metadata file")
                         review_status = None
+                    try:
+                        ensemble_source = str(metadata["ensemble_source"])
+                    except KeyError:
+                        self.log.debug("There is no ensemble source field in metadata file")
+                        ensemble_source = None
+                    try:
+                        ensemble_size_foldx = str(metadata["ensemble_size_foldx"])
+                    except KeyError:
+                        self.log.debug("There is no ensemble size for FoldX field in metadata file")
+                        ensemble_size_foldx = None
+                    try:
+                        ensemble_size_rosetta = str(metadata["ensemble_size_rosetta"])
+                    except KeyError:
+                        self.log.debug("There is no ensemble size for Rosetta field in metadata file")
+                        ensemble_size_rosetta = None
 
-                df_list.append((system, uniprot_ac, refseq_id, review_status, mode, mutation_list, curators))
+                df_list.append((system, uniprot_ac, refseq_id, ensemble_source, ensemble_size_foldx, ensemble_size_rosetta, review_status, mode, mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id','review_status', 'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id','ensemble_source',"ensemble_size_foldx","ensemble_size_rosetta",'review_status', 'mode', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -243,6 +261,9 @@ class MAVISpFileSystem:
             uniprot_ac = r['uniprot_ac']
             refseq_id = r['refseq_id']
             review_status = r['review_status']
+            ensemble_source = r['ensemble_source']
+            ensemble_size_foldx = r['ensemble_size_foldx']
+            ensemble_size_rosetta = r['ensemble_size_rosetta']
 
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
@@ -256,6 +277,12 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
+                if ensemble_source is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble source was not found in the metadata file"))
+                if ensemble_size_foldx is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size for FoldX was not found in the metadata file"))
+                if ensemble_size_rosetta is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size for Rosetta was not found in the metadata file"))
                 if review_status is None:
                     mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
                 else:
@@ -309,7 +336,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'review_status','mode', 'curators']]
+        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id','ensemble_source','ensemble_size_foldx','ensemble_size_rosetta', 'review_status','mode', 'curators']]
 
     def get_annotation_tables_view(self):
 
