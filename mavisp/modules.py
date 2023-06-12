@@ -197,8 +197,10 @@ class Stability(MultiMethodDataType):
 class LocalInteractions(MultiMethodDataType):
     module_dir = "local_interactions"
     name = "local_interactions"
-    methods = {'foldx5'                      : MutateXBinding(version="FoldX5"),
-               'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014')}
+    methods = {'foldx5'                      : MutateXBinding(version="FoldX5",
+                                                              complex_status='heterodimer'),
+               'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
+                                                                           complex_status='heterodimer')}
 
     def ingest(self, mutations):
 
@@ -254,7 +256,7 @@ class LocalInteractions(MultiMethodDataType):
 
     def _generate_local_interactions_classification(self, row, ci, stab_co=1.0):
 
-        colnames = [ f"{m.type} (Binding with {ci}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
+        colnames = [ f"{m.type} (Binding with {ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
             if row['sas_sc_rel'] >= 20:
@@ -347,6 +349,14 @@ class LocalInteractionsDNA(MultiMethodDataType):
             return 'Stabilizing'
         else:
             return 'Neutral'
+
+class LocalInteractionsHomodimer(LocalInteractions):
+    module_dir = "local_interactions_homodimers"
+    name = "local_interactions_homodimers"
+    methods = {'foldx5'                      : MutateXBinding(version="FoldX5",
+                                                              complex_status='homodimer'),
+               'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
+                                                                           complex_status='homodimer')}
 
 class LongRange(MultiMethodDataType):
 
