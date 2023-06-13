@@ -137,15 +137,36 @@ class MAVISpFileSystem:
                         self.log.debug("There is no ensemble source field in metadata file")
                         ensemble_source = None
                     try:
-                        ensemble_size_foldx = str(metadata["ensemble_size_foldx"])
+                        # Check if the ensemble size is a list, if it's not, it's egual to None
+                        if isinstance(metadata["ensemble_size_foldx"],list):
+                            ensemble_size_foldx = [", ".join(str(value) for value in metadata["ensemble_size_foldx"])]
+                        else:
+                            ensemble_size_foldx = None
+                            self.log.debug("Ensemble size Foldx is in the wrong format")
                     except KeyError:
                         self.log.debug("There is no ensemble size for FoldX field in metadata file")
                         ensemble_size_foldx = None
                     try:
-                        ensemble_size_rosetta = str(metadata["ensemble_size_rosetta"])
+                        # Check if the ensemble size is a list, if it's not, it's egual to None
+                        if isinstance(metadata["ensemble_size_rosetta"],list):
+                            ensemble_size_rosetta = [", ".join(str(value) for value in metadata["ensemble_size_rosetta"])]
+                        else:
+                            ensemble_size_rosetta = None
+                            self.log.debug("Ensemble size Rosetta is in the wrong format")
                     except KeyError:
                         self.log.debug("There is no ensemble size for Rosetta field in metadata file")
                         ensemble_size_rosetta = None
+
+                    # Check if the the length of the ensemble size is the same for FoldX and Rosetta
+                    try:
+                        if len(ensemble_size_foldx[0].split(", ")) != len(ensemble_size_rosetta[0].split(", ")):
+                            ensemble_size_foldx = None
+                            ensemble_size_rosetta = None
+                            self.log.debug("Ensemble size FoldX and Rosetta are not the same length")
+                    except TypeError:
+                        ensemble_size_rosetta = None
+                        ensemble_size_foldx = None
+
 
                 df_list.append((system, uniprot_ac, refseq_id, ensemble_source, ensemble_size_foldx, ensemble_size_rosetta, review_status, mode, mutation_list, curators))
 
@@ -277,12 +298,6 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
-                if ensemble_source is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble source was not found in the metadata file"))
-                if ensemble_size_foldx is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size for FoldX was not found in the metadata file"))
-                if ensemble_size_rosetta is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size for Rosetta was not found in the metadata file"))
                 if review_status is None:
                     mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
                 else:
