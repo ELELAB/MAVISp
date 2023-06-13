@@ -17,12 +17,14 @@ dependencies = [
     "pyyaml",
     "requests",
     "termcolor",
+    "setuptools",
     'importlib-metadata; python_version>"3.6"',
 ]
 dynamic = ["version"]
 
 [tool.setuptools]
 packages = ["mavisp"]
+include-package-data = true
 
 [tool.setuptools.dynamic]
 version = {attr = "mavisp.VERSION"}
