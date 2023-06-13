@@ -17,6 +17,7 @@ dependencies = [
     "pyyaml",
     "requests",
     "termcolor",
+    "setuptools",
     'importlib-metadata; python_version>"3.6"',
 ]
 dynamic = ["version"]
