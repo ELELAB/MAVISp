@@ -24,6 +24,7 @@ dynamic = ["version"]
 
 [tool.setuptools]
 packages = ["mavisp"]
+include-package-data = true
 
 [tool.setuptools.dynamic]
 version = {attr = "mavisp.VERSION"}
