@@ -337,8 +337,9 @@ class AlloSigma(Method):
     allowed_fnames = set(['allosigma_mut.txt', 'filtered_down_mutations.tsv', 'filtered_up_mutations.tsv'])
 
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
+
         if pd.isna(row['allosigma-mode']):
-            return '-'
+            return 'uncertain'
 
         if row['allosigma-mode'] == 'UP':
             filt = filt_up
