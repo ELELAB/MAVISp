@@ -432,9 +432,9 @@ class PTMs(DataType):
         # if site is not a known PTM
         if row['phosphorylation_site'] != 'P':
             # if wt residue is S,T,Y or mutation is NOT S->T or T->S
-            # return unknown, otherwise neutral
+            # return uncertain, otherwise neutral
             if ref in allowed_wt_res and not r_a == S_T:
-                return 'unknown'
+                return 'uncertain'
             else:
                 return 'neutral'
 
@@ -448,11 +448,11 @@ class PTMs(DataType):
                 # any mutation sas < 20% or
                 # any T/S to Y or
                 # any Y to T/S
-                # then return unknown
+                # then return uncertain
             elif row['sas_sc_rel'] < 20.0 or\
             (ref in S_T and alt == 'Y') or\
             (ref == 'Y' and (alt in S_T)):
-                return 'unknown'
+                return 'uncertain'
 
             # otherwise, if mutation sas >= 20% return damaging
             elif row['sas_sc_rel'] >= 20.0:
