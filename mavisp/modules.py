@@ -535,7 +535,7 @@ class PTMs(DataType):
             if row['site_in_slim'] and row['sas_sc_rel'] >= 20:
                 return 'potentially_damaging'
             else:
-                return 'unknown'
+                return 'uncertain'
 
         # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
