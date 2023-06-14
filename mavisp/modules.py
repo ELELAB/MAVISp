@@ -532,7 +532,7 @@ class PTMs(DataType):
         # otherwise if either classification is NA, if it is phospho-motif
         # and solvent exposed, return potentially_damaging
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
-            if row['site_in_slim'] and row['complex_sas_sc_rel'] >= 20:
+            if row['site_in_slim'] and row['sas_sc_rel'] >= 20:
                 return 'potentially_damaging'
             else:
                 return 'unkown'
@@ -557,8 +557,7 @@ class PTMs(DataType):
         expected_files = ['summary_stability.txt',
                           'sasa.rsa',
                           'metatable.csv',
-                          'summary_binding.txt',
-                          'sasa_complex.rsa']
+                          'summary_binding.txt']
 
         ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
@@ -597,19 +596,6 @@ class PTMs(DataType):
                 index_col = 'resn').fillna(pd.NA)
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-        try:
-            rsa_complex = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa_complex.rsa'),
-                skiprows=4, skipfooter=5, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'complex_sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['rest', 'chain', 'resn', 'complex_sas_sc_rel'],
-                index_col = 'resn').fillna(pd.NA)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa_complex.rsa file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
@@ -654,9 +640,6 @@ class PTMs(DataType):
         # join RSA data
         rsa_monomer = rsa_monomer.drop(columns=['rest'])
         final_table = final_table.join(rsa_monomer, on='position')
-
-        rsa_complex = rsa_complex[rsa_complex['chain'] == self.protein_chain]
-        final_table = final_table.join(rsa_complex, on='position')
 
         # process DDG information
         ddg_stability['ref'] = ddg_stability['mutation'].str[0]
@@ -728,20 +711,19 @@ class PTMs(DataType):
                                                     mut_col_name='cancer_mut_stab_class',
                                                     ptm_col_name='ptm_stab_class',
                                                     axis=1)
-        final_table['function'] = final_table.apply(self._assign_stability_class,
+        final_table['function'] = final_table.apply(self._assign_function_class,
                                                     mut_col_name='cancer_mut_bind_class',
                                                     ptm_col_name='ptm_bind_class',
                                                     axis=1)
 
         # final processing for output table
         final_table = final_table[[ 'phosphorylation_site', 'site_in_slim', 'sas_sc_rel',
-                                    'complex_sas_sc_rel', 'stability_ddg_ptm', 'binding_ddg_ptm',
-                                    'binding_ddg_mut', 'regulation', 'stability', 'function' ]]
+                                    'stability_ddg_ptm', 'binding_ddg_ptm', 'binding_ddg_mut',
+                                    'regulation', 'stability', 'function' ]]
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
                                                 'sas_sc_rel'           : "PTM residue SASA (%)" ,
-                                                'complex_sas_sc_rel'   : "PTM residue SASA in complex (%)",
                                                 'stability_ddg_ptm'    : "Change in stability with PTM (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
                                                 'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
