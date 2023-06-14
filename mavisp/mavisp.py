@@ -222,14 +222,14 @@ def main():
 
 
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system', 'uniprot_ac', 'refseq_id','ensemble_source','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'mode', 'curators']]
+    out_table = out_table[['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
                                           'uniprot_ac' : 'Uniprot AC',
                                           'refseq_id' : "RefSeq ID",
-                                          'ensemble_source' : "Ensemble source",
-                                          'ensemble_size_foldx' : 'Ensemble size (FoldX)',
-                                          'ensemble_size_rosetta' : 'Ensemble size (Rosetta)',
+                                          'ensemble_sources' : "Ensemble sources",
+                                          'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
+                                          'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
                                           'review_status' : 'Review status',
                                           'curators' : 'Curators',
                                           })
