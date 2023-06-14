@@ -163,12 +163,14 @@ class MAVISpFileSystem:
                         self.log.debug("There is no ensemble size for Rosetta field in metadata file")
                         ensemble_size_rosetta = ""
                     try:
-                        if len(metadata["ensemble_size_foldx"]) != len(metadata["ensemble_size_rosetta"]) or len(metadata["ensemble_sources"]) != len(metadata["ensemble_size_foldx"]) or len(metadata["ensemble_sources"]) != len(metadata["ensemble_size_rosetta"]):
+                        if len(metadata["ensemble_size_foldx"]) == len(metadata["ensemble_size_rosetta"]) == len(metadata["ensemble_sources"]):
+                            pass
+                        else:
                             ensemble_size_foldx = None
                             ensemble_size_rosetta = None
                             ensemble_sources = None
                             self.log.debug("Ensemble sources, ensemble size (FoldX, Rosetta) are not the same length")
-                    except:
+                    except (KeyError,TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
                         pass
                 df_list.append((system, uniprot_ac, refseq_id, mode, ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta, review_status,  mutation_list, curators))
 
@@ -300,7 +302,7 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
-                if sum([var != "" for var in [ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta]]) == 1 or sum([var != "" for var in [ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta]]) == 2:
+                if sum([var != "" for var in [ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta]]) in [1, 2]:
                     mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta need to be present or absent at the same time"))
                 elif ensemble_sources is None and ensemble_size_foldx is None and ensemble_size_rosetta is None:
                     mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta have not the same length"))
