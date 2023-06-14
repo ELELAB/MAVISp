@@ -532,10 +532,10 @@ class PTMs(DataType):
         # otherwise if either classification is NA, if it is phospho-motif
         # and solvent exposed, return potentially_damaging
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
-            if row['site_in_slim'] and row['complex_sas_sc_rel'] >= 20:
+            if row['site_in_slim'] and row['sas_sc_rel'] >= 20:
                 return 'potentially_damaging'
             else:
-                return 'unkown'
+                return 'uncertain'
 
         # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
@@ -556,14 +556,12 @@ class PTMs(DataType):
 
         expected_files = ['summary_stability.txt',
                           'sasa.rsa',
-                          'metatable.csv',
-                          'summary_binding.txt',
-                          'sasa_complex.rsa']
+                          'metatable.csv']
 
         ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
         if not set(expected_files).issubset(ptm_files):
-            this_error = f"required file not found in {self.module_dir}"
+            this_error = f"required file(s) not found"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
@@ -582,6 +580,9 @@ class PTMs(DataType):
                 delim_whitespace=True,
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
+        except FileNotFoundError as e:
+            ddg_binding = pd.DataFrame(columns=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
+            warnings.append(MAVISpWarningError(f"summary_binding.txt not found - changes in free energy will not be used to classify function"))
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary_binding.txt file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -597,19 +598,6 @@ class PTMs(DataType):
                 index_col = 'resn').fillna(pd.NA)
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-        try:
-            rsa_complex = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa_complex.rsa'),
-                skiprows=4, skipfooter=5, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'complex_sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['rest', 'chain', 'resn', 'complex_sas_sc_rel'],
-                index_col = 'resn').fillna(pd.NA)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa_complex.rsa file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
@@ -655,9 +643,6 @@ class PTMs(DataType):
         rsa_monomer = rsa_monomer.drop(columns=['rest'])
         final_table = final_table.join(rsa_monomer, on='position')
 
-        rsa_complex = rsa_complex[rsa_complex['chain'] == self.protein_chain]
-        final_table = final_table.join(rsa_complex, on='position')
-
         # process DDG information
         ddg_stability['ref'] = ddg_stability['mutation'].str[0]
         ddg_stability['alt'] = ddg_stability['mutation'].str[-1]
@@ -669,7 +654,7 @@ class PTMs(DataType):
         ddg_binding['number'] = ddg_binding['mutation'].str[2:-1].astype(int)
         ddg_binding['mutation'] = ddg_binding['ref'] + ddg_binding['number'].astype(str) + ddg_binding['alt']
 
-        if not (ddg_binding['mutation'] == ddg_stability['mutation']).all():
+        if ddg_stability.shape[0] != 0 and ddg_binding.shape[0] != 0 and not (ddg_binding['mutation'] == ddg_stability['mutation']).all():
             this_error = f"stability DDG summary has different residues or a different order of residues than binding DDG summary"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
@@ -714,7 +699,6 @@ class PTMs(DataType):
         binding_cancer_muts = binding_cancer_muts[['mutation', 'ddg_avg']].rename(columns={'ddg_avg' : 'binding_ddg_mut'}).set_index('mutation')
         final_table = final_table.join(binding_cancer_muts, on='mutation')
 
-
         # calculate class for DDG values, stability and binding
         final_table['cancer_mut_stab_class'] = final_table.apply(self._assign_ddg_class, ddg_col_name='stability_ddg_mut', axis=1)
         final_table['ptm_stab_class']        = final_table.apply(self._assign_ddg_class, ddg_col_name='stability_ddg_ptm', axis=1)
@@ -728,20 +712,19 @@ class PTMs(DataType):
                                                     mut_col_name='cancer_mut_stab_class',
                                                     ptm_col_name='ptm_stab_class',
                                                     axis=1)
-        final_table['function'] = final_table.apply(self._assign_stability_class,
+        final_table['function'] = final_table.apply(self._assign_function_class,
                                                     mut_col_name='cancer_mut_bind_class',
                                                     ptm_col_name='ptm_bind_class',
                                                     axis=1)
 
         # final processing for output table
         final_table = final_table[[ 'phosphorylation_site', 'site_in_slim', 'sas_sc_rel',
-                                    'complex_sas_sc_rel', 'stability_ddg_ptm', 'binding_ddg_ptm',
-                                    'binding_ddg_mut', 'regulation', 'stability', 'function' ]]
+                                    'stability_ddg_ptm', 'binding_ddg_ptm', 'binding_ddg_mut',
+                                    'regulation', 'stability', 'function' ]]
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
                                                 'sas_sc_rel'           : "PTM residue SASA (%)" ,
-                                                'complex_sas_sc_rel'   : "PTM residue SASA in complex (%)",
                                                 'stability_ddg_ptm'    : "Change in stability with PTM (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
                                                 'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
@@ -749,6 +732,11 @@ class PTMs(DataType):
                                                 'stability'            : "PTM effect in stability" ,
                                                 'function'             : "PTM effect in function" 
                                                 })
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[])
+
 
 class CancermutsTable(DataType):
 
