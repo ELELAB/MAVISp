@@ -133,7 +133,7 @@ class MAVISpFileSystem:
                         review_status = None
 
                     try:
-                        # Check if the ensemble size is a list, if it's not, it's egual to None
+                        # Check if the ensemble sources is a list, if it's not, it's equal to None
                         if isinstance(metadata["ensemble_sources"],list):
                             ensemble_sources = ", ".join([str(value) for value in metadata["ensemble_sources"]])
                         else:
@@ -143,7 +143,6 @@ class MAVISpFileSystem:
                         self.log.debug("There are no ensemble sources in metadata file")
                         ensemble_sources = ""
                     try:
-                        # Check if the ensemble size is a list, if it's not, it's egual to None
                         if isinstance(metadata["ensemble_size_foldx"],list):
                             ensemble_size_foldx = ", ".join([str(value) for value in metadata["ensemble_size_foldx"]])
                         else:
@@ -153,7 +152,6 @@ class MAVISpFileSystem:
                         self.log.debug("There is no ensemble size for FoldX field in metadata file")
                         ensemble_size_foldx = ""
                     try:
-                        # Check if the ensemble size is a list, if it's not, it's egual to None
                         if isinstance(metadata["ensemble_size_rosetta"],list):
                             ensemble_size_rosetta = ", ".join([str(value) for value in metadata["ensemble_size_rosetta"]])
                         else:
