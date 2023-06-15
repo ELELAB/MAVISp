@@ -161,9 +161,7 @@ class MAVISpFileSystem:
                         self.log.debug("There is no ensemble size for Rosetta field in metadata file")
                         ensemble_size_rosetta = ""
                     try:
-                        if len(metadata["ensemble_size_foldx"]) == len(metadata["ensemble_size_rosetta"]) == len(metadata["ensemble_sources"]):
-                            pass
-                        else:
+                        if not len(set( len(metadata[m]) for m in ["ensemble_size_foldx", "ensemble_size_rosetta", "ensemble_sources"])) == 1:
                             ensemble_size_foldx = None
                             ensemble_size_rosetta = None
                             ensemble_sources = None
