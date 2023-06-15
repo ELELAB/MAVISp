@@ -616,7 +616,7 @@ class PTMs(DataType):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # load phospho-SLiM data file
-        fname = pkg_resources.resource_filename(__name__, 'data/phosphoSLiMs_09062023.csv')
+        fname = pkg_resources.resource_filename(__name__, 'data/phosphoSLiMs_15062023.csv')
         phospho_slims = pd.read_csv(fname)
 
         # create final table
