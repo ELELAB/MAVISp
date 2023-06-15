@@ -43,7 +43,7 @@ class MAVISpFileSystem:
                           LocalInteractionsHomodimer,
                           ClinVar,
                           AlphaFoldMetadata,
-                          DeMaSk, 
+                          DeMaSk,
                           GEMME ]
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
@@ -103,6 +103,9 @@ class MAVISpFileSystem:
                     uniprot_ac = None
                     refseq_id = None
                     review_status = None
+                    ensemble_sources = None
+                    ensemble_size_foldx = None
+                    ensemble_size_rosetta = None
                 else:
                     try:
                         curators= ', '.join(
@@ -130,9 +133,45 @@ class MAVISpFileSystem:
                         self.log.debug("There is no review status field in metadata file")
                         review_status = None
 
-                df_list.append((system, uniprot_ac, refseq_id, review_status, mode, mutation_list, curators))
+                    try:
+                        # Check if the ensemble sources is a list, if it's not, it's equal to None
+                        if isinstance(metadata["ensemble_sources"],list):
+                            ensemble_sources = ", ".join([str(value) for value in metadata["ensemble_sources"]])
+                        else:
+                            ensemble_sources = None
+                            self.log.debug("Ensemble sources are in the wrong format")
+                    except KeyError:
+                        self.log.debug("There are no ensemble sources in metadata file")
+                        ensemble_sources = ""
+                    try:
+                        if isinstance(metadata["ensemble_size_foldx"],list):
+                            ensemble_size_foldx = ", ".join([str(value) for value in metadata["ensemble_size_foldx"]])
+                        else:
+                            ensemble_size_foldx = None
+                            self.log.debug("Ensemble size Foldx is in the wrong format")
+                    except KeyError:
+                        self.log.debug("There is no ensemble size for FoldX field in metadata file")
+                        ensemble_size_foldx = ""
+                    try:
+                        if isinstance(metadata["ensemble_size_rosetta"],list):
+                            ensemble_size_rosetta = ", ".join([str(value) for value in metadata["ensemble_size_rosetta"]])
+                        else:
+                            ensemble_size_rosetta = None
+                            self.log.debug("Ensemble size Rosetta is in the wrong format")
+                    except KeyError:
+                        self.log.debug("There is no ensemble size for Rosetta field in metadata file")
+                        ensemble_size_rosetta = ""
+                    try:
+                        if not len(set( len(metadata[m]) for m in ["ensemble_size_foldx", "ensemble_size_rosetta", "ensemble_sources"])) == 1:
+                            ensemble_size_foldx = None
+                            ensemble_size_rosetta = None
+                            ensemble_sources = None
+                            self.log.debug("Ensemble sources, ensemble size (FoldX, Rosetta) are not the same length")
+                    except (KeyError,TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
+                        pass
+                df_list.append((system, uniprot_ac, refseq_id, mode, ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta, review_status,  mutation_list, curators))
 
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id','review_status', 'mode', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'mutations', 'curators'])
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -244,6 +283,9 @@ class MAVISpFileSystem:
             uniprot_ac = r['uniprot_ac']
             refseq_id = r['refseq_id']
             review_status = r['review_status']
+            ensemble_sources = r['ensemble_sources']
+            ensemble_size_foldx = r['ensemble_size_foldx']
+            ensemble_size_rosetta = r['ensemble_size_rosetta']
 
             if mutations is None:
                 mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
@@ -257,6 +299,16 @@ class MAVISpFileSystem:
                     mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
                 if refseq_id is None:
                     mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
+                if sum([var != "" for var in [ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta]]) in [1, 2]:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta need to be present or absent at the same time"))
+                elif ensemble_sources is None and ensemble_size_foldx is None and ensemble_size_rosetta is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta have not the same length"))
+                elif ensemble_sources is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources is not in the right format"))
+                elif ensemble_size_foldx is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size FoldX is not in the right format"))
+                elif ensemble_size_rosetta is None:
+                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size Rosetta is not in the right format"))
                 if review_status is None:
                     mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
                 else:
@@ -310,7 +362,7 @@ class MAVISpFileSystem:
         self.dataset_table['warnings'] = mavisp_warnings_column
 
     def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id', 'review_status','mode', 'curators']]
+        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id','mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta', 'review_status', 'curators']]
 
     def get_annotation_tables_view(self):
 

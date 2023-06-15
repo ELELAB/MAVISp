@@ -62,8 +62,8 @@ module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'lo
 def main():
 
     parser = argparse.ArgumentParser()
-    
-    parser.add_argument("-d", "--data-dir", 
+
+    parser.add_argument("-d", "--data-dir",
                         dest="data_dir",
                         default="./data",
                         help="directory where the MAVISp data files are located (default: ./data)")
@@ -71,7 +71,7 @@ def main():
                         dest="database_dir",
                         default="./database",
                         help="output directory where the csv database is written (default: ./database")
-    parser.add_argument("-w", "--stop-on-warnings", 
+    parser.add_argument("-w", "--stop-on-warnings",
                         dest="stop_on_warnings",
                         default=False,
                         help="do not write output if any warning is found (default: false)")
@@ -110,7 +110,7 @@ def main():
         included_proteins = None
 
     in_path = Path(args.data_dir)
-    
+
     if not in_path.is_dir():
         log.error("Input directory isn't a directory or doesn't exist; exiting...")
         exit(1)
@@ -177,7 +177,7 @@ def main():
             if r['status'] == "not_available":
                 details_text += f"    = {r['module']}\n"
         details_text += '\n'
-    
+
     if error_count == 0 and warning_count == 0 and critical_count == 0:
         details_text += colored("*** ALL GOOD! 👏👏👏 ***\n", "green")
     else:
@@ -222,11 +222,14 @@ def main():
 
 
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system', 'uniprot_ac', 'refseq_id','review_status', 'mode', 'curators']]
+    out_table = out_table[['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']]
     out_table = out_table.rename(columns={'system' : "Protein",
                                           'mode'  : "Mode",
                                           'uniprot_ac' : 'Uniprot AC',
                                           'refseq_id' : "RefSeq ID",
+                                          'ensemble_sources' : "Ensemble sources",
+                                          'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
+                                          'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
                                           'review_status' : 'Review status',
                                           'curators' : 'Curators',
                                           })
