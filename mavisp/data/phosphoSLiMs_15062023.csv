@@ -40,3 +40,15 @@ LIG_WW_2,WW domain ligands,S;T
 LIG_WW_3,WW domain ligands,S;T
 MOD_CDC14_SPxK_1,Cdc14 phosphatase dephosphorylation site,S
 MOD_CDK_SPK_2,CDK Phosphorylation Site,S;T
+MOD_CDK_SPxK_1,CDK Phosphorylation Site,S;T
+MOD_CDK_SPxxK_3,CDK Phosphorylation Site,S;T
+MOD_CK1_1,Casein kinase 1 (CK1) Phosphorylation site,S;T
+MOD_SUMO_for_1,Sumoylation site,S
+MOD_SUMO_rev_2,Sumoylation site,S
+TRG_DiLeu_BaLyEn_6,Adaptin binding Endosome-Lysosome-Basolateral sorting signals,S;T
+TRG_ER_diArg_1,di Arginine retention/retrieving signal,S;T;Y
+TRG_LysEnd_GGAAcLL_1,Trans-Golgi Network-Endosome-Lysosome-sorting signals,S
+TRG_NLS_Bipartite_1,NLS classical Nuclear Localization Signals,S;T;Y
+TRG_NLS_MonoCore_2,NLS classical Nuclear Localization Signals,S;T
+TRG_NLS_MonoExtC_3,NLS classical Nuclear Localization Signals,S;T
+TRG_NLS_MonoExtN_4,NLS classical Nuclear Localization Signals,S;T
