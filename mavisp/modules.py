@@ -424,6 +424,7 @@ class PTMs(DataType):
                         'T' : 'p',
                         'Y' : 'y'}
     protein_chain = 'A'
+    slim_pattern = re.compile('.* \((CLV|DEG|DOC|LIG|MOD|TRG)_[A-Za-z0-9_-]+\), [0-9]+-[0-9]+, ELM')
 
     def _assign_regulation_class(self, row):
         ref = row.name[0]
@@ -504,22 +505,29 @@ class PTMs(DataType):
 
         return '???'
 
+    def _validate_elms(self, row):
+        if pd.isna(row['linear_motif']):
+            return True
+
+        motifs = row['linear_motif'].split('|')
+        for motif in motifs:
+            if self.slim_pattern.match(motif) is None:
+                return False
+
+        return True
+
     def _mut_in_phospho_slim(self, row, phospho_slims):
 
         if pd.isna(row['linear_motif']):
             return False
 
-        pslim_descriptions = phospho_slims['Description'].tolist()
         pslim_identifier = phospho_slims['ELM_Identifier'].tolist()
 
         slims = row['linear_motif'].split('|')
         descriptions = [ d.split(',')[0] for d in slims ]
         for desc in descriptions:
-            if any(slim in desc for slim in pslim_descriptions):
-                return True
             if any(ident in desc for ident in pslim_identifier):
                 return True
-
         return False
 
     def _assign_function_class(self, row, mut_col_name, ptm_col_name):
@@ -636,6 +644,12 @@ class PTMs(DataType):
         cancermuts = cancermuts[~ pd.isna(cancermuts['mutation'])]
         cancermuts = cancermuts.set_index('mutation')
 
+        # validate found ELMs (i.e. they must have a ELM ID)
+        are_elms_valid = cancermuts.apply(self._validate_elms, axis=1).all()
+        if not are_elms_valid:
+            warnings.append(MAVISpWarningError(f"one or more ELM entry does not contain ELM ID; PTM function will be set to NA"))
+
+
         # define whether each site is in a phospho-SLiM
         cancermuts['site_in_slim'] = cancermuts.apply(self._mut_in_phospho_slim, phospho_slims=phospho_slims, axis=1)
 
@@ -715,10 +729,13 @@ class PTMs(DataType):
                                                     mut_col_name='cancer_mut_stab_class',
                                                     ptm_col_name='ptm_stab_class',
                                                     axis=1)
-        final_table['function'] = final_table.apply(self._assign_function_class,
-                                                    mut_col_name='cancer_mut_bind_class',
-                                                    ptm_col_name='ptm_bind_class',
-                                                    axis=1)
+        if are_elms_valid:
+            final_table['function'] = final_table.apply(self._assign_function_class,
+                                                        mut_col_name='cancer_mut_bind_class',
+                                                        ptm_col_name='ptm_bind_class',
+                                                        axis=1)
+        else:
+            final_table['function'] = pd.NA
 
         # final processing for output table
         final_table = final_table[[ 'phosphorylation_site', 'site_in_slim', 'sas_sc_rel',
