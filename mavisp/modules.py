@@ -187,9 +187,12 @@ class Stability(MultiMethodDataType):
         stab_co = 3.0
         neut_co = 2.0
 
-        if row[foldx_header] > stab_co and row[rosetta_header] > stab_co:
+        if pd.isna(row[foldx_header]) or pd.isna(row[rosetta_header]):
+            return pd.NA
+
+        if row[foldx_header] >= stab_co and row[rosetta_header] >= stab_co:
             return 'Destabilizing'
-        if row[foldx_header] < (- stab_co) and row[rosetta_header] < (- stab_co):
+        if row[foldx_header] <= (- stab_co) and row[rosetta_header] <= (- stab_co):
             return 'Stabilizing'
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
             return 'Neutral'
