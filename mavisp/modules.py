@@ -750,7 +750,7 @@ class PTMs(DataType):
                                                 'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
                                                 'regulation'           : "PTM effect in regulation",
                                                 'stability'            : "PTM effect in stability" ,
-                                                'function'             : "PTM effect in function" 
+                                                'function'             : "PTM effect in function"
                                                 })
 
         if len(warnings) > 0:
@@ -921,6 +921,71 @@ class ClinVar(DataType):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class EVE(DataType):
+
+    module_dir = "eve"
+    name = "eve"
+
+    def __init__(self, data_dir=None):
+
+        super().__init__(data_dir)
+
+    def _process_sources(self, row):
+
+        manual_pattern = 'Manual annotations from (.+)\..+'
+
+        sources = row['sources'].split(',')
+        for i,s in enumerate(sources):
+            match = re.search(manual_pattern, s)
+
+            if match is None:
+                continue
+            else:
+                sources[i] = match.groups()[0]
+
+        return ",".join(sources)
+
+    def ingest(self, mutations):
+        warnings = []
+
+        # check that we have only one file
+        eve_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(eve_files) != 1:
+            this_error = f"multiple files found in {eve_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        eve_file = eve_files[0]
+
+        log.info(f"parsing EVE file {eve_file}")
+
+        # parse EVE table
+        try:
+            eve = pd.read_csv(os.path.join(self.data_dir, self.module_dir, eve_file))
+        except:
+            this_error = f"Failed parsing EVE csv file {eve_file}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # check if all the required columns are present
+        required_columns = ['protein_name', 'mutations', 'evol_indices', 'EVE_scores', 'EVE_classes_100_pct_retained', 'uncertainty']
+        if not set(required_columns).issubset(eve.columns):
+            this_error = f"input table doesn't have all the required columns"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # process table
+        eve = eve[['mutations', 'EVE_scores', 'EVE_classes_75_pct_retained']]
+        eve = eve.set_index('mutations')
+
+        self.data = eve.rename(columns={ 'EVE_scores' : 'EVE score',
+                                         'EVE_classes_75_pct_retained' : 'EVE classification (25% Uncertain)'})
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 
 class AlphaFoldMetadata(DataType):
 

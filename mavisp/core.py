@@ -44,7 +44,8 @@ class MAVISpFileSystem:
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
-                          GEMME ]
+                          GEMME,
+                          EVE ]
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 
