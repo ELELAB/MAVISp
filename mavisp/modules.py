@@ -971,7 +971,6 @@ class EVE(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-
 class AlphaFoldMetadata(DataType):
 
     module_dir = "alphafold"
