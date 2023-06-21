@@ -954,14 +954,14 @@ class EVE(DataType):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # check if all the required columns are present
-        required_columns = ['protein_name', 'mutations', 'evol_indices', 'EVE_scores', 'EVE_classes_100_pct_retained', 'uncertainty']
+        required_columns = ['mutations', 'EVE_scores', 'EVE_classes_75_pct_retained']
         if not set(required_columns).issubset(eve.columns):
             this_error = f"input table doesn't have all the required columns"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
         # process table
-        eve = eve[['mutations', 'EVE_scores', 'EVE_classes_75_pct_retained']]
+        eve = eve[required_columns]
         eve = eve.set_index('mutations')
 
         self.data = eve.rename(columns={ 'EVE_scores' : 'EVE score',
