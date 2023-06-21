@@ -931,21 +931,6 @@ class EVE(DataType):
 
         super().__init__(data_dir)
 
-    def _process_sources(self, row):
-
-        manual_pattern = 'Manual annotations from (.+)\..+'
-
-        sources = row['sources'].split(',')
-        for i,s in enumerate(sources):
-            match = re.search(manual_pattern, s)
-
-            if match is None:
-                continue
-            else:
-                sources[i] = match.groups()[0]
-
-        return ",".join(sources)
-
     def ingest(self, mutations):
         warnings = []
 
