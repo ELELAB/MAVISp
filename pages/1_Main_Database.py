@@ -43,6 +43,9 @@ st.write('Please choose a dataset in the table below and click on the "View data
 'button.  The corresponding MAVISp results table will be displayed underneath. '
 'Click on the "Download dataset" button to download the corresponding CSV file.')
 
+st.write('All data is released under the [Creative Commons Attribution 4.0 International'
+' (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)')
+
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
 gb_datasets_grid.configure_selection(selection_mode='single',
