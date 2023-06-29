@@ -19,7 +19,7 @@ import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import pandas as pd
 from collections import defaultdict
-from mavisp.streamlit_utils import *
+from streamlit_utils import *
 
 st.set_page_config(layout="wide",
     page_title="Database",
@@ -39,10 +39,11 @@ show_table = load_main_table(database_dir)
 
 add_logo("assets/logo_small.png")
 
-st.write('Welcome to MAVISp!')
+st.write('Please choose a dataset in the table below and click on the "View dataset"'
+'button.  The corresponding MAVISp results table will be displayed underneath. '
+'Click on the "Download dataset" button to download the corresponding CSV file.')
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
-gb_datasets_grid.configure_auto_height()
 
 gb_datasets_grid.configure_selection(selection_mode='single',
                        use_checkbox=True)
@@ -50,12 +51,21 @@ gb_datasets_grid.configure_selection(selection_mode='single',
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
-                      fit_columns_on_grid_load = True)
+                      fit_columns_on_grid_load = True,
+                      reload_data=False)
 
-if len(datasets_grid["selected_rows"]) == 1:
+if len(datasets_grid["selected_rows"]) != 1:
+    button_disabled = True
+else:
+    button_disabled = False
+
+if st.button('View dataset',
+            disabled=button_disabled):
 
     protein, mode = ( datasets_grid["selected_rows"][0]['Protein'],
-                      datasets_grid["selected_rows"][0]['Mode']    )
+                    datasets_grid["selected_rows"][0]['Mode']    )
+
+    st.write(f"Currently viewing: {protein}, {mode}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
@@ -72,5 +82,5 @@ if len(datasets_grid["selected_rows"]) == 1:
     this_dataset = this_dataset.fillna(pd.NA)
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
-                            width=3000)
+                            reload_data=False)
 
