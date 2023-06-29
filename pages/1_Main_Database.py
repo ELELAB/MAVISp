@@ -18,20 +18,12 @@ import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import pandas as pd
-import argparse
+from collections import defaultdict
+from mavisp.streamlit_utils import *
 
-description="The MAVISp web app for the structural annotation of protein variants"
-
-parser = argparse.ArgumentParser(description=description)
-
-parser.add_argument('--database-dir',
-                    dest='database_dir',
-                    help="Location of the MAVISp database (default: ./database)",
-                    default="./database")
-
-args = parser.parse_args()
-
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide",
+    page_title="Database",
+    page_icon="👋")
 
 @st.cache_data
 def load_dataset(data_dir, protein, mode):
@@ -41,9 +33,11 @@ def load_dataset(data_dir, protein, mode):
 def load_main_table(data_dir):
     return pd.read_csv(os.path.join(data_dir, 'index.csv'))
 
-show_table = load_main_table(args.database_dir)
+database_dir = get_database_dir()
 
-st.image('assets/logo.png')
+show_table = load_main_table(database_dir)
+
+add_logo("assets/logo_small.png")
 
 st.write('Welcome to MAVISp!')
 
@@ -63,9 +57,9 @@ if len(datasets_grid["selected_rows"]) == 1:
     protein, mode = ( datasets_grid["selected_rows"][0]['Protein'],
                       datasets_grid["selected_rows"][0]['Mode']    )
 
-    this_dataset = load_dataset(args.database_dir, protein, mode)
+    this_dataset = load_dataset(database_dir, protein, mode)
 
-    with open(os.path.join(args.database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+    with open(os.path.join(database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
                             data=data,
                             file_name=f'{protein}-{mode}.csv',
