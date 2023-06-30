@@ -73,6 +73,11 @@ def main():
                         dest="stop_on_warnings",
                         default=False,
                         help="do not write output if any warning is found (default: false)")
+    parser.add_argument("-m", "--mode",
+                        dest="modes",
+                        choices=['all', 'simple_mode', 'ensemble_mode'],
+                        default="all",
+                        help="which mode should considered (all, simple_mode, ensemble_mode; default: all)")
     parser.add_argument("-p", "--included-proteins",
                         dest="included_proteins",
                         default=None,
@@ -125,7 +130,13 @@ def main():
                 log.error("Specified output directory already exists; exiting...")
                 exit(1)
 
-    mfs = MAVISpFileSystem(data_dir=in_path, exclude_proteins=excluded_proteins, include_proteins=included_proteins)
+    if args.modes == 'all':
+        args.modes = None
+
+    mfs = MAVISpFileSystem( data_dir=in_path,
+                            exclude_proteins=excluded_proteins,
+                            include_proteins=included_proteins,
+                            modes=args.modes)
 
     mfs.ingest()
 
@@ -219,9 +230,9 @@ def main():
         log.error("Couldn't create the specified output directory; exiting...")
         exit(1)
 
-    out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
+    out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
 
-    for mode_name, mode in mfs.supported_modes:
+    for mode_name, mode in mfs.supported_modes.items():
         mode_path = out_path / Path(mode_name)
         mode_path.mkdir(exist_ok=True)
 
@@ -245,8 +256,8 @@ def main():
         # Group and count instances in which a protein is found to have two modes
         nb_both_modes = grouped[grouped == 2].shape[0]
 
-        nb_simple_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
-        nb_ensemble_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
+        nb_simple_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name]['mode'] == 'simple_mode']) - nb_both_modes
+        nb_ensemble_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name]['mode'] == 'ensemble_mode']) - nb_both_modes
 
         nb_proteins = nb_simple_mode + nb_ensemble_mode + nb_both_modes
 
@@ -269,7 +280,7 @@ def main():
                                               'PMID'     : 'References'})
             this_df = this_df.set_index('Mutation')
 
-            for mod_name in module_order:
+            for mod_name in mode.module_order:
                 mod = r['modules'][mod_name]
                 if mod is None:
                     continue
@@ -282,4 +293,4 @@ def main():
             this_df = this_df.fillna(pd.NA)
 
             # save final dataframe
-            this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")
+            this_df.to_csv(dataset_tables_path / f"{r['system']}.csv")

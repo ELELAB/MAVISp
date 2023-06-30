@@ -31,8 +31,6 @@ from tabulate import tabulate
 
 class MAVISpFileSystem:
 
-    supported_modes = { 'simple_mode'   : MAVISpSimpleMode(),
-                        'ensemble_mode' : MAVISpEnsembleMode()}
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 
@@ -46,17 +44,22 @@ class MAVISpFileSystem:
         self.log.setLevel(level)
 
         if modes is None:
-            modes = self.supported_modes
-
-        modes_diff = set(modes).difference(set(self.supported_modes.keys()))
-        if len(modes_diff) > 0:
-            raise TypeError(f"the following modes are not supported: {modes_diff}")
+            self.supported_modes = { 'simple_mode'   : MAVISpSimpleMode(),
+                                     'ensemble_mode' : MAVISpEnsembleMode()}
+        elif modes == 'simple_mode':
+            self.supported_modes = { 'simple_mode'   : MAVISpSimpleMode() }
+        elif modes == 'ensemble_mode':
+            self.supported_modes = { 'ensemble_mode' : MAVISpEnsembleMode() }
+        else:
+            raise TypeError
 
         self.data_dir = data_dir
 
         self._tree = self._traverse(self.data_dir)
 
         self.dataset_tables = {}
+
+
         for mode_name, mode in self.supported_modes.items():
             self.dataset_tables[mode_name] = self._gen_dataset_table(mode, include=include_proteins, exclude=exclude_proteins)
 
