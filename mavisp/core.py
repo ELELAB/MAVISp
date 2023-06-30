@@ -24,28 +24,15 @@ from datetime import date
 from mavisp.error import *
 from mavisp.methods import *
 from mavisp.modules import *
+from mavisp.modes import *
 import yaml
 from termcolor import colored
 from tabulate import tabulate
 
 class MAVISpFileSystem:
 
-    supported_modes = ['simple_mode', 'ensemble_mode']
-    supported_stability_methods = ['foldx5', 'rosetta_ref2015', 'rosetta_cartddg2020_ref2015']
-    supported_interaction_methods = ['foldx5']
-    supported_modules = [ CancermutsTable,
-                          PTMs,
-                          LongRange,
-                          Stability,
-                          LocalInteractions,
-                          SAS,
-                          LocalInteractionsDNA,
-                          LocalInteractionsHomodimer,
-                          ClinVar,
-                          AlphaFoldMetadata,
-                          DeMaSk,
-                          GEMME,
-                          EVE ]
+    supported_modes = { 'simple_mode'   : MAVISpSimpleMode(),
+                        'ensemble_mode' : MAVISpEnsembleMode()}
 
     def __init__(self, modes=None, include_proteins=None, exclude_proteins=None, data_dir="database", verbose=True):
 
@@ -61,7 +48,7 @@ class MAVISpFileSystem:
         if modes is None:
             modes = self.supported_modes
 
-        modes_diff = set(modes).difference(set(self.supported_modes))
+        modes_diff = set(modes).difference(set(self.supported_modes.keys()))
         if len(modes_diff) > 0:
             raise TypeError(f"the following modes are not supported: {modes_diff}")
 
@@ -72,8 +59,6 @@ class MAVISpFileSystem:
 
     def _dataset_table(self, include, exclude):
 
-        warnings = []
-
         self.log.info("generating dataset table")
 
         df_list = []
@@ -81,98 +66,39 @@ class MAVISpFileSystem:
         for system in self._dir_list(self._tree):
             if (include is not None and system not in include) or (exclude is not None and system in exclude) and (not (exclude is None and include is None)):
                 self.log.warning(f"ignoring not selected protein {system}")
-                warnings.append(f"ignoring not selected protein {system}")
                 continue
             for mode in self._dir_list(self._tree[system]):
-                if mode not in self.supported_modes:
+                if mode not in self.supported_modes.keys():
                     self.log.warning(f"ignoring unsupported mode {mode} in {[system, mode]}")
-                    warnings.append(f"ignoring unsupported mode {mode} in {[system, mode]}")
                     continue
+
                 self.log.info(f"adding {[system, mode]} to dataset")
+                mavisp_criticals = []
 
                 try:
                     mutation_list = self._parse_mutation_list(system, mode)
                 except Exception as e:
                     self.log.error(e)
                     mutation_list = None
+                    mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
 
                 try:
-                    metadata = self._parse_metadata(system, mode)
+                    metadata, metadata_mavisp_criticals = self.supported_modes[mode].parse_metadata(self.data_dir, system)
                 except IOError:
                     self.log.error("Couldn't parse metadata file")
-                    curators = None
-                    uniprot_ac = None
-                    refseq_id = None
-                    review_status = None
-                    ensemble_sources = None
-                    ensemble_size_foldx = None
-                    ensemble_size_rosetta = None
-                else:
-                    try:
-                        curators= ', '.join(
-                            [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
-                        )
-                    except KeyError:
-                        self.log.debug("There is no curators field in metadata file")
-                        curators = None
+                    metadata = {k : None for k in self.supported_modes[mode].supported_metadata}
+                    metadata_mavisp_criticals = []
 
-                    try:
-                        uniprot_ac = str(metadata['uniprot_ac'])
-                    except KeyError:
-                        self.log.debug("There is no Uniprot AC field in metadata file")
-                        uniprot_ac = None
+                mavisp_criticals.extend(metadata_mavisp_criticals)
 
-                    try:
-                        refseq_id = str(metadata['refseq_id'])
-                    except KeyError:
-                        self.log.debug("There is no RefSeq ID field in metadata file")
-                        refseq_id = None
+                metadata['system'] = system
+                metadata['mutations'] = mutation_list
+                metadata['mode'] = mode
+                metadata['mavisp_criticals'] = mavisp_criticals
 
-                    try:
-                        review_status = str(metadata["review_status"])
-                    except KeyError:
-                        self.log.debug("There is no review status field in metadata file")
-                        review_status = None
+                df_list.append(metadata)
 
-                    try:
-                        # Check if the ensemble sources is a list, if it's not, it's equal to None
-                        if isinstance(metadata["ensemble_sources"],list):
-                            ensemble_sources = ", ".join([str(value) for value in metadata["ensemble_sources"]])
-                        else:
-                            ensemble_sources = None
-                            self.log.debug("Ensemble sources are in the wrong format")
-                    except KeyError:
-                        self.log.debug("There are no ensemble sources in metadata file")
-                        ensemble_sources = ""
-                    try:
-                        if isinstance(metadata["ensemble_size_foldx"],list):
-                            ensemble_size_foldx = ", ".join([str(value) for value in metadata["ensemble_size_foldx"]])
-                        else:
-                            ensemble_size_foldx = None
-                            self.log.debug("Ensemble size Foldx is in the wrong format")
-                    except KeyError:
-                        self.log.debug("There is no ensemble size for FoldX field in metadata file")
-                        ensemble_size_foldx = ""
-                    try:
-                        if isinstance(metadata["ensemble_size_rosetta"],list):
-                            ensemble_size_rosetta = ", ".join([str(value) for value in metadata["ensemble_size_rosetta"]])
-                        else:
-                            ensemble_size_rosetta = None
-                            self.log.debug("Ensemble size Rosetta is in the wrong format")
-                    except KeyError:
-                        self.log.debug("There is no ensemble size for Rosetta field in metadata file")
-                        ensemble_size_rosetta = ""
-                    try:
-                        if not len(set( len(metadata[m]) for m in ["ensemble_size_foldx", "ensemble_size_rosetta", "ensemble_sources"])) == 1:
-                            ensemble_size_foldx = None
-                            ensemble_size_rosetta = None
-                            ensemble_sources = None
-                            self.log.debug("Ensemble sources, ensemble size (FoldX, Rosetta) are not the same length")
-                    except (KeyError,TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
-                        pass
-                df_list.append((system, uniprot_ac, refseq_id, mode, ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta, review_status,  mutation_list, curators))
-
-        main_df = pd.DataFrame.from_records(df_list, columns=['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'mutations', 'curators'])
+        main_df = pd.DataFrame.from_records(df_list)
         self.log.debug(f"identified datasets:\n{main_df}")
 
         return main_df
@@ -231,14 +157,6 @@ class MAVISpFileSystem:
 
         return mutations
 
-    def _parse_metadata(self, system, mode):
-        self.log.info("parsing metadata file")
-
-        metadata_path = os.path.join(self.data_dir, system, mode, 'metadata.yaml')
-
-        with open(metadata_path) as fh:
-            return yaml.safe_load(fh)
-
     def _select_most_recent_file(self, fnames):
 
         dates = {}
@@ -275,49 +193,11 @@ class MAVISpFileSystem:
             mavisp_modules = defaultdict(lambda: None)
             mavisp_warnings = defaultdict(list)
             mavisp_errors = defaultdict(list)
-            mavisp_criticals = []
+            mavisp_criticals = r['mavisp_criticals']
 
             system = r['system']
             mode = r['mode']
             mutations = r['mutations']
-            curators = r['curators']
-            uniprot_ac = r['uniprot_ac']
-            refseq_id = r['refseq_id']
-            review_status = r['review_status']
-            ensemble_sources = r['ensemble_sources']
-            ensemble_size_foldx = r['ensemble_size_foldx']
-            ensemble_size_rosetta = r['ensemble_size_rosetta']
-
-            if mutations is None:
-                mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
-
-            if curators is None and uniprot_ac is None and refseq_id is None and review_status is None:
-                mavisp_criticals.append(MAVISpCriticalError("No useful information was found in metadata file, or metadata file not readable"))
-            else:
-                if curators is None:
-                    mavisp_criticals.append(MAVISpCriticalError("information about curators was not found in the metadata file"))
-                if uniprot_ac is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Uniprot AC was not found in the metadata file"))
-                if refseq_id is None:
-                    mavisp_criticals.append(MAVISpCriticalError("RefSeq ID was not found in the metadata file"))
-                if sum([var != "" for var in [ensemble_sources, ensemble_size_foldx, ensemble_size_rosetta]]) in [1, 2]:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta need to be present or absent at the same time"))
-                elif ensemble_sources is None and ensemble_size_foldx is None and ensemble_size_rosetta is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources, ensemble size FoldX and ensemble size Rosetta have not the same length"))
-                elif ensemble_sources is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble sources is not in the right format"))
-                elif ensemble_size_foldx is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size FoldX is not in the right format"))
-                elif ensemble_size_rosetta is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Ensemble size Rosetta is not in the right format"))
-                if review_status is None:
-                    mavisp_criticals.append(MAVISpCriticalError("Review status was not found in the metadata file"))
-                else:
-                    if not str.isdigit(review_status):
-                        mavisp_criticals.append(MAVISpCriticalError("Review status is not a positive integer"))
-                    else:
-                        if int(review_status) < 0 or int(review_status) > 4:
-                            mavisp_criticals.append(MAVISpCriticalError("Review status is not in the range 0-4"))
 
             if len(mavisp_criticals) > 0:
                 mavisp_dataset_column.append(mavisp_modules)
@@ -332,7 +212,7 @@ class MAVISpFileSystem:
             analysis_basepath = os.path.join(self.data_dir, system, mode)
 
             # for every available module:
-            for mod in self.supported_modules:
+            for mod in self.supported_modes[mode].supported_modules:
 
                 # check if the dataset is available
                 if mod.module_dir in self._dir_list(self._tree[system][mode]):
@@ -413,8 +293,7 @@ class MAVISpFileSystem:
                 data['status'].append('critical')
                 continue
 
-            for this_m in self.supported_modules:
-
+            for this_m in self.supported_modes[r['mode']].supported_modules:
                 data['system'].append(r['system'])
                 data['mode'].append(r['mode'])
                 data['module'].append(this_m.name)

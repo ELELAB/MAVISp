@@ -25,22 +25,22 @@ from termcolor import colored
 from time import strftime
 from time import gmtime
 header = """
-                        .__                 
-  _____  _____   ___  __|__|  ____________  
- /     \ \__  \  \  \/ /|  | /  ___/\____ \ 
+                        .__
+  _____  _____   ___  __|__|  ____________
+ /     \ \__  \  \  \/ /|  | /  ___/\____ \
 |  Y Y  \ / __ \_ \   / |  | \___ \ |  |_> >
-|__|_|  /(____  /  \_/  |__|/____  >|   __/ 
-      \/      \/                 \/ |__|    
+|__|_|  /(____  /  \_/  |__|/____  >|   __/
+      \/      \/                 \/ |__|
 
 
 ============================================
 
 If you use MAVISp for your research, please cite:
 
-    Matteo Arnaudi, Ludovica Beltrame, Kristine 
-    Degn, Mattia Utichi, Alberto Pettenella, 
-    Simone Scrima, Peter Wad Sackett, Matteo 
-    Lambrughi, Matteo Tiberti, Elena Papaleo. 
+    Matteo Arnaudi, Ludovica Beltrame, Kristine
+    Degn, Mattia Utichi, Alberto Pettenella,
+    Simone Scrima, Peter Wad Sackett, Matteo
+    Lambrughi, Matteo Tiberti, Elena Papaleo.
     MAVISp: Multi-layered Assessment of VarIants
     by Structure for proteins. bioRxiv 2022.10.22.513328;
     doi: https://doi.org/10.1101/2022.10.22.513328
@@ -150,10 +150,10 @@ def main():
     for s in systems:
         this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])].reset_index()
         if 'critical' in this_system['status'].values:
-            critical_count += 1
             details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'magenta', attrs=['bold'])
             for crit in this_system.iloc[0]['details_crit']:
                 details_text += colored(f"    ! {str(crit)}\n", 'magenta')
+                critical_count += 1
             details_text += '\n'
             continue
 
