@@ -37,7 +37,9 @@ database_dir = get_database_dir()
 
 show_table = load_main_table(database_dir)
 
-add_logo("assets/logo_small.png")
+add_mavisp_logo("assets/logo_small.png")
+
+add_affiliation_logo()
 
 st.write('Please choose a dataset in the table below and click on the "View dataset"'
 'button.  The corresponding MAVISp results table will be displayed underneath. '

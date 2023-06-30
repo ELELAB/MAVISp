@@ -63,7 +63,7 @@ def build_markup_for_logo(
         image_height,
     )
 
-def add_logo(png_file, *args, **kwargs):
+def add_mavisp_logo(png_file, *args, **kwargs):
     logo_markup = build_markup_for_logo(png_file, *args, **kwargs)
     st.markdown(
         logo_markup,
@@ -76,3 +76,12 @@ def get_database_dir(var_name='MAVISP_DATABASE', default_dir='./database'):
     if dir_name is None:
         return default_dir
     return var_name
+
+def add_affiliation_logo():
+    columns = st.sidebar.columns(2)
+
+    with columns[0]:
+        st.write("""<div style="width:100%;text-align:center;"><a href="https://www.cancer.dk" style="float:center"><img src="app/static/dcs_logo.png" width="60px"></img></a></div>""", unsafe_allow_html=True)
+
+    with columns[1]:
+        st.write("""<div style="width:100%;text-align:center;"><a href="https://www.dtu.dk" style="float:center"><img src="app/static/dtu_logo.png" width="60px"></img></a></div>""", unsafe_allow_html=True)
