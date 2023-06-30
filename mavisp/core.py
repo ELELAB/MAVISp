@@ -55,9 +55,12 @@ class MAVISpFileSystem:
         self.data_dir = data_dir
 
         self._tree = self._traverse(self.data_dir)
-        self.dataset_table = self._dataset_table(include=include_proteins, exclude=exclude_proteins)
 
-    def _dataset_table(self, include, exclude):
+        self.dataset_tables = {}
+        for mode_name, mode in self.supported_modes.items():
+            self.dataset_tables[mode_name] = self._gen_dataset_table(mode, include=include_proteins, exclude=exclude_proteins)
+
+    def _gen_dataset_table(self, mode, include, exclude):
 
         self.log.info("generating dataset table")
 
@@ -67,36 +70,32 @@ class MAVISpFileSystem:
             if (include is not None and system not in include) or (exclude is not None and system in exclude) and (not (exclude is None and include is None)):
                 self.log.warning(f"ignoring not selected protein {system}")
                 continue
-            for mode in self._dir_list(self._tree[system]):
-                if mode not in self.supported_modes.keys():
-                    self.log.warning(f"ignoring unsupported mode {mode} in {[system, mode]}")
-                    continue
 
-                self.log.info(f"adding {[system, mode]} to dataset")
-                mavisp_criticals = []
+            self.log.info(f"adding {[system, mode]} to dataset")
+            mavisp_criticals = []
 
-                try:
-                    mutation_list = self._parse_mutation_list(system, mode)
-                except Exception as e:
-                    self.log.error(e)
-                    mutation_list = None
-                    mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
+            try:
+                mutation_list = self._parse_mutation_list(system, mode.name)
+            except Exception as e:
+                self.log.error(e)
+                mutation_list = None
+                mavisp_criticals.append(MAVISpCriticalError("the mutation list was not available, readable or in the expected format"))
 
-                try:
-                    metadata, metadata_mavisp_criticals = self.supported_modes[mode].parse_metadata(self.data_dir, system)
-                except IOError:
-                    self.log.error("Couldn't parse metadata file")
-                    metadata = {k : None for k in self.supported_modes[mode].supported_metadata}
-                    metadata_mavisp_criticals = []
+            try:
+                metadata, metadata_mavisp_criticals = mode.parse_metadata(self.data_dir, system)
+            except IOError:
+                self.log.error("Couldn't parse metadata file")
+                metadata = {k : None for k in mode.supported_metadata}
+                metadata_mavisp_criticals = []
 
-                mavisp_criticals.extend(metadata_mavisp_criticals)
+            mavisp_criticals.extend(metadata_mavisp_criticals)
 
-                metadata['system'] = system
-                metadata['mutations'] = mutation_list
-                metadata['mode'] = mode
-                metadata['mavisp_criticals'] = mavisp_criticals
+            metadata['system'] = system
+            metadata['mutations'] = mutation_list
+            metadata['mode'] = mode.name
+            metadata['mavisp_criticals'] = mavisp_criticals
 
-                df_list.append(metadata)
+            df_list.append(metadata)
 
         main_df = pd.DataFrame.from_records(df_list)
         self.log.debug(f"identified datasets:\n{main_df}")
@@ -182,88 +181,89 @@ class MAVISpFileSystem:
 
     def ingest(self, stop_at='critical'):
 
-        # for every protein (and supported mode) in the dataset
-        mavisp_warnings_column = []
-        mavisp_errors_column = []
-        mavisp_criticals_column = []
-        mavisp_dataset_column = []
+        for mode_name, mode in self.supported_modes.items():
 
-        for _, r in self.dataset_table.iterrows():
+            # for every protein (and supported mode) in the dataset
+            mavisp_warnings_column = []
+            mavisp_errors_column = []
+            mavisp_criticals_column = []
+            mavisp_dataset_column = []
 
-            mavisp_modules = defaultdict(lambda: None)
-            mavisp_warnings = defaultdict(list)
-            mavisp_errors = defaultdict(list)
-            mavisp_criticals = r['mavisp_criticals']
+            for _, r in self.dataset_tables[mode_name].iterrows():
 
-            system = r['system']
-            mode = r['mode']
-            mutations = r['mutations']
+                mavisp_modules = defaultdict(lambda: None)
+                mavisp_warnings = defaultdict(list)
+                mavisp_errors = defaultdict(list)
+                mavisp_criticals = r['mavisp_criticals']
 
-            if len(mavisp_criticals) > 0:
+                system = r['system']
+                mutations = r['mutations']
+
+                if len(mavisp_criticals) > 0:
+                    mavisp_dataset_column.append(mavisp_modules)
+                    mavisp_errors_column.append(mavisp_errors)
+                    mavisp_warnings_column.append(mavisp_warnings)
+                    mavisp_criticals_column.append(mavisp_criticals)
+
+                    continue
+
+                self.log.info(f"Gathering data for {r['system']} {mode_name}")
+
+                analysis_basepath = os.path.join(self.data_dir, system, mode_name)
+
+                # for every available module:
+                for mod in mode.supported_modules:
+
+                    # check if the dataset is available
+                    if mod.module_dir in self._dir_list(self._tree[system][mode_name]):
+                        try:
+                            self.log.info(f"processing module {mod.name} for {system}, {mode_name}")
+                            this_module = mod(analysis_basepath)
+                            this_module.ingest(mutations['mutation'].tolist())
+
+                        except MAVISpMultipleError as e:
+                            mavisp_errors[mod.name].extend(e.critical)
+                            mavisp_warnings[mod.name].extend(e.warning)
+                            if len(e.critical) != 0:
+                                mavisp_modules[mod.name] = None
+                                continue
+                            if len(e.warning) != 0 and stop_at == 'warning':
+                                mavisp_modules[mod.name] = None
+                                continue
+
+                        mavisp_modules[mod.name] = this_module
                 mavisp_dataset_column.append(mavisp_modules)
                 mavisp_errors_column.append(mavisp_errors)
                 mavisp_warnings_column.append(mavisp_warnings)
                 mavisp_criticals_column.append(mavisp_criticals)
 
-                continue
+            self.dataset_tables[mode_name]['modules'] = mavisp_dataset_column
+            self.dataset_tables[mode_name]['criticals'] = mavisp_criticals_column
+            self.dataset_tables[mode_name]['errors'] = mavisp_errors_column
+            self.dataset_tables[mode_name]['warnings'] = mavisp_warnings_column
 
-            self.log.info(f"Gathering data for {r['system']} {r['mode']}")
+    def get_datasets_table_view(self, mode_name):
+        return self.dataset_tables[mode_name][self.supported_modes[mode_name].index_cols]
 
-            analysis_basepath = os.path.join(self.data_dir, system, mode)
-
-            # for every available module:
-            for mod in self.supported_modes[mode].supported_modules:
-
-                # check if the dataset is available
-                if mod.module_dir in self._dir_list(self._tree[system][mode]):
-                    try:
-                        self.log.info(f"processing module {mod.name} for {system}, {mode}")
-                        this_module = mod(analysis_basepath)
-                        this_module.ingest(mutations['mutation'].tolist())
-
-                    except MAVISpMultipleError as e:
-                        mavisp_errors[mod.name].extend(e.critical)
-                        mavisp_warnings[mod.name].extend(e.warning)
-                        if len(e.critical) != 0:
-                            mavisp_modules[mod.name] = None
-                            continue
-                        if len(e.warning) != 0 and stop_at == 'warning':
-                            mavisp_modules[mod.name] = None
-                            continue
-
-                    mavisp_modules[mod.name] = this_module
-            mavisp_dataset_column.append(mavisp_modules)
-            mavisp_errors_column.append(mavisp_errors)
-            mavisp_warnings_column.append(mavisp_warnings)
-            mavisp_criticals_column.append(mavisp_criticals)
-
-        self.dataset_table['modules'] = mavisp_dataset_column
-        self.dataset_table['criticals'] = mavisp_criticals_column
-        self.dataset_table['errors'] = mavisp_errors_column
-        self.dataset_table['warnings'] = mavisp_warnings_column
-
-    def get_datasets_table_view(self):
-        return self.dataset_table[['system', 'uniprot_ac', 'refseq_id','mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta', 'review_status', 'curators']]
-
-    def get_annotation_tables_view(self):
+    def get_annotation_tables_view(self, mode_name):
 
         all_tables = {}
 
-        for _, r in self.dataset_table.iterrows():
+        for _, r in self.dataset_tables[mode_name].iterrows():
 
             annotation_table = pd.DataFrame(index=r['mutations'])
             for mod in r['modules']:
                 annotation_table = annotation_table.join(mod.get_dataset_view())
 
-                all_tables[f"{r['system']}_{r['mode']}"] = annotation_table
+                all_tables[f"{r['system']}_{mode_name}"] = annotation_table
 
         return all_tables
 
-    def get_datasets_table_summary(self):
+    def get_datasets_table_summary(self, mode_name):
 
         data = defaultdict(list)
 
-        for _, r in self.dataset_table.iterrows():
+        for _, r in self.dataset_tables[mode_name].iterrows():
             data['System'].append(r['system'])
             data['Mode'].append(r['mode'])
             if len(r['criticals']) > 0:
@@ -277,11 +277,11 @@ class MAVISpFileSystem:
 
         return pd.DataFrame(data)
 
-    def get_datasets_table_details(self):
+    def get_datasets_table_details(self, mode_name):
 
         data = defaultdict(list)
 
-        for _, r in self.dataset_table.iterrows():
+        for _, r in self.dataset_tables[mode_name].iterrows():
 
             if len(r['criticals']) > 0:
                 data['system'].append(r['system'])

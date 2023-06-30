@@ -28,7 +28,7 @@ class MAVISpMode:
 
         print(data_dir)
 
-        metadata_path = os.path.join(data_dir, system, f"{mode}_mode", 'metadata.yaml')
+        metadata_path = os.path.join(data_dir, system, self.name, 'metadata.yaml')
         print(metadata_path)
 
         with open(metadata_path) as fh:
@@ -37,7 +37,7 @@ class MAVISpMode:
 
 class MAVISpSimpleMode(MAVISpMode):
 
-    name = 'simple'
+    name = 'simple_mode'
     supported_modules = [ CancermutsTable,
                                 PTMs,
                           LongRange,
@@ -51,8 +51,16 @@ class MAVISpSimpleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE ]
-    supported_metadata = ['system', 'uniprot_ac', 'refseq_id', 'mode', 'review_status', 'mutations', 'curators']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'mode', 'review_status', 'curators']
+    index_col_labels = {'system' : "Protein",
+                        'mode'  : "Mode",
+                        'uniprot_ac' : 'Uniprot AC',
+                        'refseq_id' : "RefSeq ID",
+                        'review_status' : 'Review status',
+                        'curators' : 'Curators',
+                        }
 
     def parse_metadata(self, data_dir, system):
 
@@ -95,11 +103,22 @@ class MAVISpEnsembleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE ]
-
-    name = 'simple'
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
+    name = 'ensemble_mode'
     supported_modules = None
-    supported_metadata = ['system', 'uniprot_ac', 'refseq_id', 'mode', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'mutations', 'curators']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
+    index_col_labels = {'system' : "Protein",
+                        'mode'  : "Mode",
+                        'uniprot_ac' : 'Uniprot AC',
+                        'refseq_id' : "RefSeq ID",
+                        'ensemble_sources' : "Ensemble sources",
+                        'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
+                        'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
+                        'review_status' : 'Review status',
+                        'curators' : 'Curators',
+                        }
+
 
     def parse_metadata(self, data_dir, system):
 

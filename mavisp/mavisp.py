@@ -57,8 +57,6 @@ legend = f"""legend:
 {colored("    ~ module_name", 'yellow')}    warnings detected in this module, with no errors
     = module_name    this module is not available for this protein"""
 
-module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
-
 def main():
 
     parser = argparse.ArgumentParser()
@@ -131,74 +129,75 @@ def main():
 
     mfs.ingest()
 
-    summary = mfs.get_datasets_table_summary()
-    print("\n\n*** SUMMARY ***\n")
-    print(tabulate(summary, headers=summary.columns, showindex=False, tablefmt="double_outline"))
+    for mode_name in mfs.supported_modes.keys():
+        summary = mfs.get_datasets_table_summary(mode_name)
+        print(f"\n\n*** SUMMARY - {mode_name}***\n")
+        print(tabulate(summary, headers=summary.columns, showindex=False, tablefmt="double_outline"))
 
-    details = mfs.get_datasets_table_details()
+        details_text = "\n\n*** DETAILED REPORT ***\n\n"
+        details_text += legend + "\n\n"
 
-    details_text = "\n\n*** DETAILED REPORT ***\n\n"
-    details_text += legend + "\n\n"
+        error_count = 0
+        warning_count = 0
+        critical_count = 0
 
-    error_count = 0
-    warning_count = 0
-    critical_count = 0
+        details = mfs.get_datasets_table_details(mode_name)
 
-    details['index'] = list(zip(details['system'], details['mode']))
-    systems = details['index'].unique()
+        details['index'] = list(zip(details['system'], details['mode']))
+        systems = details['index'].unique()
 
-    for s in systems:
-        this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])].reset_index()
-        if 'critical' in this_system['status'].values:
-            details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'magenta', attrs=['bold'])
-            for crit in this_system.iloc[0]['details_crit']:
-                details_text += colored(f"    ! {str(crit)}\n", 'magenta')
-                critical_count += 1
+        for s in systems:
+            this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])].reset_index()
+            if 'critical' in this_system['status'].values:
+                details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'magenta', attrs=['bold'])
+                for crit in this_system.iloc[0]['details_crit']:
+                    details_text += colored(f"    ! {str(crit)}\n", 'magenta')
+                    critical_count += 1
+                details_text += '\n'
+                continue
+
+            details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'cyan', attrs=['bold'])
+            for _, r in this_system.iterrows():
+                if r['status'] == "ok":
+                    details_text += colored(f"    ✓ {r['module']}\n", 'green')
+                if r['status'] == "error":
+                    details_text += colored(f"    X {r['module']}\n", 'red')
+                    for err in r['details_err']:
+                        details_text += f"        {colored(err, 'red')}\n"
+                        error_count += 1
+                    for warn in r['details_warn']:
+                        details_text += f"        {colored(warn, 'yellow')}\n"
+                        warning_count += 1
+                if r['status'] == "warning":
+                    details_text += colored(f"    ~ {r['module']}\n", 'yellow')
+                    for warn in r['details_warn']:
+                        details_text += f"        {colored(warn, 'yellow')}\n"
+                        warning_count += 1
+                if r['status'] == "not_available":
+                    details_text += f"    = {r['module']}\n"
             details_text += '\n'
-            continue
 
-        details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'cyan', attrs=['bold'])
-        for _, r in this_system.iterrows():
-            if r['status'] == "ok":
-                details_text += colored(f"    ✓ {r['module']}\n", 'green')
-            if r['status'] == "error":
-                details_text += colored(f"    X {r['module']}\n", 'red')
-                for err in r['details_err']:
-                    details_text += f"        {colored(err, 'red')}\n"
-                    error_count += 1
-                for warn in r['details_warn']:
-                    details_text += f"        {colored(warn, 'yellow')}\n"
-                    warning_count += 1
-            if r['status'] == "warning":
-                details_text += colored(f"    ~ {r['module']}\n", 'yellow')
-                for warn in r['details_warn']:
-                    details_text += f"        {colored(warn, 'yellow')}\n"
-                    warning_count += 1
-            if r['status'] == "not_available":
-                details_text += f"    = {r['module']}\n"
-        details_text += '\n'
-
-    if error_count == 0 and warning_count == 0 and critical_count == 0:
-        details_text += colored("*** ALL GOOD! 👏👏👏 ***\n", "green")
-    else:
-        if critical_count > 0:
-            critical_text = colored(f"{critical_count} critical error(s)", 'magenta')
+        if error_count == 0 and warning_count == 0 and critical_count == 0:
+            details_text += colored("*** ALL GOOD! 👏👏👏 ***\n", "green")
         else:
-            critical_text = ""
+            if critical_count > 0:
+                critical_text = colored(f"{critical_count} critical error(s)", 'magenta')
+            else:
+                critical_text = ""
 
-        if error_count > 0:
-            error_text = colored(f"{error_count} error(s)", 'red')
-        else:
-            error_text = ""
+            if error_count > 0:
+                error_text = colored(f"{error_count} error(s)", 'red')
+            else:
+                error_text = ""
 
-        if warning_count > 0:
-            warning_text = colored(f"{warning_count} warning(s)", 'yellow')
-        else:
-            warning_text = ""
+            if warning_count > 0:
+                warning_text = colored(f"{warning_count} warning(s)", 'yellow')
+            else:
+                warning_text = ""
 
-        details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
+            details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
 
-    print(details_text)
+        print(details_text)
 
     if args.dry_run:
         log.info("Exiting without writing any file, as dry-run mode is active")
@@ -220,72 +219,67 @@ def main():
         log.error("Couldn't create the specified output directory; exiting...")
         exit(1)
 
-
     out_table = mfs.dataset_table[mfs.dataset_table.apply(lambda r: len(r['criticals']) == 0, axis=1)]
-    out_table = out_table[['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']]
-    out_table = out_table.rename(columns={'system' : "Protein",
-                                          'mode'  : "Mode",
-                                          'uniprot_ac' : 'Uniprot AC',
-                                          'refseq_id' : "RefSeq ID",
-                                          'ensemble_sources' : "Ensemble sources",
-                                          'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
-                                          'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
-                                          'review_status' : 'Review status',
-                                          'curators' : 'Curators',
-                                          })
 
-    out_table.to_csv(out_path / 'index.csv', index=False)
+    for mode_name, mode in mfs.supported_modes:
+        mode_path = out_path / Path(mode_name)
+        mode_path.mkdir(exist_ok=True)
 
-    dataset_tables_path = out_path / 'dataset_tables'
-    dataset_tables_path.mkdir(exist_ok=True)
+        out_table = out_table[mode.index_cols]
+        out_table = out_table.rename(columns=mode.index_col_labels)
 
-    # Generate a csv file that contains the number of mutations and the date of the run
-    time = strftime("%Y-%m-%d", gmtime())
+        out_table.to_csv(mode_path / 'index.csv', index=False)
 
-    # Count number of unique mutations
-    nb_mutations = mfs.dataset_table.explode('mutations').drop_duplicates(['system', 'mutations']).shape[0]
+        dataset_tables_path = mode_path / 'dataset_tables'
+        dataset_tables_path.mkdir(exist_ok=True)
 
-    # Group the rows by the "system" column and count the number of unique modes for each group
-    grouped = mfs.dataset_table.groupby('system')['mode'].nunique()
+        # Generate a csv file that contains the number of mutations and the date of the run
+        time = strftime("%Y-%m-%d", gmtime())
 
-    # Group and count instances in which a protein is found to have two modes
-    nb_both_modes = grouped[grouped == 2].shape[0]
+        # Count number of unique mutations
+        nb_mutations = mfs.dataset_tables[mode_name].explode('mutations').drop_duplicates(['system', 'mutations']).shape[0]
 
-    nb_simple_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
-    nb_ensemble_mode = len(mfs.dataset_table[mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
+        # Group the rows by the "system" column and count the number of unique modes for each group
+        grouped = mfs.dataset_tables[mode_name].groupby('system')['mode'].nunique()
 
-    nb_proteins = nb_simple_mode + nb_ensemble_mode + nb_both_modes
+        # Group and count instances in which a protein is found to have two modes
+        nb_both_modes = grouped[grouped == 2].shape[0]
 
-    mutation_table = pd.DataFrame({'Number of mutations': nb_mutations,
-                                   'Date of run': time,
-                                   'Number of proteins': nb_proteins,
-                                   'Number of proteins in simple mode only' : nb_simple_mode,
-                                   'Number of proteins in ensemble mode only': nb_ensemble_mode,
-                                   'Number of proteins in both modes': nb_both_modes,
-                                   }, index=[0])
-    mutation_table.to_csv(out_path / 'dataset_info.csv', index=False)
+        nb_simple_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_table['mode'] == 'simple_mode']) - nb_both_modes
+        nb_ensemble_mode = len(mfs.dataset_tables[mode_name][mfs.dataset_table['mode'] == 'ensemble_mode']) - nb_both_modes
 
-    for _, r in mfs.dataset_table.iterrows():
+        nb_proteins = nb_simple_mode + nb_ensemble_mode + nb_both_modes
 
-        if len(r['criticals']) > 0:
-            continue
+        mutation_table = pd.DataFrame({'Number of mutations': nb_mutations,
+                                    'Date of run': time,
+                                    'Number of proteins': nb_proteins,
+                                    'Number of proteins in simple mode only' : nb_simple_mode,
+                                    'Number of proteins in ensemble mode only': nb_ensemble_mode,
+                                    'Number of proteins in both modes': nb_both_modes,
+                                    }, index=[0])
+        mutation_table.to_csv(mode_path / 'dataset_info.csv', index=False)
 
-        this_df = r['mutations']
-        this_df = this_df.rename(columns={'mutation' : 'Mutation',
-                                          'PMID'     : 'References'})
-        this_df = this_df.set_index('Mutation')
+        for _, r in mfs.dataset_tables[mode_name].iterrows():
 
-        for mod_name in module_order:
-            mod = r['modules'][mod_name]
-            if mod is None:
+            if len(r['criticals']) > 0:
                 continue
-            this_df = this_df.join(mod.get_dataset_view())
 
-        # move Reference column to last
-        this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
+            this_df = r['mutations']
+            this_df = this_df.rename(columns={'mutation' : 'Mutation',
+                                              'PMID'     : 'References'})
+            this_df = this_df.set_index('Mutation')
 
-        # fill NAs
-        this_df = this_df.fillna(pd.NA)
+            for mod_name in module_order:
+                mod = r['modules'][mod_name]
+                if mod is None:
+                    continue
+                this_df = this_df.join(mod.get_dataset_view())
 
-        # save final dataframe
-        this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")
+            # move Reference column to last
+            this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
+
+            # fill NAs
+            this_df = this_df.fillna(pd.NA)
+
+            # save final dataframe
+            this_df.to_csv(dataset_tables_path / f"{r['system']}-{r['mode']}.csv")
