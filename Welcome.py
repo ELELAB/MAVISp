@@ -34,7 +34,7 @@ st.header("Welcome to MAVISp!")
 
 st.write("""MAVISp includes different types of predictions for the effect of mutations on protein function, structure or more. Its final goal is to predict the effect of relevant variants of unknown significance and identify their mechanism of action.
 
-MAVISp has been designed by the Cancer Structural/Systems Biology group, headed by Elena Papaleo, with shared affiliation at the Danish Cancer Research Center and the Danish Technical University, Department of Health and Technology. 
+MAVISp has been designed by the Cancer Structural/Systems Biology group, headed by Elena Papaleo, with shared affiliation at the Danish Cancer Research Institute and the Danish Technical University, Department of Health and Technology. 
 
 Please use the menu on the left to navigate the website.
 
