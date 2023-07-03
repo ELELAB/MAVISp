@@ -36,7 +36,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
-                                PTMs,
+                          PTMs,
                           LongRange,
                           Stability,
                           LocalInteractions,
@@ -50,9 +50,8 @@ class MAVISpSimpleMode(MAVISpMode):
                           EVE ]
     module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'mode', 'review_status', 'curators']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
-                        'mode'  : "Mode",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'review_status' : 'Review status',
@@ -72,8 +71,9 @@ class MAVISpSimpleMode(MAVISpMode):
             )
         except KeyError:
             log.debug("There is no curators field in metadata file")
-            out_metadata['curators'] = None
+            curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
+        out_metadata['curators'] = curators
 
         for k in ['uniprot_ac', 'refseq_id', 'review_status']:
             try:
@@ -88,7 +88,7 @@ class MAVISpSimpleMode(MAVISpMode):
 class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
-                                PTMs,
+                          PTMs,
                           LongRange,
                           Stability,
                           LocalInteractions,
@@ -104,10 +104,9 @@ class MAVISpEnsembleMode(MAVISpMode):
     name = 'ensemble_mode'
     supported_modules = None
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'mode','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
     index_col_labels = {'system' : "Protein",
-                        'mode'  : "Mode",
-                        'uniprot_ac' : 'Uniprot AC',
+                            'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'ensemble_sources' : "Ensemble sources",
                         'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
@@ -125,13 +124,14 @@ class MAVISpEnsembleMode(MAVISpMode):
         metadata = self._parse_metadata_file(data_dir, system, self.name)
 
         try:
-            curators= ', '.join(
+            curators = ', '.join(
                 [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
             )
         except KeyError:
             log.debug("There is no curators field in metadata file")
-            out_metadata['curators'] = None
+            curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
+        out_metadata['curators'] = curators
 
         for k in ['uniprot_ac', 'refseq_id', 'review_status']:
             try:
