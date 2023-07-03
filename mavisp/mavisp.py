@@ -159,21 +159,19 @@ def main():
         critical_count = 0
 
         details = mfs.get_datasets_table_details(mode_name)
-
-        details['index'] = list(zip(details['system'], details['mode']))
-        systems = details['index'].unique()
+        systems = details['system'].unique()
 
         for s in systems:
-            this_system = details[(details['system'] == s[0]) & (details['mode'] == s[1])].reset_index()
+            this_system = details[details['system'] == s].reset_index()
             if 'critical' in this_system['status'].values:
-                details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'magenta', attrs=['bold'])
+                details_text += colored(f"{this_system['system'].unique()[0]} - {mode_name}\n", 'magenta', attrs=['bold'])
                 for crit in this_system.iloc[0]['details_crit']:
                     details_text += colored(f"    ! {str(crit)}\n", 'magenta')
                     critical_count += 1
                 details_text += '\n'
                 continue
 
-            details_text += colored(f"{this_system['system'].unique()[0]} - {this_system['mode'].unique()[0]}\n", 'cyan', attrs=['bold'])
+            details_text += colored(f"{this_system['system'].unique()[0]} - {mode_name}\n", 'cyan', attrs=['bold'])
             for _, r in this_system.iterrows():
                 if r['status'] == "ok":
                     details_text += colored(f"    ✓ {r['module']}\n", 'green')

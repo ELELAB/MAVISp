@@ -100,7 +100,6 @@ class MAVISpFileSystem:
 
             metadata['system'] = system
             metadata['mutations'] = mutation_list
-            metadata['mode'] = mode.name
             metadata['mavisp_criticals'] = mavisp_criticals
 
             df_list.append(metadata)
@@ -273,7 +272,6 @@ class MAVISpFileSystem:
 
         for _, r in self.dataset_tables[mode_name].iterrows():
             data['System'].append(r['system'])
-            data['Mode'].append(r['mode'])
             if len(r['criticals']) > 0:
                 data['Status'].append(colored("CRITICAL", 'magenta'))
             elif sum( [ len(x) for x in list(r['errors'].values())]) > 0:
@@ -293,7 +291,6 @@ class MAVISpFileSystem:
 
             if len(r['criticals']) > 0:
                 data['system'].append(r['system'])
-                data['mode'].append(r['mode'])
                 data['module'].append(pd.NA)
                 data['details_crit'].append(r['criticals'])
                 data['details_warn'].append(list())
@@ -301,9 +298,8 @@ class MAVISpFileSystem:
                 data['status'].append('critical')
                 continue
 
-            for this_m in self.supported_modes[r['mode']].supported_modules:
+            for this_m in self.supported_modes[mode_name].supported_modules:
                 data['system'].append(r['system'])
-                data['mode'].append(r['mode'])
                 data['module'].append(this_m.name)
 
                 # module not ran/available
