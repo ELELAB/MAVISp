@@ -142,7 +142,13 @@ def main():
 
     for mode_name in mfs.supported_modes.keys():
         summary = mfs.get_datasets_table_summary(mode_name)
+
         print(f"\n\n*** SUMMARY - {mode_name}***\n")
+
+        if len(summary) == 0:
+            print(colored(f"No entry found for {mode_name}\n", 'magenta'))
+            continue
+
         print(tabulate(summary, headers=summary.columns, showindex=False, tablefmt="double_outline"))
 
         details_text = "\n\n*** DETAILED REPORT ***\n\n"
