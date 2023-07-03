@@ -26,10 +26,7 @@ class MAVISpMode:
     def _parse_metadata_file(self, data_dir, system, mode):
         log.info("parsing metadata file")
 
-        print(data_dir)
-
         metadata_path = os.path.join(data_dir, system, self.name, 'metadata.yaml')
-        print(metadata_path)
 
         with open(metadata_path) as fh:
             return yaml.safe_load(fh)
