@@ -49,7 +49,7 @@ class MAVISpFileSystem:
         elif modes == 'simple_mode':
             self.supported_modes = { 'simple_mode'   : MAVISpSimpleMode() }
         elif modes == 'ensemble_mode':
-            self.supported_modes = { 'ensemble_mode' : MAVISpEnsembleMode() }
+            self.supported_modes     = { 'ensemble_mode' : MAVISpEnsembleMode() }
         else:
             raise TypeError
 
@@ -74,7 +74,12 @@ class MAVISpFileSystem:
                 self.log.warning(f"ignoring not selected protein {system}")
                 continue
 
-            self.log.info(f"adding {[system, mode]} to dataset")
+            if mode.name not in self._dir_list(self._tree[system]):
+                self.log.warning(f"mode {mode.name} not found for {system}")
+                continue
+
+            self.log.info(f"adding {system}, {mode.name} to dataset")
+
             mavisp_criticals = []
 
             try:
