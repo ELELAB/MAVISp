@@ -18,20 +18,12 @@ import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import pandas as pd
-import argparse
+from collections import defaultdict
+from streamlit_utils import *
 
-description="The MAVISp web app for the structural annotation of protein variants"
-
-parser = argparse.ArgumentParser(description=description)
-
-parser.add_argument('--database-dir',
-                    dest='database_dir',
-                    help="Location of the MAVISp database (default: ./database)",
-                    default="./database")
-
-args = parser.parse_args()
-
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide",
+    page_title="Database",
+    page_icon="👋")
 
 @st.cache_data
 def load_dataset(data_dir, protein, mode):
@@ -41,14 +33,22 @@ def load_dataset(data_dir, protein, mode):
 def load_main_table(data_dir):
     return pd.read_csv(os.path.join(data_dir, 'index.csv'))
 
-show_table = load_main_table(args.database_dir)
+database_dir = get_database_dir()
 
-st.image('assets/logo.png')
+show_table = load_main_table(database_dir)
 
-st.write('Welcome to MAVISp!')
+add_mavisp_logo("static/logo_small.png")
+
+add_affiliation_logo()
+
+st.write('Please choose a dataset in the table below and click on the "View dataset"'
+'button.  The corresponding MAVISp results table will be displayed underneath. '
+'Click on the "Download dataset" button to download the corresponding CSV file.')
+
+st.write('All data is released under the [Creative Commons Attribution 4.0 International'
+' (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)')
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
-gb_datasets_grid.configure_auto_height()
 
 gb_datasets_grid.configure_selection(selection_mode='single',
                        use_checkbox=True)
@@ -56,16 +56,25 @@ gb_datasets_grid.configure_selection(selection_mode='single',
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
-                      fit_columns_on_grid_load = True)
+                      fit_columns_on_grid_load = True,
+                      reload_data=False)
 
-if len(datasets_grid["selected_rows"]) == 1:
+if len(datasets_grid["selected_rows"]) != 1:
+    button_disabled = True
+else:
+    button_disabled = False
+
+if st.button('View dataset',
+            disabled=button_disabled):
 
     protein, mode = ( datasets_grid["selected_rows"][0]['Protein'],
-                      datasets_grid["selected_rows"][0]['Mode']    )
+                    datasets_grid["selected_rows"][0]['Mode']    )
 
-    this_dataset = load_dataset(args.database_dir, protein, mode)
+    st.write(f"Currently viewing: {protein}, {mode}")
 
-    with open(os.path.join(args.database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+    this_dataset = load_dataset(database_dir, protein, mode)
+
+    with open(os.path.join(database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
                             data=data,
                             file_name=f'{protein}-{mode}.csv',
@@ -78,5 +87,5 @@ if len(datasets_grid["selected_rows"]) == 1:
     this_dataset = this_dataset.fillna(pd.NA)
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
-                            width=3000)
+                            reload_data=False)
 
