@@ -2,7 +2,7 @@ Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark
 Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark  
 Repository associated to the publication:  
 > MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
-> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Pablo Sánchez-Izquierdo, Simone Scrima, Francesca Maselli, Karolina Krzesińska, Terézia Dorčaková, Jordan Safer, Katrine Meldgård, Julie Bruun Brockhoff, Amalie Drud Nielsen, Alberto Pettenella, Jérémy Vinhas, Peter Wad Sackett, Claudia Cava, Sumaiya Iqbal,  View ORCID ProfileMatteo Lambrughi, Matteo Tiberti, Elena Papaleo  
 > biorxiv, doi: https://doi.org/10.1101/2022.10.22.513328
 
 
@@ -15,7 +15,7 @@ This is the web app of the MAVISp database for structural variants annotation.
 If you use MAVISp, please cite our preprint:
 
 > MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
-> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Alberto Pettenella, Simone Scrima, Peter Wad Sackett, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo  
+> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Pablo Sánchez-Izquierdo, Simone Scrima, Francesca Maselli, Karolina Krzesińska, Terézia Dorčaková, Jordan Safer, Katrine Meldgård, Julie Bruun Brockhoff, Amalie Drud Nielsen, Alberto Pettenella, Jérémy Vinhas, Peter Wad Sackett, Claudia Cava, Sumaiya Iqbal,  View ORCID ProfileMatteo Lambrughi, Matteo Tiberti, Elena Papaleo 
 > biorxiv, doi: https://doi.org/10.1101/2022.10.22.513328
 
 Please see the [CHANGELOG.md](CHANGELOG.md) file on this repository for current 
@@ -166,8 +166,8 @@ alternative that doesn't use X-forwarding see instructions below.
 ssh -XY user@hostname
 ```
 
-2. Follow the previous instructions to install requirements and run the app locally.
-A browser window should pop up.
+2. Follow the previous instructions to install requirements, download required files
+ and run the app locally. A browser window should pop up.
 
 ### Running the app remotely - without X forwarding
 
@@ -181,15 +181,10 @@ user experience.
 ssh user@hostname
 ```
 
-2. Follow the previous instructions to install the requirements for MAVISp
+2. Follow the previous instructions to install the requirements and download the
+required files for MAVISp
 
-3. create a local copy of the repository:
-
-```
-git clone https://github.com/ELELAB/MAVISp
-```
-
-4. run the app in headless mode:
+3. run the app in headless mode:
 
 ```
 cd MAVISp
@@ -199,7 +194,7 @@ streamlit run --logger.level=info --server.headless=true Welcome.py
 Please note down the port that Streamlit is using
 (i.e. in this case it is `8501`)
 
-5. **on your workstation** open a new terminal and open an SSH tunnel:
+4. **on your workstation** open a new terminal and open an SSH tunnel:
 
 ```
 ssh -N -L 8080:hostname:8501 user@hostname

@@ -14,11 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import streamlit as st
-import os
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-#from streamlit_extras.app_logo import add_logo
-import pandas as pd
 from streamlit_utils import *
 import streamlit as st
 
@@ -34,7 +29,7 @@ st.header("Welcome to MAVISp!")
 
 st.write("""MAVISp includes different types of predictions for the effect of mutations on protein function, structure or more. Its final goal is to predict the effect of relevant variants of unknown significance and identify their mechanism of action.
 
-MAVISp has been designed by the Cancer Structural/Systems Biology group, headed by Elena Papaleo, with shared affiliation at the Danish Cancer Research Institute and the Danish Technical University, Department of Health and Technology. 
+MAVISp has been designed by the Cancer Structural Biology (Danish Cancer Institute, Denmark) and the Cancer Systems Biology (Department of Health and Technology at the Technical University of Demark) groups, headed by Dr. Elena Papaleo
 
 Please use the menu on the left to navigate the website.
 

@@ -21,32 +21,32 @@ import pandas as pd
 from collections import defaultdict
 from streamlit_utils import *
 
+mode = 'simple_mode'
+
 st.set_page_config(layout="wide",
-    page_title="Database",
-    page_icon="👋")
-
-@st.cache_data
-def load_dataset(data_dir, protein, mode):
-    return pd.read_csv(os.path.join(data_dir, 'dataset_tables', f'{protein}-{mode}.csv'))
-
-@st.cache_data
-def load_main_table(data_dir):
-    return pd.read_csv(os.path.join(data_dir, 'index.csv'))
+    page_title="MAVISp simple mode",
+    page_icon="📖")
 
 database_dir = get_database_dir()
-
-show_table = load_main_table(database_dir)
 
 add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
 
-st.write('Please choose a dataset in the table below and click on the "View dataset"'
-'button.  The corresponding MAVISp results table will be displayed underneath. '
-'Click on the "Download dataset" button to download the corresponding CSV file.')
+st.header('MAVISp simple mode')
 
-st.write('All data is released under the [Creative Commons Attribution 4.0 International'
-' (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)')
+st.write('''Please choose a dataset in the table below and click on the "View dataset"
+button.  The corresponding MAVISp results table will be displayed underneath.
+Click on the "Download dataset" button to download the corresponding CSV file.)
+
+All data is released under the [Creative Commons Attribution 4.0 International
+ (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)''')
+
+try:
+    show_table = load_main_table(database_dir, mode)
+except FileNotFoundError:
+    st.write('No entries are currently available for simple mode.')
+    st.stop()
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
@@ -67,14 +67,13 @@ else:
 if st.button('View dataset',
             disabled=button_disabled):
 
-    protein, mode = ( datasets_grid["selected_rows"][0]['Protein'],
-                    datasets_grid["selected_rows"][0]['Mode']    )
+    protein = datasets_grid["selected_rows"][0]['Protein']
 
-    st.write(f"Currently viewing: {protein}, {mode}")
+    st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
-    with open(os.path.join(database_dir, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}.csv')) as data:
         st.download_button(label="Download dataset",
                             data=data,
                             file_name=f'{protein}-{mode}.csv',
