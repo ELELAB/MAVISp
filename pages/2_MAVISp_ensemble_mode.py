@@ -45,7 +45,7 @@ All data is released under the [Creative Commons Attribution 4.0 International
 try:
     show_table = load_main_table(database_dir, mode)
 except FileNotFoundError:
-    st.write('No entries are currently available for simple mode.')
+    st.write('No entries are currently available for ensemble mode.')
     st.stop()
 
 
