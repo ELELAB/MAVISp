@@ -21,10 +21,10 @@ import pandas as pd
 from collections import defaultdict
 from streamlit_utils import *
 
-mode = 'simple_mode'
+mode = 'ensemble_mode'
 
 st.set_page_config(layout="wide",
-    page_title="MAVISp simple mode",
+    page_title="MAVISp ensemble mode",
     page_icon="📖")
 
 database_dir = get_database_dir()
@@ -35,7 +35,7 @@ add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
 
-st.header('MAVISp simple mode')
+st.header('MAVISp ensemble mode')
 
 st.write('''Please choose a dataset in the table below and click on the "View dataset"
 button.  The corresponding MAVISp results table will be displayed underneath.
