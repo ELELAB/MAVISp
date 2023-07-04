@@ -140,7 +140,7 @@ With your Python environment still active and from inside the `MAVISp` repositor
 directory, run:
 
 ```
-streamlit run app.py
+streamlit run Welcome.py
 ```
 
 a browser window displaying the MAVISp web app should open.
@@ -193,7 +193,7 @@ git clone https://github.com/ELELAB/MAVISp
 
 ```
 cd MAVISp
-streamlit run --logger.level=info --server.headless=true
+streamlit run --logger.level=info --server.headless=true Welcome.py
 ```
 
 Please note down the port that Streamlit is using
