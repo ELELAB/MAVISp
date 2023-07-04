@@ -102,11 +102,10 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EVE ]
     module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
     name = 'ensemble_mode'
-    supported_modules = None
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
     index_col_labels = {'system' : "Protein",
-                            'uniprot_ac' : 'Uniprot AC',
+                        'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'ensemble_sources' : "Ensemble sources",
                         'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
