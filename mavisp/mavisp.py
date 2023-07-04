@@ -234,12 +234,11 @@ def main():
         log.error("Couldn't create the specified output directory; exiting...")
         exit(1)
 
-
-    out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
-
     all_indexes = []
 
     for mode_name, mode in mfs.supported_modes.items():
+        out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
+
         mode_path = out_path / Path(mode_name)
         mode_path.mkdir(exist_ok=True)
 
