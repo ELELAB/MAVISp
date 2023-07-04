@@ -29,8 +29,6 @@ st.set_page_config(layout="wide",
 
 database_dir = get_database_dir()
 
-show_table = load_main_table(database_dir, mode)
-
 add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
@@ -43,6 +41,12 @@ Click on the "Download dataset" button to download the corresponding CSV file.)
 
 All data is released under the [Creative Commons Attribution 4.0 International
  (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)''')
+
+try:
+    show_table = load_main_table(database_dir, mode)
+except FileNotFoundError:
+    st.write('No entries are currently available for simple mode.')
+    st.stop()
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
