@@ -17,6 +17,7 @@
 import streamlit as st
 import base64
 import os
+import pandas as pd
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -85,3 +86,12 @@ def add_affiliation_logo():
 
     with columns[1]:
         st.write("""<div style="width:100%;text-align:center;"><a href="https://www.dtu.dk" style="float:center"><img src="app/static/dtu_logo.png" width="60px"></img></a></div>""", unsafe_allow_html=True)
+
+@st.cache_data
+def load_dataset(data_dir, protein, mode):
+    return pd.read_csv(os.path.join(data_dir, mode, 'dataset_tables', f'{protein}.csv'))
+
+@st.cache_data
+def load_main_table(data_dir, mode):
+    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv'))
+
