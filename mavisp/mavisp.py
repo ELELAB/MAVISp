@@ -280,7 +280,7 @@ def main():
             this_df = this_df.fillna(pd.NA)
 
             # save final dataframe
-            this_df.to_csv(dataset_tables_path / f"{r['system']}.csv")
+            this_df.to_csv(dataset_tables_path / f"{r['system']}-{mode.name}.csv")
 
     all_indexes = pd.concat(all_indexes, ignore_index=True)
 
