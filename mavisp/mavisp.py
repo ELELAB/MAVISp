@@ -239,6 +239,9 @@ def main():
     for mode_name, mode in mfs.supported_modes.items():
         out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
 
+        if len(out_table) == 0:
+            continue
+
         mode_path = out_path / Path(mode_name)
         mode_path.mkdir(exist_ok=True)
 
