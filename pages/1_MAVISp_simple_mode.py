@@ -73,7 +73,7 @@ if st.button('View dataset',
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
-    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}.csv')) as data:
+    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
                             data=data,
                             file_name=f'{protein}-{mode}.csv',
