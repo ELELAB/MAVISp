@@ -89,7 +89,7 @@ def add_affiliation_logo():
 
 @st.cache_data
 def load_dataset(data_dir, protein, mode):
-    return pd.read_csv(os.path.join(data_dir, mode, 'dataset_tables', f'{protein}.csv'))
+    return pd.read_csv(os.path.join(data_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv'))
 
 @st.cache_data
 def load_main_table(data_dir, mode):
