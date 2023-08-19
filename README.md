@@ -1,5 +1,5 @@
 Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark  
-Cancer Structural Biology, Danish Cancer Society Research Center, 2100, Copenhagen, Denmark  
+Cancer Structural Biology, Danish Cancer Institute, 2100, Copenhagen, Denmark  
 Repository associated to the publication:  
 > MAVISp: Multi-layered Assessment of VarIants by Structure for proteins  
 > Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Pablo Sánchez-Izquierdo, Simone Scrima, Francesca Maselli, Karolina Krzesińska, Terézia Dorčaková, Jordan Safer, Katrine Meldgård, Julie Bruun Brockhoff, Amalie Drud Nielsen, Alberto Pettenella, Jérémy Vinhas, Peter Wad Sackett, Claudia Cava, Sumaiya Iqbal,  View ORCID ProfileMatteo Lambrughi, Matteo Tiberti, Elena Papaleo  
