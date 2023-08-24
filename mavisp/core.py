@@ -145,7 +145,7 @@ class MAVISpFileSystem:
         mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', most_recent_mut_file)
 
         try:
-            mutations = pd.read_csv(mut_path, delim_whitespace=True)
+            mutations = pd.read_csv(mut_path, sep='\t')
         except Exception as e:
             raise TypeError(f"Couldn't parse mutation list {mut_path} with error {e}")
 
