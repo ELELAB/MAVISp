@@ -459,8 +459,6 @@ class EnsembleSAS(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-
-
 class PTMs(DataType):
 
     module_dir = "ptm"
