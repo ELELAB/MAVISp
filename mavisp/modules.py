@@ -415,6 +415,52 @@ class SAS(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class EnsembleSAS(DataType):
+
+    module_dir = "sas"
+    name = "sas"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        sas_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(sas_file) != 1:
+            this_error = f"multiple or no files found in {sas_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        sas_file = sas_file[0]
+
+        log.info(f"parsing sas file {sas_file}")
+        print(sas_file)
+
+        try:
+            rsa = pd.read_csv(os.path.join(self.data_dir, self.module_dir, sas_file))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        mut_resn = [ mut[1:-1] for mut in mutations ]
+        df = pd.DataFrame({'mutation' : mutations, 'position_mutation' : mut_resn})
+
+        rsa["residue"]= rsa["residue"].astype(str)
+        rsa = rsa.set_index("residue")
+
+        result = pd.merge(df, rsa, left_on="position_mutation", right_on="residue", how="left")
+        result = result[['mutation', 'acc_average', 'acc_std']]
+        self.data = result.rename(columns={'mutation' : 'mutation',
+                                           'acc_average' : 'Relative Side Chain Solvent Accessibility in wild-type (average)',
+                                           'acc_std'     : 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'})
+
+        self.data = self.data.set_index('mutation')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+
+
 class PTMs(DataType):
 
     module_dir = "ptm"
