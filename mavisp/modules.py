@@ -23,11 +23,14 @@ import logging as log
 import re
 import pkg_resources
 
-class DataType(object):
-    def __init__(self, data_dir=None, stop_at='critical'):
+class MavispModule(object):
+    def __init__(self, data_dir=None, module_dir=None, stop_at='critical'):
 
         self.data_dir = data_dir
         self.data = None
+
+        if module_dir is not None:
+            self.module_dir = module_dir
 
     def ingest(self, stop_at='critical'):
         pass
