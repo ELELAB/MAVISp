@@ -59,7 +59,55 @@ class MavispModule(object):
     def get_dataset_view(self):
         return self.data
 
-class MultiMethodDataType(DataType):
+class MavispMultiEnsembleModule(MavispModule):
+    def __init_subclass__(cls, module_class, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        cls.base_module = module_class
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.ensembles = {}
+
+        ensembles = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
+        for ensemble in ensembles:
+            base_module_dir = os.path.join(self.module_dir, ensemble)
+
+            self.ensembles[ensemble] = self.base_module(self.data_dir,
+                                                        module_dir=base_module_dir)
+
+    def ingest(self, mutations):
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        warnings = []
+
+        if len(self.ensembles) == 0:
+            message = "module contained no ensembles"
+            raise MAVISpMultipleError(warning=warnings,
+                critical=[MAVISpCriticalError(message)])
+
+        for name, obj in self.ensembles.items():
+            try:
+                obj.ingest(mutations)
+            except MAVISpMultipleError as e:
+                warnings += e.warnings
+                if len(MAVISpMultipleError.critical) != 0:
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=e.critical)
+
+            new_colnames = {c : f"{c} [{name}]" for c in obj.data.columns }
+            obj.data = obj.data.rename(columns=new_colnames)
+
+            self.data = self.data.join(obj.data)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                    critical=list())
+
+class MultiMethodMavispModule(MavispModule):
     def __init__(self, data_dir=None):
 
         super().__init__(data_dir)
