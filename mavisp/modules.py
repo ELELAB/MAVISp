@@ -135,7 +135,7 @@ class MultiMethodMavispModule(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class Stability(MultiMethodDataType):
+class Stability(MultiMethodMavispModule):
 
     module_dir = "stability"
     name = "stability"
@@ -249,7 +249,7 @@ class Stability(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
-class LocalInteractions(MultiMethodDataType):
+class LocalInteractions(MultiMethodMavispModule):
     module_dir = "local_interactions"
     name = "local_interactions"
     methods = {'foldx5'                      : MutateXBinding(version="FoldX5",
@@ -325,7 +325,7 @@ class LocalInteractions(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
-class LocalInteractionsDNA(MultiMethodDataType):
+class LocalInteractionsDNA(MultiMethodMavispModule):
     module_dir = "local_interactions_DNA"
     name = "local_interactions_DNA"
     methods = {'foldx5' : MutateXDNABinding(version="FoldX5")}
@@ -413,13 +413,13 @@ class LocalInteractionsHomodimer(LocalInteractions):
                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
                                                                            complex_status='homodimer')}
 
-class LongRange(MultiMethodDataType):
+class LongRange(MultiMethodMavispModule):
 
     module_dir = "long_range"
     name = "long_range"
     methods = {'allosigma2' : AlloSigma(version=2)}
 
-class SAS(DataType):
+class SAS(MavispModule):
 
     module_dir = "sas"
     name = "sas"
@@ -466,7 +466,7 @@ class SAS(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class EnsembleSAS(DataType):
+class TaccSAS(MavispModule):
 
     module_dir = "sas"
     name = "sas"
@@ -510,7 +510,11 @@ class EnsembleSAS(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class PTMs(DataType):
+class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
+    module_dir = "sas"
+    name = "sas"
+
+class PTMs(MavispModule):
 
     module_dir = "ptm"
     name = "ptms"
@@ -853,7 +857,7 @@ class PTMs(DataType):
                                         critical=[])
 
 
-class CancermutsTable(DataType):
+class CancermutsTable(MavispModule):
 
     module_dir = "cancermuts"
     name = "cancermuts"
@@ -936,7 +940,7 @@ class CancermutsTable(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class ClinVar(DataType):
+class ClinVar(MavispModule):
 
     module_dir = "clinvar"
     name = "clinvar"
@@ -1017,7 +1021,7 @@ class ClinVar(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class EVE(DataType):
+class EVE(MavispModule):
 
     module_dir = "eve"
     name = "eve"
@@ -1066,7 +1070,7 @@ class EVE(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class AlphaFoldMetadata(DataType):
+class AlphaFoldMetadata(MavispModule):
 
     module_dir = "alphafold"
     name = "alphafold"
@@ -1116,7 +1120,7 @@ class AlphaFoldMetadata(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class DeMaSk(DataType):
+class DeMaSk(MavispModule):
 
     module_dir = "demask"
     name = "demask"
@@ -1167,7 +1171,7 @@ class DeMaSk(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class GEMME(DataType):
+class GEMME(MavispModule):
 
     module_dir = "gemme"
     name = "gemme"
