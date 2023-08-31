@@ -277,13 +277,13 @@ class RosettaDDGPredictionStability(Method):
                 else:
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-            # merge the data from the different cl folders and keep average
-            ddg_colname = f'{self.type} ({self.version}, {self.unit})'
-            mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-            mutation_data = mutation_data[[ddg_colname]]
+        # merge the data from the different cl folders and keep average
+        ddg_colname = f'{self.type} ({self.version}, {self.unit})'
+        mutation_data[ddg_colname] = mutation_data.mean(axis=1)
+        mutation_data = mutation_data[[ddg_colname]]
 
-            # Sort the data by mutation_label and state, and calculate the mean of the different ddg values
-            mutation_data = mutation_data.sort_index()
+        # Sort the data by mutation_label
+        mutation_data = mutation_data.sort_index()
 
         return mutation_data, warnings
 
@@ -458,21 +458,12 @@ class RaSP(Method):
     unit = "kcal/mol"
     type = "Stability"
 
-    def parse(self, dir_path):
+    def _parse_postprocessed_csv(self, fname, warnings):
 
         warnings = []
 
-        rasp_files = os.listdir(dir_path)
-
-        if len(rasp_files) != 1:
-            this_error = f"zero or multiple files found in {dir_path}; only one expected"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        rasp_file = rasp_files[0]
-
         try:
-            mutation_data = pd.read_csv(os.path.join(dir_path, rasp_file),
+            mutation_data = pd.read_csv(fname,
                                         usecols=['variant', 'RaSP_ddG'], index_col='variant')
 
         except Exception as e:
@@ -480,6 +471,74 @@ class RaSP(Method):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        mutation_data = mutation_data.rename(columns={'RaSP_ddG' : f"{self.type} ({self.version}, {self.unit})"})
+        return mutation_data
+
+    def parse(self, dir_path):
+
+        warnings = []
+
+        rasp_files = os.listdir(dir_path)
+        print("dir_path", dir_path)
+        print("rasp_files", rasp_files)
+
+        if len(rasp_files) == 1 and os.path.isfile(os.path.join(dir_path, rasp_files[0])):
+
+            rasp_file = rasp_files[0]
+
+            mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
+
+        else:
+            csv_files = []
+            rasp_folder = os.listdir(dir_path)
+
+            # Check if all available files are directories
+            for folder in rasp_folder:
+                if not os.path.isdir(os.path.join(dir_path, folder)):
+                    this_error = f"{folder} in {dir_path} is not a directory"
+                    raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+
+                ddg_files = os.listdir(os.path.join(dir_path, folder))
+                # check one file per directory is available
+                if len(ddg_files) != 1:
+                    this_error = f"zero or multiples files found in {dir_path}; only one expected"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                ddg_file = ddg_files[0]
+
+                if not os.path.splitext(ddg_file)[-1] == '.csv':
+                    this_error = f"file {ddg_file} in {dir_path}/{folder} doesn't have csv as extension"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                csv_files.append(os.path.join(dir_path, folder, ddg_file))
+
+            list_mutation_label = None
+            mutation_data = None
+
+            for fname in csv_files:
+                tmp = self._parse_postprocessed_csv(fname, warnings)
+
+                # Check if the mutation labels are the same in the different csv files
+                if list_mutation_label is None:
+                    list_mutation_label = set(tmp.index)
+                elif list_mutation_label != set(tmp.index):
+                    this_error = f"the mutation labels are not the same in the different csv files"
+                    raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+
+                # Allow to merge the data from the different cl folders
+                if mutation_data is None:
+                    mutation_data = tmp
+                else:
+                    mutation_data = mutation_data.join(tmp, rsuffix="_")
+
+            # merge the data from the different cl folders and keep average
+        ddg_colname = f'{self.type} ({self.unit})'
+        mutation_data[ddg_colname] = mutation_data.mean(axis=1)
+        mutation_data = mutation_data[[ddg_colname]]
+
+        mutation_data = mutation_data.sort_index()
 
         return mutation_data, warnings
