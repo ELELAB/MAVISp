@@ -87,14 +87,15 @@ class MavispMultiEnsembleModule(MavispModule):
         if len(self.ensembles) == 0:
             message = "module contained no ensembles"
             raise MAVISpMultipleError(warning=warnings,
-                critical=[MAVISpCriticalError(message)])
+                                      critical=[MAVISpCriticalError(message)])
 
         for name, obj in self.ensembles.items():
             try:
                 obj.ingest(mutations)
             except MAVISpMultipleError as e:
-                warnings += e.warnings
-                if len(MAVISpMultipleError.critical) != 0:
+                ensemble_warnings = [MAVISpWarningError(f"[{name}] {exc.args[0]}") for exc in e.warning]
+                warnings += ensemble_warnings
+                if len(e.critical) != 0:
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=e.critical)
 
@@ -483,7 +484,6 @@ class TaccSAS(MavispModule):
         sas_file = sas_file[0]
 
         log.info(f"parsing sas file {sas_file}")
-        print(sas_file)
 
         try:
             rsa = pd.read_csv(os.path.join(self.data_dir, self.module_dir, sas_file))
@@ -518,6 +518,12 @@ class PTMs(MavispModule):
 
     module_dir = "ptm"
     name = "ptms"
+    expected_files = ['summary_stability.txt',
+                      'sasa.rsa',
+                      'metatable.csv']
+
+    sasa_fname = expected_files[1]
+
     allowed_ptms = ['s', 'p', 'y']
     allowed_ptm_muts = {'S' : 's',
                         'T' : 'p',
@@ -660,17 +666,29 @@ class PTMs(MavispModule):
 
         return '???'
 
+    def _parse_sas(self, fname):
+
+        try:
+            return pd.read_fwf(fname,
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                index_col = 'resn').fillna(pd.NA)
+
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
     def ingest(self, mutations):
 
         warnings = []
 
-        expected_files = ['summary_stability.txt',
-                          'sasa.rsa',
-                          'metatable.csv']
-
         ptm_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
-        if not set(expected_files).issubset(ptm_files):
+        if not set(self.expected_files).issubset(ptm_files):
             this_error = f"required file(s) not found"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
@@ -699,15 +717,9 @@ class PTMs(MavispModule):
                                         critical=[MAVISpCriticalError(this_error)])
 
         try:
-            rsa_monomer = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
-                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['rest', 'resn', 'sas_sc_rel'],
-                index_col = 'resn').fillna(pd.NA)
+            rsa_monomer = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
         except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            this_error = f"Exception {type(e).__name__} occurred when parsing the {self.sasa_fname} file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
@@ -756,7 +768,6 @@ class PTMs(MavispModule):
         final_table = final_table.join(cancermuts)
 
         # join RSA data
-        rsa_monomer = rsa_monomer.drop(columns=['rest'])
         final_table = final_table.join(rsa_monomer, on='position')
 
         # process DDG information
@@ -837,9 +848,11 @@ class PTMs(MavispModule):
             final_table['function'] = pd.NA
 
         # final processing for output table
-        final_table = final_table[[ 'phosphorylation_site', 'site_in_slim', 'sas_sc_rel',
-                                    'stability_ddg_ptm', 'binding_ddg_ptm', 'binding_ddg_mut',
-                                    'regulation', 'stability', 'function' ]]
+        cols = [ 'phosphorylation_site', 'site_in_slim', 'sas_sc_rel',
+                 'stability_ddg_ptm', 'binding_ddg_ptm', 'binding_ddg_mut',
+                 'regulation', 'stability', 'function', 'acc_rel' ]
+
+        final_table = final_table[final_table.columns.intersection(cols)]
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
@@ -856,9 +869,30 @@ class PTMs(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
 
+class TaccPTMs(PTMs):
+
+    expected_files = ['summary_stability.txt',
+                      'acc_REL.csv',
+                      'metatable.csv']
+
+    sasa_fname = expected_files[1]
+
+    def _parse_sas(self, fname):
+
+        return pd.read_csv(fname).set_index('residue').rename(columns={'acc_average' : 'sas_sc_rel'})
+
+    def ingest(self, mutations):
+
+        super().ingest(mutations)
+
+        self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
+                                    "acc_std" : "PTM residue SASA (%), standard deviation"})
+
+class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
+    module_dir = "ptm"
+    name = "ptms"
 
 class CancermutsTable(MavispModule):
-
     module_dir = "cancermuts"
     name = "cancermuts"
 
