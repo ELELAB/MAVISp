@@ -87,14 +87,15 @@ class MavispMultiEnsembleModule(MavispModule):
         if len(self.ensembles) == 0:
             message = "module contained no ensembles"
             raise MAVISpMultipleError(warning=warnings,
-                critical=[MAVISpCriticalError(message)])
+                                      critical=[MAVISpCriticalError(message)])
 
         for name, obj in self.ensembles.items():
             try:
                 obj.ingest(mutations)
             except MAVISpMultipleError as e:
-                warnings += e.warnings
-                if len(MAVISpMultipleError.critical) != 0:
+                ensemble_warnings = [MAVISpWarningError(f"[{name}] {exc.args[0]}") for exc in e.warning]
+                warnings += ensemble_warnings
+                if len(e.critical) != 0:
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=e.critical)
 
@@ -483,7 +484,6 @@ class TaccSAS(MavispModule):
         sas_file = sas_file[0]
 
         log.info(f"parsing sas file {sas_file}")
-        print(sas_file)
 
         try:
             rsa = pd.read_csv(os.path.join(self.data_dir, self.module_dir, sas_file))
@@ -869,7 +869,7 @@ class PTMs(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
 
-class EnsemblePTMs(PTMs):
+class TaccPTMs(PTMs):
 
     expected_files = ['summary_stability.txt',
                       'acc_REL.csv',
@@ -888,8 +888,11 @@ class EnsemblePTMs(PTMs):
         self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
                                     "acc_std" : "PTM residue SASA (%), standard deviation"})
 
-class CancermutsTable(MavispModule):
+class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
+    module_dir = "ptm"
+    name = "ptms"
 
+class CancermutsTable(MavispModule):
     module_dir = "cancermuts"
     name = "cancermuts"
 
