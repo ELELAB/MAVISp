@@ -258,7 +258,7 @@ class RosettaDDGPredictionStability(Method):
                 csv_files.append(os.path.join(dir_path, folder, ddg_file))
 
             list_mutation_label = None
-            mutation_data = pd.DataFrame()
+            mutation_data = None
 
             for fname in csv_files:
                 tmp = self._parse_aggregate_csv(fname, warnings)
@@ -272,7 +272,10 @@ class RosettaDDGPredictionStability(Method):
                                             critical=[MAVISpCriticalError(this_error)])
 
                 # Allow to merge the data from the different cl folders
-                mutation_data = mutation_data.join(tmp, rsuffix="_")
+                if mutation_data is None:
+                    mutation_data = tmp
+                else:
+                    mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
             ddg_colname = f'{self.type} ({self.version}, {self.unit})'
