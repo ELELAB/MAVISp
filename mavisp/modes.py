@@ -92,7 +92,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           LongRange,
                           Stability,
                           LocalInteractions,
-                          SAS,
+                          EnsembleSAS,
                           LocalInteractionsDNA,
                           LocalInteractionsHomodimer,
                           ClinVar,

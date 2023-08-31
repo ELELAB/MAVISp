@@ -23,11 +23,14 @@ import logging as log
 import re
 import pkg_resources
 
-class DataType(object):
-    def __init__(self, data_dir=None, stop_at='critical'):
+class MavispModule(object):
+    def __init__(self, data_dir=None, module_dir=None, stop_at='critical'):
 
         self.data_dir = data_dir
         self.data = None
+
+        if module_dir is not None:
+            self.module_dir = module_dir
 
     def ingest(self, stop_at='critical'):
         pass
@@ -56,7 +59,55 @@ class DataType(object):
     def get_dataset_view(self):
         return self.data
 
-class MultiMethodDataType(DataType):
+class MavispMultiEnsembleModule(MavispModule):
+    def __init_subclass__(cls, module_class, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        cls.base_module = module_class
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.ensembles = {}
+
+        ensembles = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
+        for ensemble in ensembles:
+            base_module_dir = os.path.join(self.module_dir, ensemble)
+
+            self.ensembles[ensemble] = self.base_module(self.data_dir,
+                                                        module_dir=base_module_dir)
+
+    def ingest(self, mutations):
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        warnings = []
+
+        if len(self.ensembles) == 0:
+            message = "module contained no ensembles"
+            raise MAVISpMultipleError(warning=warnings,
+                critical=[MAVISpCriticalError(message)])
+
+        for name, obj in self.ensembles.items():
+            try:
+                obj.ingest(mutations)
+            except MAVISpMultipleError as e:
+                warnings += e.warnings
+                if len(MAVISpMultipleError.critical) != 0:
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=e.critical)
+
+            new_colnames = {c : f"{c} [{name}]" for c in obj.data.columns }
+            obj.data = obj.data.rename(columns=new_colnames)
+
+            self.data = self.data.join(obj.data)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                    critical=list())
+
+class MultiMethodMavispModule(MavispModule):
     def __init__(self, data_dir=None):
 
         super().__init__(data_dir)
@@ -84,7 +135,7 @@ class MultiMethodDataType(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class Stability(MultiMethodDataType):
+class Stability(MultiMethodMavispModule):
 
     module_dir = "stability"
     name = "stability"
@@ -198,7 +249,7 @@ class Stability(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
-class LocalInteractions(MultiMethodDataType):
+class LocalInteractions(MultiMethodMavispModule):
     module_dir = "local_interactions"
     name = "local_interactions"
     methods = {'foldx5'                      : MutateXBinding(version="FoldX5",
@@ -274,7 +325,7 @@ class LocalInteractions(MultiMethodDataType):
             return 'Neutral'
         return 'Uncertain'
 
-class LocalInteractionsDNA(MultiMethodDataType):
+class LocalInteractionsDNA(MultiMethodMavispModule):
     module_dir = "local_interactions_DNA"
     name = "local_interactions_DNA"
     methods = {'foldx5' : MutateXDNABinding(version="FoldX5")}
@@ -362,13 +413,13 @@ class LocalInteractionsHomodimer(LocalInteractions):
                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
                                                                            complex_status='homodimer')}
 
-class LongRange(MultiMethodDataType):
+class LongRange(MultiMethodMavispModule):
 
     module_dir = "long_range"
     name = "long_range"
     methods = {'allosigma2' : AlloSigma(version=2)}
 
-class SAS(DataType):
+class SAS(MavispModule):
 
     module_dir = "sas"
     name = "sas"
@@ -415,7 +466,55 @@ class SAS(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class PTMs(DataType):
+class TaccSAS(MavispModule):
+
+    module_dir = "sas"
+    name = "sas"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        sas_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(sas_file) != 1:
+            this_error = f"multiple or no files found in {sas_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        sas_file = sas_file[0]
+
+        log.info(f"parsing sas file {sas_file}")
+        print(sas_file)
+
+        try:
+            rsa = pd.read_csv(os.path.join(self.data_dir, self.module_dir, sas_file))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        mut_resn = [ mut[1:-1] for mut in mutations ]
+        df = pd.DataFrame({'mutation' : mutations, 'position_mutation' : mut_resn})
+
+        rsa["residue"]= rsa["residue"].astype(str)
+        rsa = rsa.set_index("residue")
+
+        result = pd.merge(df, rsa, left_on="position_mutation", right_on="residue", how="left")
+        result = result[['mutation', 'acc_average', 'acc_std']]
+        self.data = result.rename(columns={'mutation' : 'mutation',
+                                           'acc_average' : 'Relative Side Chain Solvent Accessibility in wild-type (average)',
+                                           'acc_std'     : 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'})
+
+        self.data = self.data.set_index('mutation')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
+    module_dir = "sas"
+    name = "sas"
+
+class PTMs(MavispModule):
 
     module_dir = "ptm"
     name = "ptms"
@@ -789,7 +888,7 @@ class EnsemblePTMs(PTMs):
         self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
                                     "acc_std" : "PTM residue SASA (%), standard deviation"})
 
-class CancermutsTable(DataType):
+class CancermutsTable(MavispModule):
 
     module_dir = "cancermuts"
     name = "cancermuts"
@@ -872,7 +971,7 @@ class CancermutsTable(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class ClinVar(DataType):
+class ClinVar(MavispModule):
 
     module_dir = "clinvar"
     name = "clinvar"
@@ -953,7 +1052,7 @@ class ClinVar(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class EVE(DataType):
+class EVE(MavispModule):
 
     module_dir = "eve"
     name = "eve"
@@ -1002,7 +1101,7 @@ class EVE(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class AlphaFoldMetadata(DataType):
+class AlphaFoldMetadata(MavispModule):
 
     module_dir = "alphafold"
     name = "alphafold"
@@ -1052,7 +1151,7 @@ class AlphaFoldMetadata(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class DeMaSk(DataType):
+class DeMaSk(MavispModule):
 
     module_dir = "demask"
     name = "demask"
@@ -1103,7 +1202,7 @@ class DeMaSk(DataType):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
-class GEMME(DataType):
+class GEMME(MavispModule):
 
     module_dir = "gemme"
     name = "gemme"
