@@ -277,15 +277,15 @@ class RosettaDDGPredictionStability(Method):
                 else:
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-        # merge the data from the different cl folders and keep average
-        ddg_colname = f'{self.type} ({self.version}, {self.unit})'
-        mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-        mutation_data = mutation_data[[ddg_colname]]
+            # merge the data from the different cl folders and keep average
+            ddg_colname = f'{self.type} ({self.version}, {self.unit})'
+            mutation_data[ddg_colname] = mutation_data.mean(axis=1)
+            mutation_data = mutation_data[[ddg_colname]]
 
-        # Sort the data by mutation_label
-        mutation_data = mutation_data.sort_index()
+            # Sort the data by mutation_label
+            mutation_data = mutation_data.sort_index()
 
-        return mutation_data, warnings
+            return mutation_data, warnings
 
 class RosettaDDGPredictionBinding(Method):
 
