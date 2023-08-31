@@ -285,7 +285,7 @@ class RosettaDDGPredictionStability(Method):
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-            return mutation_data, warnings
+        return mutation_data, warnings
 
 class RosettaDDGPredictionBinding(Method):
 
