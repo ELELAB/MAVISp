@@ -188,11 +188,6 @@ class Stability(MultiMethodMavispModule):
 
             for method_dir in method_dirs:
                 model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
-                #print(f'<--- {method_dir}')
-                #print(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
-                #print(self.methods[method_dir])
-                #print(model_data)
-                #print('--->')
 
                 warnings += this_warnings
                 model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
