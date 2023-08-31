@@ -478,8 +478,6 @@ class RaSP(Method):
         warnings = []
 
         rasp_files = os.listdir(dir_path)
-        print("dir_path", dir_path)
-        print("rasp_files", rasp_files)
 
         if len(rasp_files) == 1 and os.path.isfile(os.path.join(dir_path, rasp_files[0])):
 
