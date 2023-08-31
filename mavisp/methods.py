@@ -51,6 +51,10 @@ class MutateXStability(Method):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
+        # drop empty column if it exists
+        cols_to_drop = [ c for c in df.columns if c.startswith('Unnamed') ]
+        df = df.drop(columns=cols_to_drop)
+
         # create residue column
         df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
 
