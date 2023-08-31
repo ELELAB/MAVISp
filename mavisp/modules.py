@@ -229,7 +229,7 @@ class Stability(MultiMethodMavispModule):
             warnings.append(MAVISpWarningError(f"Stability classification (Rosetta, FoldX) can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
 
         if rasp_header is not None and foldx_header is not None:
-            model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+            model_data[f'Stability classification, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
         else:
             warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
