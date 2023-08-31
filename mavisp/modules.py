@@ -109,9 +109,9 @@ class MavispMultiEnsembleModule(MavispModule):
                                     critical=list())
 
 class MultiMethodMavispModule(MavispModule):
-    def __init__(self, data_dir=None):
+    def __init__(self, data_dir=None, module_dir=None):
 
-        super().__init__(data_dir)
+        super().__init__(data_dir, module_dir)
 
     def ingest(self, mutations):
 
@@ -151,9 +151,10 @@ class Stability(MultiMethodMavispModule):
 
         warnings = []
 
-        this_error = "Stability folder has to contain only 1 dataset"
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
         if len(tmp) != 1:
+            this_error = "Stability folder has to contain only 1 dataset"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
@@ -162,73 +163,77 @@ class Stability(MultiMethodMavispModule):
         # tmp is equal to the list of methods
         tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
 
-        # We loop over the methods
-        for method in tmp:
-            # all_methods is a list of all the methods (Rosetta,FoldX,RaSP) in the folder, it is defined for every method (nmr, cabsflex...), so it is reset to an empty list and we can check if there are no duplicated methods (FoldX,Rosetta).
-            all_methods = []
-            models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
-            model_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
-            model_data_list = []
-        # check that:
-            # all methods are supported
-            # there are no duplicated methods (possible since they are in different model dirs)
-            for model in models:
-                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
-                if not set(method_dirs).issubset(set(self.methods.keys())):
-                    this_error = f"One or more {self.name} methods are not supported"
-                    raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-                all_methods.extend(method_dirs)
+        # all_methods is a list of all the methods (Rosetta,FoldX,RaSP) in the folder, it is defined for every method (nmr, cabsflex...), so it is reset to an empty list and we can check if there are no duplicated methods (FoldX,Rosetta).
+        all_methods = []
+        models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
+        model_data_list = []
+    # check that:
+        # all methods are supported
+        # there are no duplicated methods (possible since they are in different model dirs)
+        for model in models:
+            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model))
+            if not set(method_dirs).issubset(set(self.methods.keys())):
+                this_error = f"One or more {self.name} methods are not supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+            all_methods.extend(method_dirs)
 
-                if len(all_methods) != len(set(all_methods)):
-                                this_error = f"Only using one single instance of any given method is supported"
-                                raise MAVISpMultipleError(warning=warnings,
-                                                        critical=[MAVISpCriticalError(this_error)])
-            for model in models:
-                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+            if len(all_methods) != len(set(all_methods)):
+                            this_error = f"Only using one single instance of any given method is supported"
+                            raise MAVISpMultipleError(warning=warnings,
+                                                    critical=[MAVISpCriticalError(this_error)])
 
-                for method_dir in method_dirs:
-                    model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
-                    warnings += this_warnings
-                    model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]
-                    model_data_list.append(model_data)
-                    model_data = pd.concat(model_data_list, axis=1)
+        for model in models:
+            method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model))
 
-            keys = [ k for k in model_data.columns if k.startswith('Stability') ]
+            for method_dir in method_dirs:
+                model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
+                #print(f'<--- {method_dir}')
+                #print(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
+                #print(self.methods[method_dir])
+                #print(model_data)
+                #print('--->')
 
-            if any(['FoldX' in k for k in keys]):
-                foldx_col = [k for k in keys if 'FoldX' in k]
-                assert foldx_col is not None
-                foldx_header = foldx_col[0]
-            else:
-                foldx_header = None
+                warnings += this_warnings
+                model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
+                model_data_list.append(model_data)
+                model_data = pd.concat(model_data_list, axis=1)
 
-            if any(['Rosetta' in k for k in keys]):
-                rosetta_col = [k for k in keys if 'Rosetta' in k]
-                assert rosetta_col is not None
-                rosetta_header = rosetta_col[0]
-            else:
-                rosetta_header = None
+        keys = [ k for k in model_data.columns if k.startswith('Stability') ]
 
-            if any(['RaSP' in k for k in keys]):
-                rasp_col = [k for k in keys if 'RaSP' in k]
-                assert rasp_col is not None
-                rasp_header = rasp_col[0]
-            else:
-                rasp_header = None
+        if any(['FoldX' in k for k in keys]):
+            foldx_col = [k for k in keys if 'FoldX' in k]
+            assert foldx_col is not None
+            foldx_header = foldx_col[0]
+        else:
+            foldx_header = None
 
-            # check if we have both FoldX and Rosetta/RaSP col
-            if rosetta_header is not None and foldx_header is not None:
-                model_data[f'Stability classification, {method}, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
-            else:
-                warnings.append(MAVISpWarningError(f"Stability classification (Rosetta, FoldX) for {method} method can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+        if any(['Rosetta' in k for k in keys]):
+            rosetta_col = [k for k in keys if 'Rosetta' in k]
+            assert rosetta_col is not None
+            rosetta_header = rosetta_col[0]
+        else:
+            rosetta_header = None
 
-            if rasp_header is not None and foldx_header is not None:
-                model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
-            else:
-                warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+        if any(['RaSP' in k for k in keys]):
+            rasp_col = [k for k in keys if 'RaSP' in k]
+            assert rasp_col is not None
+            rasp_header = rasp_col[0]
+        else:
+            rasp_header = None
 
-            self.data = self.data.join(model_data)
+        # check if we have both FoldX and Rosetta/RaSP col
+        if rosetta_header is not None and foldx_header is not None:
+            model_data[f'Stability classification, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+        else:
+            warnings.append(MAVISpWarningError(f"Stability classification (Rosetta, FoldX) can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+
+        if rasp_header is not None and foldx_header is not None:
+            model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+        else:
+            warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+        self.data = self.data.join(model_data)
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -249,6 +254,11 @@ class Stability(MultiMethodMavispModule):
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
             return 'Neutral'
         return 'Uncertain'
+
+
+class EnsembleStability(MavispMultiEnsembleModule, module_class=Stability):
+    module_dir = "stability"
+    name = "stability"
 
 class LocalInteractions(MultiMethodMavispModule):
     module_dir = "local_interactions"
