@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import pandas as pd
 import numpy as np
 from mavisp.error import *
@@ -323,12 +322,38 @@ class RosettaDDGPredictionBinding(Method):
             interactor_dir = os.path.join(dir_path, interactor)
             rosetta_files = os.listdir(interactor_dir)
 
-            if len(rosetta_files) != 1:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"zero or multiple files found in {interactor_dir}; exactly one expected")],
-                                        warning=[])
+            if len(rosetta_files) == 1 and os.path.isfile(os.path.join(interactor_dir, rosetta_files[0])):
 
-            rosetta_file = rosetta_files[0]
-            mutation_data = self._parse_aggregate_csv(os.path.join(interactor_dir, rosetta_file), warnings)
+                rosetta_file = rosetta_files[0]
+                mutation_data = self._parse_aggregate_csv(os.path.join(interactor_dir, rosetta_file), warnings)
+
+            elif len(rosetta_files) > 1 and all( [ os.path.isdir(os.path.join(interactor_dir, f)) for f in rosetta_files] ):
+                mutation_data = None
+                for c, conformer_dir in enumerate(rosetta_files):
+
+                    conformer_files = os.listdir(os.path.join(interactor_dir, conformer_dir))
+
+                    if len(conformer_files) != 1:
+                        text = "only one file per conformer is supported for RosettaDDGPrediction"
+                        raise MAVISpMultipleError(critical=[MAVISpCriticalError(text)],
+                                                  warning=warnings)
+
+                    conformer_data = self._parse_aggregate_csv(os.path.join(interactor_dir, conformer_dir, conformer_files[0]), warnings)
+
+                    conformer_data = conformer_data.rename(columns={'total_score' : f'total_score_{c}'})
+
+                    if mutation_data is None:
+                        mutation_data = conformer_data
+                    else:
+                        mutation_data = mutation_data.join(conformer_data)
+
+                mutation_data = pd.DataFrame(mutation_data.mean(axis=1), columns=['total_score'])
+
+            else:
+                text = f"dataset {interactor_dir} was not either a single files, or multiple directories containing one file"
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(text)],
+                                            warning=warnings)
+
             mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
             if all_data is None:
@@ -369,7 +394,6 @@ class AlloSigma(Method):
             return 'stabilizing'
         else:
             return 'mixed_effects'
-
 
     def parse(self, allosigma2_dir):
 
