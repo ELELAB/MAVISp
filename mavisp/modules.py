@@ -166,6 +166,7 @@ class Stability(MultiMethodMavispModule):
         # all_methods is a list of all the methods (Rosetta,FoldX,RaSP) in the folder, it is defined for every method (nmr, cabsflex...), so it is reset to an empty list and we can check if there are no duplicated methods (FoldX,Rosetta).
         all_methods = []
         models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
+
         model_data_list = []
     # check that:
         # all methods are supported
@@ -250,6 +251,96 @@ class Stability(MultiMethodMavispModule):
             return 'Neutral'
         return 'Uncertain'
 
+class SimpleStability(Stability):
+    def ingest(self, mutations):
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        warnings = []
+
+        this_error = "Stability folder has to contain only 1 dataset"
+        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(tmp) != 1:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        structure_ID, residue_range = tmp[0].split("_", maxsplit=1)
+
+        # tmp is equal to the list of methods
+        tmp = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
+
+        # We loop over the methods
+        for method in tmp:
+            # all_methods is a list of all the methods (Rosetta,FoldX,RaSP) in the folder, it is defined for every method (nmr, cabsflex...), so it is reset to an empty list and we can check if there are no duplicated methods (FoldX,Rosetta).
+            all_methods = []
+            models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
+            model_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+            model_data_list = []
+        # check that:
+            # all methods are supported
+            # there are no duplicated methods (possible since they are in different model dirs)
+            for model in models:
+                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+                if not set(method_dirs).issubset(set(self.methods.keys())):
+                    this_error = f"One or more {self.name} methods are not supported"
+                    raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+                all_methods.extend(method_dirs)
+
+                if len(all_methods) != len(set(all_methods)):
+                                this_error = f"Only using one single instance of any given method is supported"
+                                raise MAVISpMultipleError(warning=warnings,
+                                                        critical=[MAVISpCriticalError(this_error)])
+            for model in models:
+                method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
+
+                for method_dir in method_dirs:
+                    model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    warnings += this_warnings
+                    model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]
+                    model_data_list.append(model_data)
+                    model_data = pd.concat(model_data_list, axis=1)
+
+            keys = [ k for k in model_data.columns if k.startswith('Stability') ]
+
+            if any(['FoldX' in k for k in keys]):
+                foldx_col = [k for k in keys if 'FoldX' in k]
+                assert foldx_col is not None
+                foldx_header = foldx_col[0]
+            else:
+                foldx_header = None
+
+            if any(['Rosetta' in k for k in keys]):
+                rosetta_col = [k for k in keys if 'Rosetta' in k]
+                assert rosetta_col is not None
+                rosetta_header = rosetta_col[0]
+            else:
+                rosetta_header = None
+
+            if any(['RaSP' in k for k in keys]):
+                rasp_col = [k for k in keys if 'RaSP' in k]
+                assert rasp_col is not None
+                rasp_header = rasp_col[0]
+            else:
+                rasp_header = None
+
+            # check if we have both FoldX and Rosetta/RaSP col
+            if rosetta_header is not None and foldx_header is not None:
+                model_data[f'Stability classification, {method}, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
+            else:
+                warnings.append(MAVISpWarningError(f"Stability classification (Rosetta, FoldX) for {method} method can only be calculated if exactly one Rosetta and one MutateX datasets are available"))
+
+            if rasp_header is not None and foldx_header is not None:
+                model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
+            else:
+                warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+            self.data = self.data.join(model_data)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 
 class EnsembleStability(MavispMultiEnsembleModule, module_class=Stability):
     module_dir = "stability"
@@ -262,6 +353,25 @@ class LocalInteractions(MultiMethodMavispModule):
                                                               complex_status='heterodimer'),
                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
                                                                            complex_status='heterodimer')}
+    sas_filename = 'sasa.rsa'
+
+    def _parse_sas(self, fname, warnings):
+
+        try:
+            rsa = pd.read_fwf(fname,
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel']).fillna(pd.NA)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        rsa['resn'] = rsa['resn'].astype("string")
+
+        return rsa.set_index('resn')
 
     def ingest(self, mutations):
 
@@ -276,27 +386,11 @@ class LocalInteractions(MultiMethodMavispModule):
             e = None
 
         module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        if 'sasa.rsa' not in module_dir_files:
-            this_error = f"required sasa.rsa file not found in {self.module_dir}"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
 
-        try:
-            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
-                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['resn', 'sas_sc_rel'],
-                )
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+        rsa = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sas_filename), warnings)
 
-        rsa['resn'] = rsa['resn'].astype("string")
-        rsa = rsa.set_index('resn')
         self.data['res_num'] = self.data.index.str[1:-1]
+
         self.data = self.data.join(rsa, on='res_num')
 
         common_interactors = set.intersection(*[ set(m.interactors) for k, m in self.methods.items() ])
@@ -330,6 +424,32 @@ class LocalInteractions(MultiMethodMavispModule):
         if np.all( [ (- stab_co) <= row[h] <= stab_co for h in colnames ] ):
             return 'Neutral'
         return 'Uncertain'
+
+class TaccLocalInteractions(LocalInteractions):
+
+    sas_filename = 'acc_REL.csv'
+
+    def _parse_sas(self, sas_file, warnings):
+
+        try:
+            rsa = pd.read_csv(sas_file)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the acc_REL.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        rsa = rsa.drop(columns=['acc_std'])
+
+        rsa = rsa.rename(columns={'residue'     : 'resn',
+                                  'acc_average' : 'sas_sc_rel'})
+        rsa['resn'] = rsa['resn'].astype(str)
+
+        return rsa.set_index('resn')
+
+
+class EnsembleLocalInteractions(MavispMultiEnsembleModule, module_class=TaccLocalInteractions):
+    module_dir = "local_interactions"
+    name = "local_interactions"
 
 class LocalInteractionsDNA(MultiMethodMavispModule):
     module_dir = "local_interactions_DNA"
