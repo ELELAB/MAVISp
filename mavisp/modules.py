@@ -539,6 +539,18 @@ class LocalInteractionsHomodimer(LocalInteractions):
                'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
                                                                            complex_status='homodimer')}
 
+class TaccLocalInteractionsHomodimer(TaccLocalInteractions):
+    module_dir = "local_interactions_homodimers"
+    name = "local_interactions_homodimers"
+    methods = {'foldx5'                      : MutateXBinding(version="FoldX5",
+                                                              complex_status='homodimer'),
+               'rosetta_flexddg_talaris2014' : RosettaDDGPredictionBinding(version='Rosetta Talaris 2014',
+                                                                           complex_status='homodimer')}
+
+class EnsembleLocalInteractionsHomodimer(MavispMultiEnsembleModule, module_class=TaccLocalInteractionsHomodimer):
+    module_dir = "local_interactions_homodimers"
+    name = "local_interactions_homodimers"
+
 class LongRange(MultiMethodMavispModule):
 
     module_dir = "long_range"
