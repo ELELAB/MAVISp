@@ -93,7 +93,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleStability,
                           EnsembleLocalInteractions,
                           EnsembleSAS,
-                          LocalInteractionsDNA,
+                          EnsembleLocalInteractionsDNA,
                           LocalInteractionsHomodimer,
                           ClinVar,
                           AlphaFoldMetadata,
