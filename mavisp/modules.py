@@ -442,6 +442,7 @@ class TaccLocalInteractions(LocalInteractions):
 
         rsa = rsa.rename(columns={'residue'     : 'resn',
                                   'acc_average' : 'sas_sc_rel'})
+
         rsa['resn'] = rsa['resn'].astype(str)
 
         return rsa.set_index('resn')
@@ -455,6 +456,25 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
     module_dir = "local_interactions_DNA"
     name = "local_interactions_DNA"
     methods = {'foldx5' : MutateXDNABinding(version="FoldX5")}
+    sas_filename = 'sasa.rsa'
+
+    def _parse_sas(self, fname, warnings):
+
+        try:
+            rsa = pd.read_fwf(fname,
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel']).fillna(pd.NA)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        rsa['resn'] = rsa['resn'].astype(str)
+
+        return rsa.set_index('resn')
 
     def ingest(self, mutations):
 
@@ -468,28 +488,10 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
         else:
             e = None
 
-        module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        if 'sasa.rsa' not in module_dir_files:
-            this_error = f"required sasa.rsa file not found in {self.module_dir}"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
+        rsa = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sas_filename), warnings)
 
-        try:
-            rsa = pd.read_fwf(os.path.join(self.data_dir, self.module_dir, 'sasa.rsa'),
-                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['resn', 'sas_sc_rel'],
-                )
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-
-        rsa['resn'] = rsa['resn'].astype("string")
-        rsa = rsa.set_index('resn')
         self.data['res_num'] = self.data.index.str[1:-1]
+
         self.data = self.data.join(rsa, on='res_num')
 
         keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
@@ -530,6 +532,32 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
             return 'Stabilizing'
         else:
             return 'Neutral'
+
+class TaccLocalInteractionsDNA(LocalInteractionsDNA):
+
+    sas_filename = 'acc_REL.csv'
+
+    def _parse_sas(self, sas_file, warnings):
+
+        try:
+            rsa = pd.read_csv(sas_file)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the acc_REL.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        rsa = rsa.drop(columns=['acc_std'])
+
+        rsa = rsa.rename(columns={'residue'     : 'resn',
+                                  'acc_average' : 'sas_sc_rel'})
+
+        rsa['resn'] = rsa['resn'].astype(str)
+
+        return rsa.set_index('resn')
+
+class EnsembleLocalInteractionsDNA(MavispMultiEnsembleModule, module_class=TaccLocalInteractionsDNA):
+    module_dir = "local_interactions_DNA"
+    name = "local_interactions_DNA"
 
 class LocalInteractionsHomodimer(LocalInteractions):
     module_dir = "local_interactions_homodimers"
