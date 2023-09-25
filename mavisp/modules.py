@@ -1370,6 +1370,46 @@ class DeMaSk(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class AlphaMissense(MavispModule):
+
+    module_dir = "alphamissense"
+    name = "alphamissense"
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        am_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(am_files) != 1:
+            this_error = f"multiple or no files found in {am_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        am_file = am_files[0]
+
+        log.info(f"parsing AlphaMissense data file {am_file}")
+
+        try:
+
+            afm = pd.read_csv(os.path.join(self.data_dir, self.module_dir, am_file),
+                             usecols=['protein_variant', 'am_pathogenicity', 'am_class'],
+                             dtype={ 'protein_variant' :  'string',
+                                     'am_pathogenicity' : 'float32',
+                                     'am_class' :         'category' },
+                             sep='\t',
+                             index_col='protein_variant')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        self.data = afm.rename(columns = {'am_pathogenicity'     : 'AlphaMissense pathogenicity score',
+                                          'am_class'   : 'AlphaMissense classification',})
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 class GEMME(MavispModule):
 
     module_dir = "gemme"
