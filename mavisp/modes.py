@@ -47,8 +47,9 @@ class MAVISpSimpleMode(MAVISpMode):
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
-                          EVE ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
+                          EVE,
+                          AlphaMissense ]
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
@@ -99,8 +100,9 @@ class MAVISpEnsembleMode(MAVISpMode):
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
-                          EVE ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve']
+                          EVE,
+                          AlphaMissense ]
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
