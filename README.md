@@ -5,9 +5,6 @@ Repository associated to the publication:
 > Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Pablo Sánchez-Izquierdo, Simone Scrima, Francesca Maselli, Karolina Krzesińska, Terézia Dorčaková, Jordan Safer, Katrine Meldgård, Julie Bruun Brockhoff, Amalie Drud Nielsen, Alberto Pettenella, Jérémy Vinhas, Peter Wad Sackett, Claudia Cava, Sumaiya Iqbal,  View ORCID ProfileMatteo Lambrughi, Matteo Tiberti, Elena Papaleo  
 > biorxiv, doi: https://doi.org/10.1101/2022.10.22.513328
 
-## WARNING
-The data currently available in the MAVISp database for the **LONG_RANGE module is unreliable** because of a bug we found in the code of one of the scripts used by the curators for this purpose. We are working on a fix and will revise the data as soon as possible.
-
 # MAVISp web app
 
 ## Introduction
