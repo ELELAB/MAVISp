@@ -96,13 +96,14 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleSAS,
                           EnsembleLocalInteractionsDNA,
                           EnsembleLocalInteractionsHomodimer,
+                          EnsembleFunctionalDynamics,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_dynamics', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
