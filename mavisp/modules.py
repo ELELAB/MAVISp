@@ -1480,7 +1480,6 @@ class FunctionalDynamics(MavispModule):
 
         df = pd.read_csv(fname, sep='\t', index_col=False)
 
-        print(df.columns)
         if len(df.columns) != 2:
             this_error = f"Functional Dynamics table must have two columns (mutations and classification)"
             raise TypeError(this_error)
