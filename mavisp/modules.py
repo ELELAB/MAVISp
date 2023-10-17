@@ -447,7 +447,6 @@ class TaccLocalInteractions(LocalInteractions):
 
         return rsa.set_index('resn')
 
-
 class EnsembleLocalInteractions(MavispMultiEnsembleModule, module_class=TaccLocalInteractions):
     module_dir = "local_interactions"
     name = "local_interactions"
@@ -1509,7 +1508,7 @@ class FunctionalDynamics(MavispModule):
         # check that we have one or more directories
         fd_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
-        if len(fd_dirs) == 0 and not all([os.path.isdir(os.path.join(self.data_dir, self.module_dir, d)) for d in fd_dirs]):
+        if len(fd_dirs) == 0 or not all([os.path.isdir(os.path.join(self.data_dir, self.module_dir, d)) for d in fd_dirs]):
             this_error = f"functional_dynamics directory must contain one or more subdirectory"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
