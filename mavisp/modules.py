@@ -447,7 +447,6 @@ class TaccLocalInteractions(LocalInteractions):
 
         return rsa.set_index('resn')
 
-
 class EnsembleLocalInteractions(MavispMultiEnsembleModule, module_class=TaccLocalInteractions):
     module_dir = "local_interactions"
     name = "local_interactions"
@@ -1469,3 +1468,78 @@ class GEMME(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class FunctionalDynamics(MavispModule):
+
+    module_dir = "functional_dynamics"
+    name = "functional_dynamics"
+    allowed_values = set(['uncertain', 'neutral', 'destabilizing', 'stabilizing'])
+
+    def _parse_table(self, fname):
+
+        df = pd.read_csv(fname, sep='\t', index_col=False)
+
+        if len(df.columns) != 2:
+            this_error = f"Functional Dynamics table must have two columns (mutations and classification)"
+            raise TypeError(this_error)
+
+        if 'mutation' not in df.columns:
+            this_error = f"Functional Dynamics table must have a column named mutation"
+            raise TypeError(this_error)
+
+        df = df.set_index('mutation')
+
+        other_col = df.columns.to_list()[0]
+
+        if not set(df[other_col]).issubset(self.allowed_values):
+            this_error = f"Functional Dynamics table must have only the following values: {', '.join(self.allowed_values)}"
+            raise TypeError(this_error)
+
+        df = df.rename(columns={other_col : f"Functional dynamics ({other_col})"})
+
+        return df
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        # check that we have one or more directories
+        fd_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
+        if len(fd_dirs) == 0 or not all([os.path.isdir(os.path.join(self.data_dir, self.module_dir, d)) for d in fd_dirs]):
+            this_error = f"functional_dynamics directory must contain one or more subdirectory"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        for fd_dir in fd_dirs:
+
+            # check that we have only one file
+            fd_files = os.listdir(os.path.join(self.data_dir, self.module_dir, fd_dir))
+            if len(fd_files) != 1:
+                this_error = f"multiple or no files found in {fd_files}; only one expected"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            fd_file = fd_files[0]
+
+            log.info(f"parsing Functional Dynamics data file {fd_file}")
+
+            # parse functional dynamics table
+            try:
+                fd = self._parse_table(os.path.join(self.data_dir, self.module_dir, fd_dir, fd_file))
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            # join this functional dynamics table to main table
+            self.data = self.data.join(fd)
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class EnsembleFunctionalDynamics(MavispMultiEnsembleModule, module_class=FunctionalDynamics):
+    module_dir = "functional_dynamics"
+    name = "functional_dynamics"

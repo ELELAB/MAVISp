@@ -96,22 +96,29 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleSAS,
                           EnsembleLocalInteractionsDNA,
                           EnsembleLocalInteractionsHomodimer,
+                          EnsembleFunctionalDynamics,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_dynamics', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
-    supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'review_status', 'curators']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id','ensemble_sources','ensemble_size_foldx','ensemble_size_rosetta','review_status', 'curators']
+    supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
+    'review_status', 'curators']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics',
+    'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'ensemble_sources' : "Ensemble sources",
                         'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
                         'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
+                        'sampling_functional_dynamics' : "Sampling methods for functional dynamics",
+                        'interfaces_functional_dynamics' : "Regions of interest for functional dynamics",
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
                         }
@@ -159,5 +166,21 @@ class MAVISpEnsembleMode(MAVISpMode):
 
         except (KeyError, TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
             pass
+
+        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics']:
+            try:
+                out_metadata[k] = str(metadata[k])
+            except KeyError:
+                out_metadata[k] = ""
+
+        try:
+            curators = ', '.join(
+                [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+            )
+        except KeyError:
+            log.debug("There is no curators field in metadata file")
+            curators = None
+            mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
+
 
         return out_metadata, mavisp_criticals
