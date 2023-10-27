@@ -367,12 +367,13 @@ class AlloSigma(Method):
 
     name = "AlloSigma"
 
-    allowed_fnames_filtered = set(['allosigma_mut.txt',
-                                   'filtered_down_mutations.tsv',
-                                   'filtered_up_mutations.tsv'])
-    allowed_fnames_filtered_pocket = set(['filtered_down_pockets.tsv',
-                                          'allosigma_mut.txt',
-                                          'filtered_up_pockets.tsv'])
+    datasets = {'sub_cat'  : 'AlloSigma{version} predicted consequence - active sites',
+                'cofactor' : 'AlloSigma{version} predicted consequence - cofactor sites',
+                'pockets'  : 'AlloSigma{version} predicted consequence - pockets and interfaces'}
+
+    allowed_fnames = [f'filtered_up_{x}.tsv' for x in datasets.keys()] +\
+                     [f'filtered_down_{x}.tsv' for x in datasets.keys()] +\
+                     ['allosigma_mut.txt']
 
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
 
@@ -391,7 +392,6 @@ class AlloSigma(Method):
             return 'neutral'
 
         entry = filt.loc[row['mutations']]
-        entry = entry.drop(['avg_dG', 'n_mutations'])
         values = entry[~ pd.isna(entry)].values
 
         if np.all(values > cutoff):
@@ -400,6 +400,25 @@ class AlloSigma(Method):
             return 'stabilizing'
         else:
             return 'mixed_effects'
+
+    def _parse_allosigma2_energy_table(self, fname):
+
+        filt = pd.read_csv(fname, sep='\t', index_col=0)
+
+        filt = filt.reset_index()
+        filt['mutations'] = filt['mutations'].str.split()
+        filt = filt.explode('mutations')
+        filt = filt.set_index('mutations')
+
+        return filt
+
+    def _parse_allosigma2_mutation_file(self, fname):
+
+        all_mut = pd.read_csv(fname, sep='\t')
+
+        all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
+
+        return all_mut
 
     def parse(self, allosigma2_dir):
 
@@ -421,94 +440,63 @@ class AlloSigma(Method):
 
         for dirname, allosigma2_files in allosigma2_domains.items():
 
-            if len(allosigma2_files) not in [1, 2, 3]:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the AlloSigma2 directory {allosigma2_dir}/{dirname} should contain only 2 or 3 files")],
-                                        warning=[])
-
+            # check if the files are the expected ones
             if 'allosigma_mut.txt' not in allosigma2_files:
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")],
                                         warning=[])
 
-            # != is logical xor here - only one of the two needs to not be True
-            if not (allosigma2_files.issubset(self.allowed_fnames_filtered) != allosigma2_files.issubset(self.allowed_fnames_filtered_pocket)):
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the only allowed file names in the allosigma2 directory {allosigma2_dir}/{dirname} are {', '.join(list(self.allowed_fnames_filtered))} or {', '.join(list(self.allowed_fnames_filtered_pocket))}")],
+            if not allosigma2_files.issubset(self.allowed_fnames):
+                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the only allowed file names in the allosigma2 directory {allosigma2_dir}/{dirname} are {', '.join(list(self.allowed_fnames))}")],
                                         warning=[])
 
+            # parse the mutation file
             try:
-                all_mut = pd.read_csv(os.path.join(allosigma2_dir, dirname, 'allosigma_mut.txt'), sep='\t')
+                all_mut = self._parse_allosigma2_mutation_file(os.path.join(allosigma2_dir, dirname, 'allosigma_mut.txt'))
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                                          critical=[MAVISpCriticalError(this_error)])
 
-            all_mut = all_mut.drop_duplicates()
+            # for every data type
+            for suffix, colname in self.datasets.items():
 
-            all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
+                data = {}
 
-            if 'filtered_down_mutations.tsv' in allosigma2_files:
-                down_fname = 'filtered_down_mutations.tsv'
-            elif 'filtered_down_pockets.tsv' in allosigma2_files:
-                down_fname = 'filtered_down_pockets.tsv'
-            else:
-                down_fname = None
+                # for either up or down mutations for the type
+                for direction in ['up', 'down']:
 
-            if down_fname is not None:
-                try:
-                    filt_down = pd.read_csv(os.path.join(allosigma2_dir, dirname, down_fname), sep='\t', index_col=0)
-                except Exception as e:
-                    this_error = f"Exception {type(e).__name__} occurred when parsing {down_fname}. Arguments:{e.args}"
-                    raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+                    fname = f'filtered_{direction}_{suffix}.tsv'
 
-                if not 'mutations' in filt_down.columns:
-                    filt_down = filt_down.reset_index()
-                for col in ['n_mutations', 'avg_dG']:
-                    if not col in filt_down.columns:
-                        filt_down[col] = pd.NA
+                    if fname in allosigma2_files:
+                        try:
+                            data[direction] = self._parse_allosigma2_energy_table(os.path.join(allosigma2_dir, dirname, fname))
+                        except Exception as e:
+                            this_error = f"Exception {type(e).__name__} occurred when parsing {fname}. Arguments:{e.args}"
+                            raise MAVISpMultipleError(warning=warnings,
+                                                    critical=[MAVISpCriticalError(this_error)])
+                    else:
+                        data[direction] = None
 
-                filt_down['mutations'] = filt_down['mutations'].str.split()
-                filt_down = filt_down.explode('mutations')
-                filt_down = filt_down.set_index('mutations')
-            else:
-                filt_down = None
+                all_mut[suffix] = all_mut.apply(self._process_allosigma2_tables,
+                                                                          filt_up=data['up'],
+                                                                          filt_down=data['down'],
+                                                                          cutoff=2,
+                                                                          axis=1)
 
-            if 'filtered_up_mutations.tsv' in allosigma2_files:
-                up_fname = 'filtered_up_mutations.tsv'
-            elif 'filtered_up_pockets.tsv' in allosigma2_files:
-                up_fname = 'filtered_up_pockets.tsv'
-            else:
-                up_fname = None
-
-            if up_fname is not None:
-                try:
-                    filt_up   = pd.read_csv(os.path.join(allosigma2_dir, dirname, up_fname), sep='\t', index_col=0)
-                except Exception as e:
-                    this_error = f"Exception {type(e).__name__} occurred when parsing {up_fname}. Arguments:{e.args}"
-                    raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-
-                if not 'mutations' in filt_up.columns:
-                    filt_up = filt_up.reset_index()
-                for col in ['n_mutations', 'avg_dG']:
-                    if not col in filt_up.columns:
-                        filt_up[col] = pd.NA
-
-                filt_up['mutations'] = filt_up['mutations'].str.split()
-                filt_up = filt_up.explode('mutations')
-                filt_up = filt_up.set_index('mutations')
-            else:
-                filt_up = None
-
-            all_mut['allosigma-consequence'] = all_mut.apply(self._process_allosigma2_tables, filt_up=filt_up, filt_down=filt_down, cutoff=2, axis=1)
-
-            all_mut = all_mut[['mutations', 'allosigma-mode', 'allosigma-consequence']].set_index('mutations')
-
-            all_mut = all_mut.rename(columns={'allosigma-mode': f'AlloSigma{self.version} mutation type',
-                                            'allosigma-consequence' : f'AlloSigma{self.version} predicted consequence'}).fillna('-')
+            all_mut = all_mut[['mutations', 'allosigma-mode'] + list(self.datasets.keys())]
+            all_mut = all_mut.set_index('mutations')
 
             allosigma2_data.append(all_mut)
 
-        return pd.concat(allosigma2_data, axis=0), warnings
+        out_data = pd.concat(allosigma2_data, axis=0)
+
+        rename_scheme = {'allosigma-mode' : f'AlloSigma{self.version} mutation type'}
+        for k, v in self.datasets.items():
+            rename_scheme[k] = v.format(version=self.version)
+
+        print("RETURNING ", out_data.rename(columns=rename_scheme).fillna('-'), warnings)
+
+        return out_data.rename(columns=rename_scheme).fillna('-'), warnings
 
 class RaSP(Method):
 
