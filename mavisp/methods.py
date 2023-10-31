@@ -494,8 +494,6 @@ class AlloSigma(Method):
         for k, v in self.datasets.items():
             rename_scheme[k] = v.format(version=self.version)
 
-        print("RETURNING ", out_data.rename(columns=rename_scheme).fillna('-'), warnings)
-
         return out_data.rename(columns=rename_scheme).fillna('-'), warnings
 
 class RaSP(Method):
