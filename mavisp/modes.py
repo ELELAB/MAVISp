@@ -43,13 +43,14 @@ class MAVISpSimpleMode(MAVISpMode):
                           SAS,
                           LocalInteractionsDNA,
                           LocalInteractionsHomodimer,
+                          FunctionalSites,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
@@ -97,13 +98,14 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleLocalInteractionsDNA,
                           EnsembleLocalInteractionsHomodimer,
                           EnsembleFunctionalDynamics,
+                          FunctionalSites,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_dynamics', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
@@ -181,6 +183,5 @@ class MAVISpEnsembleMode(MAVISpMode):
             log.debug("There is no curators field in metadata file")
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
-
 
         return out_metadata, mavisp_criticals
