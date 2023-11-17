@@ -94,7 +94,7 @@ def load_dataset(data_dir, protein, mode):
 
 @st.cache_data
 def load_main_table(data_dir, mode):
-    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv'))
+    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
 # JavaScript column renderers, to dynamically add web links
 
@@ -125,7 +125,7 @@ class SourceCellRenderer {
 
         // If a link is assigned, create the anchor tag
         if (link !== "") {
-            array[i] = '<a target="_parent" href="' + link + '">' + item + '</a>';
+            array[i] = `<a target="_parent" href=${link}>${item}</a>`;
         } else {
             array[i] = item;
         }
@@ -138,3 +138,20 @@ class SourceCellRenderer {
     return this.eGui;
   }
 }''')
+
+cell_renderers['PTMs'] = JsCode('''
+class PTMCellRenderer {
+    init(params) {
+        this.eGui = document.createElement('span');
+        if (params.value == null) {
+            this.eGui.innerHTML = '';
+        } else {
+            this.eGui.innerHTML = `<a target="_parent" href="http://www.phosphosite.org/uniprotAccAction?id=${params.data.UniProtAC}">${params.value}</a>`;
+        }
+    }
+  getGui() {
+    return this.eGui;
+  }
+}''')
+
+

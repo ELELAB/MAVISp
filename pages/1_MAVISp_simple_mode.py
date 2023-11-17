@@ -68,6 +68,7 @@ if st.button('View dataset',
             disabled=button_disabled):
 
     protein = datasets_grid["selected_rows"][0]['Protein']
+    upac = datasets_grid["selected_rows"][0]['Uniprot AC']
 
     st.write(f"Currently viewing: {protein}")
 
@@ -80,12 +81,16 @@ if st.button('View dataset',
                             mime="text/csv",
                             key='download-csv')
 
+    this_dataset = this_dataset.fillna(pd.NA)
+    this_dataset['UniProtAC'] = upac
+
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
-    for col in ['Mutation sources']:
+    this_gb.configure_column('UniProt AC', hide=True)
+    for col in ['Mutation sources', 'PTMs']:
         this_gb.configure_column(col, cellRenderer=cell_renderers[col])
 
-    this_dataset = this_dataset.fillna(pd.NA)
+
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
                             reload_data=False,
