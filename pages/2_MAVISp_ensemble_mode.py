@@ -83,6 +83,7 @@ if st.button('View dataset',
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
+    this_gb.configure_column("Mutation sources", cellRenderer=render_source_cell)
 
     this_dataset = this_dataset.fillna(pd.NA)
     mutations_grid = AgGrid(this_dataset,

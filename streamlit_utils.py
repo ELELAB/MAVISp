@@ -95,3 +95,34 @@ def load_dataset(data_dir, protein, mode):
 def load_main_table(data_dir, mode):
     return pd.read_csv(os.path.join(data_dir, mode, 'index.csv'))
 
+# JavaScript column renderers, to dynamically add web links
+
+render_source_cell = JsCode("""function createLinksFromString(params) {
+    // Split the string into an array using comma as separator
+    var array = params.value.split(',');
+
+    // Loop through array and create a link for each item
+    for (var i = 0; i < array.length; i++) {
+        var item = array[i].trim();
+        var link = "";
+
+        // Check the item and assign the corresponding link
+        if (item === "COSMIC") {
+            link = "https://cancer.sanger.ac.uk/cosmic";
+        } else if (item === "cBioPortal") {
+            link = "https://www.cbioportal.org";
+        } else if (item === "clinvar") {
+            link = "https://www.ncbi.nlm.nih.gov/clinvar/"
+        }
+
+        // If a link is assigned, create the anchor tag
+        if (link !== "") {
+            array[i] = '<a href="' + link + '">' + item + '</a>';
+        } else {
+            array[i] = item;
+        }
+    }
+
+    // Return the string
+    return array.join(', ');
+""")
