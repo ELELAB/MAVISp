@@ -18,6 +18,7 @@ import streamlit as st
 import base64
 import os
 import pandas as pd
+from st_aggrid import JsCode
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -97,7 +98,13 @@ def load_main_table(data_dir, mode):
 
 # JavaScript column renderers, to dynamically add web links
 
-render_source_cell = JsCode("""function createLinksFromString(params) {
+
+cell_renderers = {}
+
+cell_renderers['Mutation sources'] = JsCode('''
+class SourceCellRenderer {
+  init(params) {
+    this.eGui = document.createElement('span');
     // Split the string into an array using comma as separator
     var array = params.value.split(',');
 
@@ -112,17 +119,22 @@ render_source_cell = JsCode("""function createLinksFromString(params) {
         } else if (item === "cBioPortal") {
             link = "https://www.cbioportal.org";
         } else if (item === "clinvar") {
-            link = "https://www.ncbi.nlm.nih.gov/clinvar/"
+            item = "ClinVar";
+            link = "https://www.ncbi.nlm.nih.gov/clinvar/";
         }
 
         // If a link is assigned, create the anchor tag
         if (link !== "") {
-            array[i] = '<a href="' + link + '">' + item + '</a>';
+            array[i] = '<a target="_parent" href="' + link + '">' + item + '</a>';
         } else {
             array[i] = item;
         }
     }
 
-    // Return the string
-    return array.join(', ');
-""")
+    this.eGui.innerHTML = array.join(', ');
+
+  }
+  getGui() {
+    return this.eGui;
+  }
+}''')
