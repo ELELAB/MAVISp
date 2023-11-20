@@ -1,13 +1,13 @@
 # MAVISp - various utilities for MAVISp web server
-# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -18,6 +18,7 @@ import streamlit as st
 import base64
 import os
 import pandas as pd
+from st_aggrid import JsCode
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -93,5 +94,62 @@ def load_dataset(data_dir, protein, mode):
 
 @st.cache_data
 def load_main_table(data_dir, mode):
-    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv'))
+    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
+# JavaScript column renderers, to dynamically add web links
+
+
+cell_renderers = {}
+
+cell_renderers['Mutation sources'] = JsCode('''
+class SourceCellRenderer {
+  init(params) {
+    this.eGui = document.createElement('span');
+    // Split the string into an array using comma as separator
+    var array = params.value.split(',');
+
+    // Loop through array and create a link for each item
+    for (var i = 0; i < array.length; i++) {
+        var item = array[i].trim();
+        var link = "";
+
+        // Check the item and assign the corresponding link
+        if (item === "COSMIC") {
+            link = "https://cancer.sanger.ac.uk/cosmic";
+        } else if (item === "cBioPortal") {
+            link = "https://www.cbioportal.org";
+        } else if (item === "clinvar") {
+            item = "ClinVar";
+            link = "https://www.ncbi.nlm.nih.gov/clinvar/";
+        }
+
+        // If a link is assigned, create the anchor tag
+        if (link !== "") {
+            array[i] = `<a target="_parent" href=${link}>${item}</a>`;
+        } else {
+            array[i] = item;
+        }
+    }
+
+    this.eGui.innerHTML = array.join(', ');
+
+  }
+  getGui() {
+    return this.eGui;
+  }
+}''')
+
+cell_renderers['PTMs'] = JsCode('''
+class PTMCellRenderer {
+    init(params) {
+        this.eGui = document.createElement('span');
+        if (params.value == null) {
+            this.eGui.innerHTML = '';
+        } else {
+            this.eGui.innerHTML = `<a target="_parent" href="http://www.phosphosite.org/uniprotAccAction?id=${params.data.UniProtAC}">${params.value}</a>`;
+        }
+    }
+  getGui() {
+    return this.eGui;
+  }
+}''')

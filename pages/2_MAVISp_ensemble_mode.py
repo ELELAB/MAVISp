@@ -33,14 +33,13 @@ add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
 
-st.header('MAVISp ensemble mode')
+st.write('''Please choose a dataset in the table below and click on the "View
+dataset" button. The corresponding MAVISp results table will be displayed underneath.''')
 
-st.write('''Please choose a dataset in the table below and click on the "View dataset"
-button.  The corresponding MAVISp results table will be displayed underneath.
-Click on the "Download dataset" button to download the corresponding CSV file.)
+st.write('''Click on the "Download dataset" button to download the corresponding CSV file.''')
 
-All data is released under the [Creative Commons Attribution 4.0 International
- (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)''')
+st.write('''Please see the Acknowledgement and data usage page for information on our data
+sources, licensing term, and data reuse permissions''')
 
 try:
     show_table = load_main_table(database_dir, mode)
@@ -69,10 +68,12 @@ if st.button('View dataset',
             disabled=button_disabled):
 
     protein = datasets_grid["selected_rows"][0]['Protein']
+    upac = datasets_grid["selected_rows"][0]['Uniprot AC']
 
     st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
+    ptm_columns = [c for c in this_dataset.columns if c.startswith('PTMs')]
 
     with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
@@ -83,9 +84,15 @@ if st.button('View dataset',
 
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
+    this_gb.configure_column('UniProt AC', hide=True)
+    col = 'Mutation sources'
+    this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+    for col in ptm_columns:
+        this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
 
-    this_dataset = this_dataset.fillna(pd.NA)
+
+
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
-                            reload_data=False)
-
+                            reload_data=False,
+                            allow_unsafe_jscode=True)

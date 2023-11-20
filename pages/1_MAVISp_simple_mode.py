@@ -1,13 +1,13 @@
 # MAVISp - Streamlit application
-# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -35,12 +35,13 @@ add_affiliation_logo()
 
 st.header('MAVISp simple mode')
 
-st.write('''Please choose a dataset in the table below and click on the "View dataset"
-button.  The corresponding MAVISp results table will be displayed underneath.
-Click on the "Download dataset" button to download the corresponding CSV file.)
+st.write('''Please choose a dataset in the table below and click on the "View 
+dataset" button. The corresponding MAVISp results table will be displayed underneath.''')
 
-All data is released under the [Creative Commons Attribution 4.0 International
- (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)''')
+st.write('''Click on the "Download dataset" button to download the corresponding CSV file.''')
+
+st.write('''Please see the Acknowledgement and data usage page for information on our data
+sources, licensing term, and data reuse permissions''')
 
 try:
     show_table = load_main_table(database_dir, mode)
@@ -68,6 +69,7 @@ if st.button('View dataset',
             disabled=button_disabled):
 
     protein = datasets_grid["selected_rows"][0]['Protein']
+    upac = datasets_grid["selected_rows"][0]['Uniprot AC']
 
     st.write(f"Currently viewing: {protein}")
 
@@ -80,11 +82,18 @@ if st.button('View dataset',
                             mime="text/csv",
                             key='download-csv')
 
+    this_dataset = this_dataset.fillna(pd.NA)
+    this_dataset['UniProtAC'] = upac
+
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
+    this_gb.configure_column('UniProt AC', hide=True)
+    for col in ['Mutation sources', 'PTMs']:
+        this_gb.configure_column(col, cellRenderer=cell_renderers[col])
 
-    this_dataset = this_dataset.fillna(pd.NA)
+
     mutations_grid = AgGrid(this_dataset,
                             gridOptions=this_gb.build(),
-                            reload_data=False)
+                            reload_data=False,
+                            allow_unsafe_jscode=True)
 

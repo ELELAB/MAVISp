@@ -27,18 +27,27 @@ add_affiliation_logo()
 
 st.header("Welcome to MAVISp!")
 
-st.write("""MAVISp includes different types of predictions for the effect of mutations on protein function, structure or more. Its final goal is to predict the effect of relevant variants of unknown significance and identify their mechanism of action.
+st.write("""MAVISp includes different types of predictions for the effect of mutations
+on protein function, structure or more. Its final goal is to predict the effect of
+relevant variants of unknown significance and identify their mechanism of action.
 
-MAVISp has been designed by the Cancer Structural Biology (Danish Cancer Institute, Denmark) and the Cancer Systems Biology (Department of Health and Technology at the Technical University of Demark) groups, headed by Dr. Elena Papaleo
+MAVISp has been designed by the Cancer Structural Biology (Danish Cancer Institute, Denmark)
+and the Cancer Systems Biology (Department of Health and Technology at the Technical University of Demark)
+groups, headed by Dr. Elena Papaleo
 
 Please use the menu on the left to navigate the website.
 
-If you use data from MAVISp from your research, please cite our preprint:""")
+If you use data from MAVISp from your research, please cite
+[our preprint](https://www.biorxiv.org/content/10.1101/2022.10.22.513328v4):""")
 
-st.code("""MAVISp: Multi-layered Assessment of VarIants by Structure for proteins
-Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Pablo Sánchez-Izquierdo,
-Simone Scrima, Francesca Maselli, Karolina Krzesińska, Terézia Dorčaková, Jordan Safer,
-Katrine Meldgård, Julie Bruun Brockhoff, Amalie Drud Nielsen, Alberto Pettenella, Jérémy Vinhas,
-Peter Wad Sackett, Claudia Cava, Sumaiya Iqbal, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
-bioRxiv 2022.10.22.51332; doi: https://doi.org/10.1101/2022.10.22.513328""", language=None)
+st.code("""MAVISp: A Modular Structure-Based Framework for Genomic Variant Interpretation
+Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Simone Scrima,
+Pablo Sanchez Izquierdo, Karolina Krzesinska, Francesca Maselli, Terezia Dorcakova,
+Jordan Safer, Alberte Heering Estad, Katrine Meldgard, Philipp Becker, Julie Bruun Brockhoff,
+Amalie Drud Nielsen, Valentina Sora, Alberto Pettenella, Jeremy Vinhas,
+Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert, Sumaiya Iqbal, Matteo Lambrughi,
+Matteo Tiberti, Elena Papaleo. bioRxiv https://doi.org/10.1101/2022.10.22.513328""", language=None)
+
+st.write("""Please see the "Acknowledgement and data usage" section for information about our data
+sources, data license terms and data reuse""")
 
