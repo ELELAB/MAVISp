@@ -77,6 +77,8 @@ st.markdown('''MAVISp uses the following datasets for the mutation data:
   - [**ClinVar**](https://www.ncbi.nlm.nih.gov/clinvar/), the NIH database of
     clinically relevant genetic variants. It is released under public domain.''')
 
+st.image("static/NCBI_powered.png")
+
 st.subheader('Mutations metadata')
 
 st.markdown('''MAVISp uses the following datasets for the mutation metadata:
@@ -135,5 +137,4 @@ st.markdown('''MAVISp uses the following protein-protein interaction databases:
   - [**mentha**](https://mentha.uniroma2.it), a database of protein-protein
   interactions.
   - [**HPC-Atlas**](http://www.yulpan.top/HPC-Atlas/), a database of protein
-  complexes.
-''')
+  complexes.''')
