@@ -33,14 +33,13 @@ add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
 
-st.header('MAVISp ensemble mode')
+st.write('''Please choose a dataset in the table below and click on the "View
+dataset" button. The corresponding MAVISp results table will be displayed underneath.''')
 
-st.write('''Please choose a dataset in the table below and click on the "View dataset"
-button.  The corresponding MAVISp results table will be displayed underneath.
-Click on the "Download dataset" button to download the corresponding CSV file.)
+st.write('''Click on the "Download dataset" button to download the corresponding CSV file.''')
 
-All data is released under the [Creative Commons Attribution 4.0 International
- (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/)''')
+st.write('''Please see the Acknowledgement and data usage page for information on our data
+sources, licensing term, and data reuse permissions''')
 
 try:
     show_table = load_main_table(database_dir, mode)
