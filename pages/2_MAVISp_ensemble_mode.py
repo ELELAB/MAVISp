@@ -73,6 +73,7 @@ if st.button('View dataset',
     st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
+    ptm_columns = [c for c in this_dataset.columns if c.startswith('PTMs')]
 
     with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
@@ -84,8 +85,11 @@ if st.button('View dataset',
     this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
     this_gb.configure_column('UniProt AC', hide=True)
-    for col in ['Mutation sources', 'PTMs']:
-        this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+    col = 'Mutation sources'
+    this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+    for col in ptm_columns:
+        this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
+
 
 
     mutations_grid = AgGrid(this_dataset,
