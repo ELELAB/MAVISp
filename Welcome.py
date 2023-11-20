@@ -44,7 +44,7 @@ st.code("""MAVISp: A Modular Structure-Based Framework for Genomic Variant Inter
 Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Simone Scrima,
 Pablo Sanchez Izquierdo, Karolina Krzesinska, Francesca Maselli, Terezia Dorcakova,
 Jordan Safer, Alberte Heering Estad, Katrine Meldgard, Philipp Becker, Julie Bruun Brockhoff,
-Amalie Drud Nielsen,  View ORCID ProfileValentina Sora, Alberto Pettenella, Jeremy Vinhas,
+Amalie Drud Nielsen, Valentina Sora, Alberto Pettenella, Jeremy Vinhas,
 Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert, Sumaiya Iqbal, Matteo Lambrughi,
 Matteo Tiberti, Elena Papaleo. bioRxiv https://doi.org/10.1101/2022.10.22.513328""", language=None)
 
