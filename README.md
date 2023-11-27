@@ -36,24 +36,25 @@ the Python package.
 ## Requirements
 
 Running the MAVISp web app requires a working Python 3.7+ installation with the following
-Python packages installed:
+Python packages:
 
-- streamlit
-- streamlit-aggrid
-- pandas
-- osfclient
+- streamlit 1.28.2
+- streamlit-aggrid 0.3.4.post3
+- pandas 2.1.3
+- osfclient 0.0.5
 
-It has been tested on Linux and macOS, but in principle runs on any operating system
-that supports Python.
+In principle, it is compatible with all operating systems that support Python.
 
-The easiest way to run MAVISp is by means of a Docker container - see the next section.
+It has been last test on Linux (Ubuntu 18.04), and on macOS (13.5.2),
+with Python 3.9.6 and the following package versions:
 
-If you would rather install and run it on your local hardware, please follow the instructions
-below.
+- streamlit 1.28.2
+- streamlit-aggrid 0.3.4.post3
+- pandas 2.1.3
+- osfclient 0.0.5
 
-## Running the app as a Docker container
-
-coming soon - please use one of the options below for now
+Notice that `osfclient` is only required to download the full MAVISp dataset
+from OSF (see below)
 
 ## Installing requirements
 
@@ -79,7 +80,7 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas streamlit streamlit-aggrid pyyaml osfclient
+pip install pandas==2.1.3 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
 ```
 
 ### Installing requirements using a conda Python environment
@@ -100,13 +101,25 @@ conda activate MAVISp_env
 3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install streamlit pandas pyyaml streamlit-aggrid osfclient
+pip install pandas==2.1.3 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
 ```
 
-## Downloading the required files
+Installation time is typically up to a few minutes.
 
-You will need to download the MAVISp web app from GitHub and the current MAVISp
-database from our OSF repository:
+## Running the app
+
+In the following instructions
+  - `hostname` denotes the hostname of the server (i.e. the one you usually ssh to)
+  - `user` denotes your username on the server
+
+### Running the app locally - full dataset
+
+This requires downloading the full MAVISp dataset.
+
+In order to run our web server locally with its full content, you will need to
+download the full MAVISp dataset from OSF, as follow, as well as download our
+web app from GitHub. If you'd rather test the web app on a small subset, please
+follow the instructions in the "Running the app locally - test dataset" instead.
 
 1. If you haven't already, activate your Python environment (see previous steps)
 
@@ -123,24 +136,15 @@ and download the files, as follows:
 
 ```
 cd MAVISp
+rm -rf ./database
 osf clone && mv ufpzm/osfstorage/database/ . && rm -r ufpzm
 ```
 
 alternatively, you can download the whole OSF database from the web interface
-and copy it in the `MAVISp` folder.
+and copy its `database` folder in `MAVISp`. At the end of the process,
+you should have the OSF `database` folder and its contents inside the `MAVISp` folder.
 
-At the end of the process, you should have the OSF `database` folder and its
-contents inside the `MAVISp` folder.
-
-## Running the app
-
-In the following instructions
-  - `hostname` denotes the hostname of the server (i.e. the one you usually ssh to)
-  - `user` denotes your username on the server
-
-### Running the app locally
-
-With your Python environment still active and from inside the `MAVISp` repository
+4. With your Python environment still active and from inside the `MAVISp` repository
 directory, run:
 
 ```
@@ -148,6 +152,37 @@ streamlit run Welcome.py
 ```
 
 a browser window displaying the MAVISp web app should open.
+
+### Running the app locally - test dataset
+
+These instructions allow to run our web app on a minimal test dataset that
+is included in the distribution.
+
+1. If you haven't already, activate your Python environment (see previous steps)
+
+2. create a local copy of the MAVISp repository in your system:
+
+```
+git clone https://github.com/ELELAB/MAVISp
+```
+
+3. Create a copy of the test dataset in the MAVISp directory
+
+```
+cd MAVISp
+rm -rf ./database
+cp test_data/mavisp_web_server database
+```
+
+4. With your Python environment still active and from inside the `MAVISp` repository
+directory, run:
+
+```
+streamlit run Welcome.py
+```
+
+a browser window displaying the MAVISp web app should open.
+
 
 ### Running the app remotely - if you have access to a host
 
@@ -161,8 +196,9 @@ This option is useful for who wants to run MAVISp remotely, but doesn't have
 direct access to the MAVISp web service (e.g. because the outbound port that
 streamlit uses is blocked). It is however pretty slow and clunky, meaning it
 is not very effective for in-depth data exploration or analysis. It also requires
-to be able to connected with X forwarding to your server. For a faster 
-alternative that doesn't use X-forwarding see instructions below.
+to be able to connected with X forwarding to your server, and to have a web
+browser installed on your server. For a faster alternative that doesn't use
+X-forwarding see instructions below.
 
 1. connect to your server via ssh, with X forwarding:
 
@@ -219,9 +255,24 @@ performs the conversion. Please see the help text of the script itself for furth
 
 ## Requirements
 
+The MAVISp Python package is designed to run on any operating system that supports
+Python. It has been tested on Ubuntu Linux 18.04 and macOS (13.5.2) 
+
 In order to install the package and all its requirements automatically, you will need to have a
-working Python 3.7+ installation availalbe. We recommend installing the package in its own
-virtual environment - please see previous instructions on how to perform this.
+working Python 3.7+ installation available. We recommend installing the package in its own
+virtual environment - please see previous instructions on how to create a virtual environment.
+
+The MAVISp Python package requires the following packages, and has been tested
+with the following versions:
+
+- pandas 2.1.3
+- tabulate 0.9.0
+- numpy 1.26.2
+- PyYAML 6.0.1 
+- streamlit 1.28.2
+- streamlit-aggrid 0.3.4.post3
+- requests 2.31.0
+- termcolor 2.3.0
 
 ## Installation
 
@@ -242,10 +293,12 @@ pip install .
 
 the `mavisp` executable will be available.
 
+Installation time is typically up to a few minutes.
+
 Notice that installing the Python package always installs all the requirements
 for the web app, meaning it is ready to run.
 
-## Running the `mavisp` script
+## Running the `mavisp` script on the example dataset
 
 A typical command line of the `mavisp` script looks like:
 
@@ -259,6 +312,20 @@ where `input_data` is a folder containing the raw data in a specific format and
 3. prints a more detailed report of the status of each MAVISp module in each dataset
 3. writes the output database. The output directories needs not to be present, unless
 option `-f` is set, which forces writing or overwriting the database.
+
+To test the script on the MAVISp dataset included in the repository, from inside
+the `MAVISp` folder you have cloned from GitHub (see previous instructions),
+just run:
+
+```
+mavisp -d test_data/mavisp_python_package -o test_output
+```
+
+the `test_output` folder will now contain the output of the command. A reference
+output for this command can be found in the `test_data/mavisp_web_server/` folder.
+The execution should complete in a few seconds.
+
+## Additional instructions
 
 The MAVISp modules can have 4 possible states:
 
