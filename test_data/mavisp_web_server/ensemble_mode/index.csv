@@ -1,0 +1,2 @@
+Protein,Uniprot AC,RefSeq ID,Ensemble sources,Ensemble sizes (FoldX),Ensemble sizes (Rosetta),Sampling methods for functional dynamics,Regions of interest for functional dynamics,Review status,Curators
+ARID3A,Q99856,NP_005215,"cabsflex, md","20, 50","3, 3",,,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark), Karolina Krzesinska (DTU, Denmark, DCI, Denmark)"
