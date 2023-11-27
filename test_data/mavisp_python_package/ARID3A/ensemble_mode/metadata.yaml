@@ -1,0 +1,15 @@
+curators:
+    Elena Papaleo:
+        affiliation:
+            - DCI, Denmark 
+            - DTU, Denmark
+    Karolina Krzesinska:
+        affiliation:
+            - DTU, Denmark
+            - DCI, Denmark
+uniprot_ac: Q99856
+refseq_id: NP_005215 
+review_status: 3
+ensemble_sources : [ cabsflex, md ]
+ensemble_size_foldx : [ 20, 50 ]
+ensemble_size_rosetta : [ 3, 3 ]
