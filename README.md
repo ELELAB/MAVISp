@@ -171,7 +171,7 @@ git clone https://github.com/ELELAB/MAVISp
 ```
 cd MAVISp
 rm -rf ./database
-cp test_data/mavisp_web_server database
+cp -r test_data/mavisp_web_server database
 ```
 
 4. With your Python environment still active and from inside the `MAVISp` repository
