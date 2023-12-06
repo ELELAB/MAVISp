@@ -1,0 +1,68 @@
+#ClinVar	Internal_dictionary
+Benign	Benign
+	Class
+nan	Uncertain 
+Uncertain significance,Pathogenic	Conflicting interpretation
+Conflicting interpretations of pathogenicity	Conflicting interpretation
+Uncertain significance,Likely pathogenic,Likely pathogenic	Conflicting interpretation
+Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Conflicting interpretations of pathogenicity,Uncertain significance	Conflicting interpretation
+Uncertain significance,Uncertain significance,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Uncertain significance,Conflicting interpretations of pathogenicity,Uncertain significance	Conflicting interpretation
+Pathogenic/Likely pathogenic,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Conflicting interpretations of pathogenicity,Pathogenic/Likely pathogenic	Conflicting interpretation
+Likely benign,Likely benign,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Likely pathogenic,Uncertain significance,Pathogenic/Likely pathogenic	Conflicting interpretation
+Uncertain significance,Likely pathogenic	Conflicting interpretation
+Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Uncertain significance,Uncertain significance,Likely pathogenic	Conflicting interpretation
+Uncertain significance,Conflicting interpretations of pathogenicity,Likely pathogenic	Conflicting interpretation
+Uncertain significance,Pathogenic/Likely pathogenic	Conflicting interpretation
+Likely benign,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Uncertain significance,Likely benign	Conflicting interpretation
+Uncertain significance,Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Pathogenic,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Likely benign,Uncertain significance	Conflicting interpretation
+Likely pathogenic,Uncertain significance	Conflicting interpretation
+Uncertain significance,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Uncertain significance,Benign/Likely benign	Conflicting interpretation
+Uncertain significance,Likely pathogenic,Uncertain significance	Conflicting interpretation
+Conflicting interpretations of pathogenicity,Likely pathogenic	Conflicting interpretation
+Likely pathogenic,Conflicting interpretations of pathogenicity	Conflicting interpretation
+Pathogenic,Uncertain significance	Conflicting interpretation
+Likely benign	Likely benign
+Benign/Likely benign	Likely benign
+Likely benign,Benign/Likely benign	Likely benign
+Benign/Likely benign,Benign/Likely benign	Likely benign
+Likely benign,Benign	Likely benign
+Likely benign,Likely benign	Likely benign
+Pathogenic/Likely pathogenic,Pathogenic,Pathogenic	Likely pathogenic
+Likely pathogenic,drug response	Likely pathogenic
+Likely pathogenic,Pathogenic	Likely pathogenic
+Likely pathogenic	Likely pathogenic
+Pathogenic, Pathogenic/Likely pathogenic	Likely pathogenic
+Likely pathogenic, Likely pathogenic, drug response	Likely pathogenic
+Pathogenic/Likely pathogenic, Likely pathogenic	Likely pathogenic
+Pathogenic/Likely pathogenic	Likely pathogenic
+Pathogenic/Likely pathogenic, Pathogenic/Likely pathogenic	Likely pathogenic
+Pathogenic/Likely pathogenic; risk factor	Likely pathogenic
+Pathogenic, Likely pathogenic, Pathogenic	Likely pathogenic
+Likely pathogenic, Likely pathogenic, Likely pathogenic	Likely pathogenic
+Likely pathogenic, Pathogenic/Likely pathogenic	Likely pathogenic
+Likely pathogenic,risk factor	Likely pathogenic
+Pathogenic/Likely pathogenic,drug response	Likely pathogenic
+Likely pathogenic,Pathogenic,drug response,other	Likely pathogenic
+Pathogenic/Likely pathogenic,Pathogenic	Likely pathogenic
+Likely pathogenic,Likely pathogenic	Likely pathogenic
+Pathogenic,Likely pathogenic	Likely pathogenic
+not provided	Uncertain 
+Pathogenic,Pathogenic,Pathogenic	Pathogenic
+Pathogenic,risk factor	Pathogenic
+Pathogenic,Pathogenic	Pathogenic
+Pathogenic	Pathogenic
+Uncertain significance,Uncertain significance,Uncertain significance	Uncertain 
+Uncertain significance,not provided	Uncertain 
+drug response	Uncertain 
+Uncertain significance	Uncertain 
+Uncertain significance,Uncertain significance	Uncertain 
+Uncertain significance,drug response	Uncertain 
