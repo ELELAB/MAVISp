@@ -44,47 +44,27 @@ st.write('''Please see the Acknowledgement and data usage page for information o
 sources, licensing term, and data reuse permissions''')
 
 try:
-    original_show_table = load_main_table(database_dir, mode)
+    show_table = load_main_table(database_dir, mode)
 except FileNotFoundError:
     st.write('No entries are currently available for simple mode.')
     st.stop()
 
-filter_string = st.text_input("Search for protein name, UniProt AC or RefSeq ID")
-
-if filter_string == "":
-    show_table = original_show_table
-else:
-    filter_string = filter_string.upper()
-    show_table = original_show_table.copy()
-    show_table = show_table[ (show_table['Protein'].str.contains(filter_string)) | (show_table['Uniprot AC'].str.contains(filter_string)) | (show_table['RefSeq ID'].str.contains(filter_string))]
-
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
-if "id_row" not in st.session_state:
-    st.session_state["id_row"] = ''
-    st.session_state.selected_row = '0'
-else:
-    st.session_state.selected_row = st.session_state["id_row"].get('selectedItems')[0]['_selectedRowNodeInfo'][
-        'nodeRowIndex']
-
-
 gb_datasets_grid.configure_selection(selection_mode='single',
-                                    pre_selected_rows=[str(st.session_state.selected_row)],
-                                       use_checkbox=True)
+                                     use_checkbox=True)
 
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True,
-                      reload_data = True,
-                      height=200,
-                      key="id_row")
+                      reload_data = False,
+                      height=200)
 
 if len(datasets_grid["selected_rows"]) != 1:
     button_disabled = True
 else:
     button_disabled = False
-    #st.session_stat['id_row'] = datasets_grid['selected_rows']
 
 if st.button('View dataset',
             disabled=button_disabled):
@@ -117,8 +97,7 @@ if st.button('View dataset',
     mutations_grid = AgGrid(this_dataset_table,
                             gridOptions=this_gb.build(),
                             reload_data=False,
-                            allow_unsafe_jscode=True,
-                            key = st.session_state.grid_key)
+                            allow_unsafe_jscode=True)
 
     plots = plot_dotplot(this_dataset, demask_co=0.3, revel_co=0.5)
     st.write(f"N plots: {len(plots)}")
