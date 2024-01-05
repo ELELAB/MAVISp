@@ -76,7 +76,7 @@ datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True,
-                      reload_data = False,
+                      reload_data = True,
                       height=200,
                       key="id_row")
 
