@@ -44,26 +44,47 @@ st.write('''Please see the Acknowledgement and data usage page for information o
 sources, licensing term, and data reuse permissions''')
 
 try:
-    show_table = load_main_table(database_dir, mode)
+    original_show_table = load_main_table(database_dir, mode)
 except FileNotFoundError:
     st.write('No entries are currently available for simple mode.')
     st.stop()
 
+filter_string = st.text_input("Search for protein name, UniProt AC or RefSeq ID")
+
+if filter_string == "":
+    show_table = original_show_table
+else:
+    filter_string = filter_string.upper()
+    show_table = original_show_table.copy()
+    show_table = show_table[ (show_table['Protein'].str.contains(filter_string)) | (show_table['Uniprot AC'].str.contains(filter_string)) | (show_table['RefSeq ID'].str.contains(filter_string))]
+
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
+if "id_row" not in st.session_state:
+    st.session_state["id_row"] = ''
+    st.session_state.selected_row = '0'
+else:
+    st.session_state.selected_row = st.session_state["id_row"].get('selectedItems')[0]['_selectedRowNodeInfo'][
+        'nodeRowIndex']
+
+
 gb_datasets_grid.configure_selection(selection_mode='single',
-                       use_checkbox=True)
+                                    pre_selected_rows=[str(st.session_state.selected_row)],
+                                       use_checkbox=True)
 
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True,
-                      reload_data=False)
+                      reload_data = False,
+                      height=200,
+                      key="id_row")
 
 if len(datasets_grid["selected_rows"]) != 1:
     button_disabled = True
 else:
     button_disabled = False
+    #st.session_stat['id_row'] = datasets_grid['selected_rows']
 
 if st.button('View dataset',
             disabled=button_disabled):
@@ -74,6 +95,7 @@ if st.button('View dataset',
     st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
+    print(this_dataset.columns)
 
     with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
         st.download_button(label="Download dataset",
@@ -82,18 +104,23 @@ if st.button('View dataset',
                             mime="text/csv",
                             key='download-csv')
 
-    this_dataset = this_dataset.fillna(pd.NA)
-    this_dataset['UniProtAC'] = upac
+    this_dataset_table = this_dataset.copy()
+    this_dataset_table = this_dataset_table.fillna(pd.NA)
+    this_dataset_table['UniProtAC'] = upac
 
-    this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
+    this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
     this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
     this_gb.configure_column('UniProt AC', hide=True)
     for col in ['Mutation sources', 'PTMs']:
         this_gb.configure_column(col, cellRenderer=cell_renderers[col])
 
-
-    mutations_grid = AgGrid(this_dataset,
+    mutations_grid = AgGrid(this_dataset_table,
                             gridOptions=this_gb.build(),
                             reload_data=False,
-                            allow_unsafe_jscode=True)
+                            allow_unsafe_jscode=True,
+                            key = st.session_state.grid_key)
 
+    plots = plot_dotplot(this_dataset, demask_co=0.3, revel_co=0.5)
+    st.write(f"N plots: {len(plots)}")
+    for plot in plots:
+        st.pyplot(plot)
