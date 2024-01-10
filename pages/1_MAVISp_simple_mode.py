@@ -116,7 +116,7 @@ if len(datasets_grid["selected_rows"]) == 1:
         col1, col2 = st.columns(2)
 
         with col1:
-            do_revel = st.checkbox('Show available REVEL scores', )
+            do_revel = st.checkbox('Show available REVEL classification', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
         with col2:
