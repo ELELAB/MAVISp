@@ -19,6 +19,9 @@ import base64
 import os
 import pandas as pd
 from st_aggrid import JsCode
+from dot_plot import plot as do_dotplots
+from dot_plot import process_input as process_data
+
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -96,8 +99,14 @@ def load_dataset(data_dir, protein, mode):
 def load_main_table(data_dir, mode):
     return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
-# JavaScript column renderers, to dynamically add web links
+@st.cache_data
+def plot_dotplot(df, demask_co, revel_co, fig_width=14, fig_height=4, n_muts=50):
+    df = df.copy()
+    processed_df, _ = process_data(df, d_cutoff=demask_co, r_cutoff=revel_co, all=False)
+    my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, reshape_last=False)
+    return my_plots
 
+# JavaScript column renderers, to dynamically add web links
 
 cell_renderers = {}
 
