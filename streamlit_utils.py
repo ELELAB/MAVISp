@@ -100,9 +100,12 @@ def load_main_table(data_dir, mode):
     return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
 @st.cache_data
-def plot_dotplot(df, demask_co, revel_co, fig_width=14, fig_height=4, n_muts=50):
+def plot_dotplot(df, demask_co, revel_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False):
     df = df.copy()
     processed_df, _ = process_data(df, d_cutoff=demask_co, r_cutoff=revel_co, all=False)
+    if not do_revel:
+        processed_df = processed_df.drop(columns=['REVEL'])
+
     my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, reshape_last=False)
     return my_plots
 

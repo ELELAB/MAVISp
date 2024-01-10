@@ -113,23 +113,24 @@ if len(datasets_grid["selected_rows"]) == 1:
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.set_index('Mutation')
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
 
         with col1:
-            demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
+            do_revel = st.checkbox('Show available REVEL scores', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
+            demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
         with col2:
+            n_muts = st.number_input("number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
             fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
-        with col3:
-            n_muts = st.number_input("number of mutations per plot", value=50, min_value=0)
 
         plots = plot_dotplot(this_dataset_table,
                              demask_co=demask_co,
                              revel_co=revel_co,
                              n_muts=n_muts,
                              fig_width=fig_width,
-                             fig_height=fig_height)
+                             fig_height=fig_height,
+                             do_revel=do_revel)
 
         with BytesIO() as pdf_stream:
             with PdfPages(pdf_stream) as pdf:
