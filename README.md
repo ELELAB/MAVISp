@@ -42,6 +42,7 @@ Python packages:
 - streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
 - osfclient 0.0.5
+- matplotlib 3.7.4
 
 In principle, it is compatible with all operating systems that support Python.
 
@@ -52,6 +53,7 @@ with Python 3.9.6 and the following package versions:
 - streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
 - osfclient 0.0.5
+- matplotlib 3.7.4
 
 Notice that `osfclient` is only required to download the full MAVISp dataset
 from OSF (see below)
@@ -80,7 +82,7 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas==2.1.3 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
 ```
 
 ### Installing requirements using a conda Python environment
@@ -101,7 +103,7 @@ conda activate MAVISp_env
 3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install pandas==2.1.3 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
 ```
 
 Installation time is typically up to a few minutes.
