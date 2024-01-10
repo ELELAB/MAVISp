@@ -11,6 +11,7 @@ license = {text = "GPL 3"}
 dependencies = [
     "tabulate",
     "pandas",
+    "matplotlib",
     "numpy",
     "streamlit",
     "streamlit-aggrid",
