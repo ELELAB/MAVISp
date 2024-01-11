@@ -269,6 +269,7 @@ with the following versions:
 
 - pandas 2.1.3
 - tabulate 0.9.0
+- matplotlib 3.7.4
 - numpy 1.26.2
 - PyYAML 6.0.1 
 - streamlit 1.28.2
