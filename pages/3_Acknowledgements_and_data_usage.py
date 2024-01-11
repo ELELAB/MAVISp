@@ -123,6 +123,7 @@ st.markdown('''MAVISp uses the following software for the prediction of the effe
   - [**FoldX**](http://foldxsuite.crg.eu/), a software suite for the prediction of changes of protein stability upon mutation. FoldX was licensed to us according to the Academic license terms.
   - [**Rosetta**](https://www.rosettacommons.org/), a software suite for the prediction of protein structure and stability. We have used the Rosetta suite licensed to us according to the Academic license terms, meaning that data produced with Rosetta is released in MAVISp for non-profit research
     purposes only, in accordance to such license terms.
+  - [**RaSP**](https://github.com/KULL-Centre/_2022_ML-ddG-Blaabjerg/), a machine learning method for the prediction of changes of protein stability upon mutation. We have used RaSP by means of [our pipeline](https://github.com/ELELAB/RaSP_workflow), which is derived from and similar to the original implementation
   - [**Demask**](https://demask.princeton.edu), released under GPL v.3 license
   - [**EVE**](https://evemodel.org), released under the MIT license
   - [**GEMME**](http://www.lcqb.upmc.fr/GEMME/download.html)
