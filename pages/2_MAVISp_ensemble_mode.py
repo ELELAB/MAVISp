@@ -121,7 +121,7 @@ if len(datasets_grid["selected_rows"]) == 1:
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
         with col2:
-            n_muts = st.number_input("number of mutations per plot", value=50, min_value=0)
+            n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
             fig_height = st.number_input("Plot height (inches)", value=6, min_value=0)
 
