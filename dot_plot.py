@@ -19,14 +19,11 @@
 import sys
 import math
 import argparse
-import argcomplete
-import logging as log
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from itertools import combinations
 from matplotlib.backends.backend_pdf import PdfPages
 import re
 
