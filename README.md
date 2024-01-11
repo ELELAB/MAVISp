@@ -129,8 +129,7 @@ git clone https://github.com/ELELAB/MAVISp
 
 3. Download the database files from [our OSF repository](https://osf.io/ufpzm/).
 This requires the `wget` program or similar. If it's not available, you can
-downlaod the file manually using the provided link in the following
-code snippet.
+manually download a zip file containing all the database files from [this link](https://files.de-1.osf.io/v1/resources/ufpzm/providers/osfstorage/65579865874c2e15e54e7d34/?zip=).
 
 ```
 cd MAVISp
@@ -142,8 +141,8 @@ rm database.zip
 cd ..
 ```
 
-At the end of the process, you should have the OSF `database` folder and its contents
-inside the `MAVISp` folder.
+At the end of the process, you should have a `database` folder inside
+the `MAVISp` folder including all the contents of the `database` folder on OSF.
 
 4. With your Python environment still active and from inside the `MAVISp` repository
 directory, run:
