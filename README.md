@@ -41,7 +41,6 @@ Python packages:
 - streamlit 1.28.2
 - streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
-- osfclient 0.0.5
 - matplotlib 3.7.4
 
 In principle, it is compatible with all operating systems that support Python.
@@ -52,11 +51,10 @@ with Python 3.9.6 and the following package versions:
 - streamlit 1.28.2
 - streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
-- osfclient 0.0.5
 - matplotlib 3.7.4
 
-Notice that `osfclient` is only required to download the full MAVISp dataset
-from OSF (see below)
+In order to download the full MAVISp dataset from OSF, you will also need the `wget` 
+program (see below). We last tested the download with wget 1.21.3.
 
 ## Installing requirements
 
@@ -82,7 +80,7 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
 ```
 
 ### Installing requirements using a conda Python environment
@@ -103,7 +101,7 @@ conda activate MAVISp_env
 3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3 osfclient==0.0.5
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
 ```
 
 Installation time is typically up to a few minutes.
@@ -132,19 +130,21 @@ git clone https://github.com/ELELAB/MAVISp
 ```
 
 3. Download the database files from [our OSF repository](https://osf.io/ufpzm/).
-If you have installed the `osfclient` Python package (see requirements), just
-enter the directory of the MAVISp repository you have created in the previous step
-and download the files, as follows:
+This requires the `wget` program or similar. If it's not available, you can
+manually download a zip file containing all the database files from [this link](https://files.de-1.osf.io/v1/resources/ufpzm/providers/osfstorage/65579865874c2e15e54e7d34/?zip=).
 
 ```
 cd MAVISp
 rm -rf ./database
-osf clone && mv ufpzm/osfstorage/database/ . && rm -r ufpzm
+mkdir database 
+cd database
+wget -O database.zip 'https://files.de-1.osf.io/v1/resources/ufpzm/providers/osfstorage/65579865874c2e15e54e7d34/?zip=' && unzip database.zip 
+rm database.zip
+cd ..
 ```
 
-alternatively, you can download the whole OSF database from the web interface
-and copy its `database` folder in `MAVISp`. At the end of the process,
-you should have the OSF `database` folder and its contents inside the `MAVISp` folder.
+At the end of the process, you should have a `database` folder inside
+the `MAVISp` folder including all the contents of the `database` folder on OSF.
 
 4. With your Python environment still active and from inside the `MAVISp` repository
 directory, run:
