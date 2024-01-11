@@ -35,7 +35,7 @@ the Python package.
 
 ## Requirements
 
-Running the MAVISp web app requires a working Python 3.7+ installation with the following
+Running the MAVISp web app requires a working Python 3.9+ installation with the following
 Python packages:
 
 - streamlit 1.28.2
@@ -61,7 +61,7 @@ from OSF (see below)
 ## Installing requirements
 
 These instructions apply to both Linux and macOS, using the terminal. You
-will need to have a recent (>=3.7) Python distribution installed on your system
+will need to have a recent (>=3.9) Python distribution installed on your system
 or [Anaconda](https://anaconda.org).
 
 ### Installing requirements using a virtualenv Python environment
@@ -70,7 +70,7 @@ or [Anaconda](https://anaconda.org).
 virtual environment:
 
 ```
-virtualenv -p python3.8 MAVISp_env
+virtualenv -p python3.9 MAVISp_env
 ```
 
 2. then, activate it:
@@ -261,7 +261,7 @@ The MAVISp Python package is designed to run on any operating system that suppor
 Python. It has been tested on Ubuntu Linux 18.04 and macOS (13.5.2) 
 
 In order to install the package and all its requirements automatically, you will need to have a
-working Python 3.7+ installation available. We recommend installing the package in its own
+working Python 3.9+ installation available. We recommend installing the package in its own
 virtual environment - please see previous instructions on how to create a virtual environment.
 
 The MAVISp Python package requires the following packages, and has been tested
