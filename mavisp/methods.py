@@ -375,6 +375,8 @@ class AlloSigma(Method):
                      [f'filtered_down_{x}.tsv' for x in datasets.keys()] +\
                      ['allosigma_mut.txt']
 
+    directions = ['up', 'down']
+
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
 
         if pd.isna(row['allosigma-mode']):
@@ -457,42 +459,51 @@ class AlloSigma(Method):
                 raise MAVISpMultipleError(warning=warnings,
                                           critical=[MAVISpCriticalError(this_error)])
 
+            available_suffixes = []
+
             # for every data type
             for suffix, colname in self.datasets.items():
 
                 data = {}
 
+                available_files = {d : f'filtered_{d}_{suffix}.tsv' for d in self.directions if f'filtered_{d}_{suffix}.tsv' in allosigma2_files}
+
+                # skip if there are no files
+                if len(available_files) == 0:
+                    continue
+
+                available_suffixes.append(suffix)
+
                 # for either up or down mutations for the type
-                for direction in ['up', 'down']:
+                for direction, fname in available_files.items():
 
-                    fname = f'filtered_{direction}_{suffix}.tsv'
+                    try:
+                        data[direction] = self._parse_allosigma2_energy_table(os.path.join(allosigma2_dir, dirname, fname))
+                    except Exception as e:
+                        this_error = f"Exception {type(e).__name__} occurred when parsing {fname}. Arguments:{e.args}"
+                        raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
 
-                    if fname in allosigma2_files:
-                        try:
-                            data[direction] = self._parse_allosigma2_energy_table(os.path.join(allosigma2_dir, dirname, fname))
-                        except Exception as e:
-                            this_error = f"Exception {type(e).__name__} occurred when parsing {fname}. Arguments:{e.args}"
-                            raise MAVISpMultipleError(warning=warnings,
-                                                    critical=[MAVISpCriticalError(this_error)])
-                    else:
+                # add None for when up/down was not available
+                for direction in self.directions:
+                    if direction not in list(data.keys()):
                         data[direction] = None
 
                 all_mut[suffix] = all_mut.apply(self._process_allosigma2_tables,
-                                                                          filt_up=data['up'],
-                                                                          filt_down=data['down'],
-                                                                          cutoff=2,
-                                                                          axis=1)
+                                                filt_up=data['up'],
+                                                filt_down=data['down'],
+                                                cutoff=2,
+                                                axis=1)
 
-            all_mut = all_mut[['mutations', 'allosigma-mode'] + list(self.datasets.keys())]
+            all_mut = all_mut[['mutations', 'allosigma-mode'] + available_suffixes]
             all_mut = all_mut.set_index('mutations')
 
             allosigma2_data.append(all_mut)
 
         out_data = pd.concat(allosigma2_data, axis=0)
 
-        rename_scheme = {'allosigma-mode' : f'AlloSigma{self.version} mutation type'}
-        for k, v in self.datasets.items():
-            rename_scheme[k] = v.format(version=self.version)
+        rename_scheme = {k : v.format(version=self.version) for k,v in self.datasets.items()}
+        rename_scheme['allosigma-mode'] = f'AlloSigma{self.version} mutation type'
 
         return out_data.rename(columns=rename_scheme).fillna('-'), warnings
 
