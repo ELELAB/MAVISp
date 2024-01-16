@@ -1451,7 +1451,7 @@ class GEMME(MavispModule):
         gemme = gemme.reset_index().melt('index').rename(columns={'index':'mut', 'variable':'res', 'value':'score'})
 
         # calculate which residue is WT for each row (for every residue, this would
-        # be tone with score 'None')
+        # be the one with score 'None')
         wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0])
         wts.name = 'wt'
 
@@ -1462,7 +1462,17 @@ class GEMME(MavispModule):
         gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
 
         # drop unnecessary columns and rename for pretty
-        gemme = gemme.drop(columns=['wt', 'res', 'mut']).rename(columns={'score': 'GEMME Score'})
+        gemme = gemme.drop(columns=['wt', 'res', 'mut'])
+
+        # rank-normalize
+        max_s = gemme['score'].max()
+        min_s = gemme['score'].min()
+        gemme['score_rn'] = (gemme['score'] - min_s) / (max_s - min_s)
+
+        # rename for pretty
+        gemme = gemme.rename(columns={'score'    : 'GEMME Score',
+                                      'score_rn' : 'GEMME Score (rank-normalized)'})
+
         self.data = gemme.set_index('mutations')
 
         if len(warnings) > 0:
