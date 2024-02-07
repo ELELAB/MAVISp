@@ -678,6 +678,79 @@ class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
     module_dir = "sas"
     name = "sas"
 
+class MutsOnPhospho(MavispModule):
+    module_dir = "muts_on_phospho"
+    name = "mutsonphospho"
+    expected_files = ['aggregated_filtered_output.csv',
+                      'sasa.rsa']
+
+    sasa_fname = expected_files[1]
+    
+    def _parse_sas(self, fname):
+
+        try:
+            return pd.read_fwf(fname,
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                index_col = 'resn').fillna(pd.NA)
+
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+    def ingest(self, mutations):
+        
+        warnings = [] 
+
+        aggregated_df = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'aggregated_filtered_output.csv'))
+        aggregated_df = aggregated_df.drop_duplicates()
+
+        # Load solvent accessibility data using _parse_sas
+        sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
+
+        gain_of_function = {}
+        loss_of_function = {}
+
+        # Iterate over the aggregated DataFrame to determine gain or loss of function
+        for index, row in aggregated_df.iterrows():
+            for mutation in mutations:
+                mutation_key = mutation
+                restype_resnum_kinase = f"{row['restype']}{row['resnum']}_{row['kinase']}"
+                if pd.isna(row['WT']) and not pd.isna(row[mutation]):
+                    solvent_accessibility = sas_data.loc[row['resnum'], 'sas_sc_rel'] if row['resnum'] in sas_data.index else None
+                    if solvent_accessibility is not None and solvent_accessibility > 20:
+                        if mutation_key not in gain_of_function:
+                            gain_of_function[mutation_key] = []
+                        gain_of_function[mutation_key].append(restype_resnum_kinase)
+                elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
+                    if mutation_key not in loss_of_function:
+                        loss_of_function[mutation_key] = []
+                    loss_of_function[mutation_key].append(restype_resnum_kinase)
+
+        # Convert the dictionaries into DataFrames, aggregating lists into comma-separated strings
+        gain_of_function_df = pd.DataFrame([(k, ', '.join(v)) for k, v in gain_of_function.items()], columns=['mutation', 'Gain of Function']).set_index('mutation')
+        loss_of_function_df = pd.DataFrame([(k, ', '.join(v)) for k, v in loss_of_function.items()], columns=['mutation', 'Loss of Function']).set_index('mutation')
+
+        final_table = pd.DataFrame({'mutation': mutations})
+        final_table = final_table.set_index('mutation')
+        
+        # Joining gain_of_function_df and loss_of_function_df with final_table
+        final_table = final_table.join(gain_of_function_df, how='left')
+        final_table = final_table.join(loss_of_function_df, how='left')
+
+        # After joining, rename the columns as needed
+        self.data = final_table.rename(columns={
+            'Gain of Function': 'PTM Gain of Function',
+            'Loss of Function': 'PTM Loss of Function'
+        })
+        
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
+
 class PTMs(MavispModule):
 
     module_dir = "ptm"
