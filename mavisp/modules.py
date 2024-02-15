@@ -687,13 +687,13 @@ class MutsOnPhospho(MavispModule):
     def _parse_sas(self, fname):
         try:
             return pd.read_fwf(fname,
-                               skiprows=4, skipfooter=4, header=None,
-                               widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                               names=['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel',
-                                      'sas_sc_abs', 'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel',
-                                      'sas_np_abs', 'sas_np_rel', 'sas_ap_abs', 'sas_ap_rel'],
-                               usecols=['resn', 'sas_sc_rel'],
-                               index_col='resn')
+                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+                'sas_ap_rel'],
+                usecols = ['resn', 'sas_sc_rel'],
+                index_col = 'resn').fillna(pd.NA)
+        
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -772,7 +772,6 @@ class MutsOnPhospho(MavispModule):
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
-
 
 class PTMs(MavispModule):
 
