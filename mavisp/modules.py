@@ -685,19 +685,14 @@ class MutsOnPhospho(MavispModule):
     sasa_fname = expected_files[1]
 
     def _parse_sas(self, fname):
-        try:
-            return pd.read_fwf(fname,
-                skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
-                names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
-                'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
-                'sas_ap_rel'],
-                usecols = ['resn', 'sas_sc_rel'],
-                index_col = 'resn').fillna(pd.NA)
         
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred when parsing the sasa.rsa file. Arguments:{e.args}"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
+        return pd.read_fwf(fname,
+            skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+            names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+            'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+            'sas_ap_rel'],
+            usecols = ['resn', 'sas_sc_rel'],
+            index_col = 'resn').fillna(pd.NA)   
 
     def ingest(self, mutations):
         warnings = []
@@ -715,7 +710,7 @@ class MutsOnPhospho(MavispModule):
             this_error = f"Failed to load 'aggregated_filtered_output.csv': {e}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         # Parse SAS data
         try:
             sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
@@ -723,7 +718,7 @@ class MutsOnPhospho(MavispModule):
             this_error = f"Failed to parse solvent accessibility data ('{self.sasa_fname}'): {e}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         try:
             # Data type alignment and merge
             aggregated_df['resnum'] = aggregated_df['resnum'].astype(str)
@@ -753,14 +748,14 @@ class MutsOnPhospho(MavispModule):
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         # Convert the dictionaries into DataFrames
         try:
             gain_of_function_df = pd.DataFrame(
-                [(k, ','.join(v)) for k, v in gain_of_function.items()], 
+                [(k, ','.join(v)) for k, v in gain_of_function.items()],
                 columns=['mutation', 'PTM Gain of Function']).set_index('mutation')
             loss_of_function_df = pd.DataFrame(
-                [(k, ','.join(v)) for k, v in loss_of_function.items()], 
+                [(k, ','.join(v)) for k, v in loss_of_function.items()],
                 columns=['mutation', 'PTM Loss of Function']).set_index('mutation')
             final_table = pd.DataFrame({'mutation': mutations}).set_index('mutation')
             final_table = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
