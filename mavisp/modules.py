@@ -698,7 +698,7 @@ class MutsOnPhospho(MavispModule):
         warnings = []
 
         mf_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        if not set(mf_files).issubset(set(self.expected_files)):
+        if not set(self.expected_files).issubset(set(mf_files)):
             this_error = f"the input files for Muts On Phospho must be named {', '.join(self.expected_files)}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
