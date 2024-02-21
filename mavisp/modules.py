@@ -19,6 +19,7 @@ import os
 import pandas as pd
 from mavisp.methods import *
 from mavisp.utils import three_to_one
+from collections import defaultdict
 import logging as log
 import re
 import pkg_resources
@@ -729,8 +730,8 @@ class MutsOnPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        gain_of_function = {}
-        loss_of_function = {}
+        gain_of_function = defaultdict(list)
+        loss_of_function = defaultdict(list)
 
         # Main analysis loop
         try:
@@ -738,14 +739,14 @@ class MutsOnPhospho(MavispModule):
                 for mutation in mutations:
                     restype_resnum_kinase = row['restype_resnum_kinase']
                     if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
-                        gain_of_function.setdefault(mutation, []).append(restype_resnum_kinase)
+                        gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
-                        loss_of_function.setdefault(mutation, []).append(restype_resnum_kinase)
+                        loss_of_function[mutation].append(restype_resnum_kinase)
         except Exception as e:
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
+                              critical=[MAVISpCriticalError(this_error)])
+        
         # Convert the dictionaries into DataFrames
         try:
             gain_of_function_df = pd.DataFrame(
