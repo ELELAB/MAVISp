@@ -686,14 +686,14 @@ class MutsOnPhospho(MavispModule):
     sasa_fname = expected_files[1]
 
     def _parse_sas(self, fname):
-        
+
         return pd.read_fwf(fname,
             skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
             names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
             'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
             'sas_ap_rel'],
             usecols = ['resn', 'sas_sc_rel'],
-            index_col = 'resn').fillna(pd.NA)   
+            index_col = 'resn').fillna(pd.NA)
 
     def ingest(self, mutations):
         warnings = []
@@ -746,7 +746,7 @@ class MutsOnPhospho(MavispModule):
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
                               critical=[MAVISpCriticalError(this_error)])
-        
+
         # Convert the dictionaries into DataFrames
         try:
             gain_of_function_df = pd.DataFrame(
@@ -756,8 +756,7 @@ class MutsOnPhospho(MavispModule):
                 [(k, ','.join(v)) for k, v in loss_of_function.items()],
                 columns=['mutation', 'PTM Loss of Function']).set_index('mutation')
             final_table = pd.DataFrame({'mutation': mutations}).set_index('mutation')
-            final_table = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
-            self.data = final_table
+            self.data = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
         except Exception as e:
             this_error = f"Error compiling results: {e}"
             raise MAVISpMultipleError(warning=warnings,
