@@ -721,12 +721,10 @@ class MutsOnPhospho(MavispModule):
 
         try:
             # Data type alignment and merge
-            aggregated_df['resnum'] = aggregated_df['resnum'].astype(str)
             sas_data = sas_data.reset_index()
-            sas_data['resn'] = sas_data['resn'].astype(str)
             aggregated_df = pd.merge(aggregated_df, sas_data, left_on='resnum', right_on='resn', how='left')
             aggregated_df['sas_sc_rel'] = aggregated_df['sas_sc_rel'].fillna(-1)
-            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'] + aggregated_df['resnum'] + '_' + aggregated_df['kinase']
+            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'] + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase']
         except Exception as e:
             this_error = f"Error during data preparation: {e}"
             raise MAVISpMultipleError(warning=warnings,
