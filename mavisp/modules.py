@@ -756,7 +756,15 @@ class MutsOnPhospho(MavispModule):
                 [(k, ','.join(v)) for k, v in loss_of_function.items()],
                 columns=['mutation', 'PTM Loss of Function']).set_index('mutation')
             final_table = pd.DataFrame({'mutation': mutations}).set_index('mutation')
-            self.data = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
+            final_table = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
+            # Add 'PTM effect by mutation' based on gain or loss of function
+            final_table['PTM effect by mutation'] = final_table.apply(
+                lambda row: 'damaging' 
+                if not pd.isna(row.get('PTM Gain of Function')) 
+                or not pd.isna(row.get('PTM Loss of Function')) 
+                else 'neutral', axis=1)
+            self.data = final_table
+            
         except Exception as e:
             this_error = f"Error compiling results: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -764,6 +772,7 @@ class MutsOnPhospho(MavispModule):
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
+
 
 class PTMs(MavispModule):
 
