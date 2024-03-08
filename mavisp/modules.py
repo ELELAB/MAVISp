@@ -751,20 +751,15 @@ class MutsOnPhospho(MavispModule):
         try:
             gain_of_function_df = pd.DataFrame(
                 [(k, ','.join(v)) for k, v in gain_of_function.items()],
-                columns=['mutation', 'PTM Gain of Function']).set_index('mutation')
+                columns=['mutation', 'PTM gain of function']).set_index('mutation')
             loss_of_function_df = pd.DataFrame(
                 [(k, ','.join(v)) for k, v in loss_of_function.items()],
-                columns=['mutation', 'PTM Loss of Function']).set_index('mutation')
+                columns=['mutation', 'PTM loss of function']).set_index('mutation')
             final_table = pd.DataFrame({'mutation': mutations}).set_index('mutation')
-            final_table = final_table.join(gain_of_function_df, how='left').join(loss_of_function_df, how='left')
+            final_table = final_table.join(loss_of_function_df, how='left').join(gain_of_function_df, how='left')
             # Add 'PTM effect by mutation' based on gain or loss of function
-            final_table['PTM effect by mutation'] = final_table.apply(
-                lambda row: 'damaging' 
-                if not pd.isna(row.get('PTM Gain of Function')) 
-                or not pd.isna(row.get('PTM Loss of Function')) 
-                else 'neutral', axis=1)
+            final_table['Mutation predicted to add new phosphorylation site'] = final_table['PTM gain of function'].apply(lambda x: False if pd.isna(x) else True)
             self.data = final_table
-            
         except Exception as e:
             this_error = f"Error compiling results: {e}"
             raise MAVISpMultipleError(warning=warnings,
