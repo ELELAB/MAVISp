@@ -679,9 +679,9 @@ class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
     module_dir = "sas"
     name = "sas"
 
-class MutsOnPhospho(MavispModule):
-    module_dir = "muts_on_phospho"
-    name = "mutsonphospho"
+class DenovoPhospho(MavispModule):
+    module_dir = "denovo_phospho"
+    name = "denovophospho"
     expected_files = ['aggregated_filtered_output.csv', 'sasa.rsa']
     sasa_fname = expected_files[1]
 
