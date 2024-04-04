@@ -697,8 +697,6 @@ class DenovoPhospho(MavispModule):
 
     def ingest(self, mutations):
         warnings = []
-        print(f"Data directory: {self.data_dir}")
-        print(f"Module directory: {self.module_dir}")
         mf_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
         if not set(self.expected_files).issubset(set(mf_files)):
             this_error = f"the input files for Muts On Phospho must be named {', '.join(self.expected_files)}"
