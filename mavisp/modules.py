@@ -1161,13 +1161,13 @@ class ClinVar(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns):
-            this_error = f"The variants_output.csv file must contain either the clinvar_code or the variant_id column"
+        if 'interpretation' not in clinvar_found.columns:
+            this_error = f"The variants_output.csv file must contain the interpretation column"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        if 'interpretation' not in clinvar_found.columns:
-            this_error = f"The variants_output.csv file must contain the interpretation column"
+        if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns):
+            this_error = f"The variants_output.csv file must contain either the clinvar_code or the variant_id column"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
@@ -1178,7 +1178,6 @@ class ClinVar(MavispModule):
             id_col = 'variant_id'
 
         clinvar_found[id_col] = clinvar_found[id_col].astype(str)
-
 
         if "number_of_stars" in clinvar_found.columns:
             clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
