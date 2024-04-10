@@ -770,10 +770,7 @@ class DenovoPhospho(MavispModule):
 class TaccDenovoPhospho(DenovoPhospho):
     
     expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
-    
-    def __init__(self, data_dir=None, module_dir="denovo_phospho"):
-        super().__init__(data_dir=data_dir,module_dir=module_dir)
-        self.sasa_fname = 'acc_REL.csv'
+    sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
         
