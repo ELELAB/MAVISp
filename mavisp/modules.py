@@ -788,7 +788,6 @@ class TaccDenovoPhospho(DenovoPhospho):
         warnings = []
 
         dir_path = os.path.join(self.data_dir, self.module_dir)
-        print(f"Constructed directory path: {dir_path}")
         
         if not os.path.exists(dir_path):
             raise Exception(f"Directory does not exist: {dir_path}")
