@@ -1,6 +1,7 @@
 # MAVISp - classes for handling different MAVISp modules
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
+#           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
