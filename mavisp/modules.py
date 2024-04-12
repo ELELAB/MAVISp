@@ -693,7 +693,7 @@ class DenovoPhospho(MavispModule):
             'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
             'sas_ap_rel'],
             usecols = ['resn', 'sas_sc_rel'],
-            index_col = 'resn').fillna(pd.NA)
+            index_col = 'resn')
 
     def ingest(self, mutations):
         warnings = []
@@ -777,7 +777,7 @@ class TaccDenovoPhospho(DenovoPhospho):
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
-        return sas_data.fillna(pd.NA)
+        return sas_data
 
 class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPhospho):
     module_dir = "denovo_phospho"
