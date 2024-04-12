@@ -1248,49 +1248,44 @@ class ClinVar(MavispModule):
 
     module_dir = "clinvar"
     name = "clinvar"
-    found_fname = "variants_output.csv"
-    missing_fname = "entry_not_found.csv"
+    variants_fname = "variants_output.csv"
+    mutation_pattern = re.compile('\(p\.([A-Z][a-z]{2}[0-9]+[A-Z][a-z]{2})\)')
+
+    def _get_mutation_string(self, row):
+        matches = self.mutation_pattern.findall(row['variant_name'])
+        if len(matches) != 1:
+            raise TypeError(f"processing ot variant {row['variant_id']} name failed")
+        mutation = matches[0]
+        try:
+            mutation = three_to_one[mutation[0:3].upper()] + \
+                       mutation[3:-3] + \
+                       three_to_one[mutation[-3:].upper()]
+        except KeyError:
+            raise TypeError(f"non-standard residue name in variant {row['variant_id']}")
+
+        return mutation
 
     def ingest(self, mutations):
         warnings = []
 
         clinvar_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
-        if len(clinvar_files) not in [1, 2] or not set(clinvar_files).issubset(set([self.found_fname, self.missing_fname])):
-            this_error = f"One or two files expected for ClinVar, they must be {self.found_fname} and/or {self.missing_fname}"
+        if self.variants_fname not in clinvar_files:
+            this_error = f"Required file {self.variants_fname} was not found"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-
-
-        if self.found_fname not in clinvar_files:
-            this_error = f"variants_output.csv expected for ClinVar"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        log.info(f"parsing ClinVar files")
 
         try:
-            clinvar_found = pd.read_csv(os.path.join(self.data_dir, self.module_dir, self.found_fname), sep=';')
+            clinvar_found = pd.read_csv(os.path.join(self.data_dir, self.module_dir, self.variants_fname), sep=';')
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        missing_entries_path = os.path.join(self.data_dir, self.module_dir, self.missing_fname)
-        if os.path.isfile(missing_entries_path):
-            try:
-                clinvar_missing = pd.read_csv(missing_entries_path, sep=';')
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
-                raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
-            missing_muts = clinvar_missing['variant_name'].to_list()
-        else:
-            warnings.append(MAVISpWarningError(f"file {self.missing} not found in ClinVar module"))
-            missing_muts = []
-
-        if len(set(missing_muts).intersection(set(clinvar_found['variant_name']))) > 0:
-            warnings.append(MAVISpWarningError(f"some mutations are both in the ClinVar annotation and not found file"))
+        if 'interpretation' not in clinvar_found.columns:
+            this_error = f"The variants_output.csv file must contain the interpretation column"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
 
         if not ('clinvar_code' in clinvar_found.columns) ^ ('variant_id' in clinvar_found.columns):
             this_error = f"The variants_output.csv file must contain either the clinvar_code or the variant_id column"
@@ -1299,27 +1294,28 @@ class ClinVar(MavispModule):
 
         if 'clinvar_code' in clinvar_found.columns:
             warnings.append(MAVISpWarningError(f"the input file has the old style clinvar_code column"))
-            id_col = 'clinvar_code'
-        else:
-            id_col = 'variant_id'
+            clinvar_found.rename({'clinvar_code' : 'variant_id'})
 
-        if 'interpretation' not in clinvar_found.columns:
-            this_error = f"The variants_output.csv file must contain the interpretation column"
+        clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
+
+        try:
+            clinvar_found['mutations'] = clinvar_found.apply(self._get_mutation_string, axis=1)
+        except TypeError as e:
+            this_error = f"Error processing the variants file: {e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        clinvar_found[id_col] = clinvar_found[id_col].astype(str)
+
         if "number_of_stars" in clinvar_found.columns:
             clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
-            clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation',"number_of_stars"]]
-            self.data = clinvar_found.rename({ id_col           : 'ClinVar Variation ID',
+            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation', 'number_of_stars']]
+            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
                                                'interpretation' : 'ClinVar Interpretation',
                                                'number_of_stars': 'ClinVar Review Status'}, axis=1)
         else:
             warnings.append(MAVISpWarningError(f"the variant_output.csv file doesn't contain the number_of_stars column (ClinVar review status)"))
-            clinvar_found[id_col] = clinvar_found[id_col].astype(str)
-            clinvar_found = clinvar_found.groupby('variant_name').agg(lambda x: ", ".join(list(x)))[[id_col, 'interpretation']]
-            self.data = clinvar_found.rename({ id_col        : 'ClinVar Variation ID',
-                                            'interpretation' : 'ClinVar Interpretation',}, axis=1)
+            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation']]
+            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
+                                               'interpretation' : 'ClinVar Interpretation',}, axis=1)
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
