@@ -1,6 +1,7 @@
 # MAVISp - classes for handling different MAVISp modules
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
+#           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -19,6 +20,7 @@ import os
 import pandas as pd
 from mavisp.methods import *
 from mavisp.utils import three_to_one
+from collections import defaultdict
 import logging as log
 import re
 import pkg_resources
@@ -677,6 +679,110 @@ class TaccSAS(MavispModule):
 class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
     module_dir = "sas"
     name = "sas"
+
+class DenovoPhospho(MavispModule):
+    module_dir = "denovo_phospho"
+    name = "denovo_phospho"
+    expected_files = ['aggregated_filtered_output.csv', 'sasa.rsa']
+    sasa_fname = expected_files[1]
+
+    def _parse_sas(self, fname):
+
+        return pd.read_fwf(fname,
+            skiprows=4, skipfooter=4, header=None, widths=[4,4,1,4,9,6,7,6,7,6,7,6,7,6],
+            names = ['entry', 'rest', 'chain', 'resn', 'all_abs', 'sas_all_rel', 'sas_sc_abs',
+            'sas_sc_rel', 'sas_mc_abs', 'sas_mc_rel', 'sas_np_abs', 'sas_np_rel', 'sas_ap_abs',
+            'sas_ap_rel'],
+            usecols = ['resn', 'sas_sc_rel'],
+            index_col = 'resn')
+
+    def ingest(self, mutations):
+        warnings = []
+        mf_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if not set(self.expected_files).issubset(set(mf_files)):
+            this_error = f"the input files for Muts On Phospho must be named {', '.join(self.expected_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Load and process aggregated data
+        try:
+            aggregated_df = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'aggregated_filtered_output.csv'))
+        except Exception as e:
+            this_error = f"Failed to load 'aggregated_filtered_output.csv': {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Parse SAS data
+        try:
+            sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
+        except Exception as e:
+            this_error = f"Failed to parse solvent accessibility data ('{self.sasa_fname}'): {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            # Data type alignment and merge
+            sas_data = sas_data.reset_index()
+            aggregated_df = pd.merge(aggregated_df, sas_data, left_on='resnum', right_on='resn', how='left')
+            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'] + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase']
+        except Exception as e:
+            this_error = f"Error during data preparation: {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        gain_of_function = defaultdict(list)
+        loss_of_function = defaultdict(list)
+
+        # Main analysis loop
+        try:
+            for index, row in aggregated_df.iterrows():
+                for mutation in mutations:
+                    restype_resnum_kinase = row['restype_resnum_kinase']
+                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
+                        gain_of_function[mutation].append(restype_resnum_kinase)
+                    elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
+                        loss_of_function[mutation].append(restype_resnum_kinase)
+        except Exception as e:
+            this_error = f"Error during mutation analysis: {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                              critical=[MAVISpCriticalError(this_error)])
+
+        # Convert the dictionaries into DataFrames
+        try:
+            gain_of_function_df = pd.DataFrame(
+                [(k, ','.join(v)) for k, v in gain_of_function.items()],
+                columns=['mutation', 'Phosphorylation - gain of function']).set_index('mutation')
+            loss_of_function_df = pd.DataFrame(
+                [(k, ','.join(v)) for k, v in loss_of_function.items()],
+                columns=['mutation', 'Phosphorylation - loss of function']).set_index('mutation')
+            final_table = pd.DataFrame({'mutation': mutations}).set_index('mutation')
+            final_table = final_table.join(loss_of_function_df, how='left').join(gain_of_function_df, how='left')
+            # Add 'PTM effect by mutation' based on gain or loss of function
+            final_table['Mutation predicted to add new phosphorylation site'] = final_table['Phosphorylation - gain of function'].apply(lambda x: False if pd.isna(x) else True)
+            self.data = final_table
+        except Exception as e:
+            this_error = f"Error compiling results: {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
+
+class TaccDenovoPhospho(DenovoPhospho):
+    
+    expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
+    sasa_fname = 'acc_REL.csv'
+
+    def _parse_sas(self, fname):
+        
+        sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
+        sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
+        sas_data.set_index('resn', inplace=True)
+        return sas_data
+
+class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPhospho):
+    module_dir = "denovo_phospho"
+    name = "denovo_phospho"
 
 class PTMs(MavispModule):
 

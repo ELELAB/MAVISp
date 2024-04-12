@@ -1,6 +1,7 @@
 # MAVISp - classes for handling different MAVISp modules
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
+#           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -37,6 +38,7 @@ class MAVISpSimpleMode(MAVISpMode):
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
                           PTMs,
+                          DenovoPhospho,
                           LongRange,
                           SimpleStability,
                           LocalInteractions,
@@ -50,7 +52,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
@@ -95,6 +97,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleStability,
                           EnsembleLocalInteractions,
                           EnsembleSAS,
+                          EnsembleDenovoPhospho,
                           EnsembleLocalInteractionsDNA,
                           EnsembleLocalInteractionsHomodimer,
                           EnsembleFunctionalDynamics,
@@ -105,7 +108,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'long_range', 'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'denovo_phospho', 'long_range', 'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
