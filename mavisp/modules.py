@@ -735,14 +735,16 @@ class DenovoPhospho(MavispModule):
 
         # Main analysis loop
         try:
-            for index, row in aggregated_df.iterrows():
-                for mutation in mutations:
-                    if mutation in aggregated_df.columns:
-                        restype_resnum_kinase = row['restype_resnum_kinase']
-                        if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
-                            gain_of_function[mutation].append(restype_resnum_kinase)
-                        elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
-                            loss_of_function[mutation].append(restype_resnum_kinase)
+            available_mutations = list(set(mutations).intersection(set(aggregated_df.columns)))
+
+            for mutation in available_mutations:
+                for index, row in aggregated_df.iterrows():
+                    restype_resnum_kinase = row['restype_resnum_kinase']
+                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
+                        gain_of_function[mutation].append(restype_resnum_kinase)
+                    elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
+                        loss_of_function[mutation].append(restype_resnum_kinase)
+        
         except Exception as e:
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
