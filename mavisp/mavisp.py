@@ -20,6 +20,7 @@ import argparse
 from tabulate import tabulate
 import pandas as pd
 from mavisp.core import MAVISpFileSystem
+from mavisp.utils import mutation_to_HGVSp
 import logging as log
 from termcolor import colored
 from time import strftime
@@ -259,12 +260,17 @@ def main():
 
         for _, r in mfs.dataset_tables[mode_name].iterrows():
 
+            this_refseq_id = out_table[out_table['Protein'] == r['system']]
+            assert(this_refseq_id.shape[0]) == 1
+            this_refseq_id = this_refseq_id.iloc[0]['RefSeq ID']
+
             if len(r['criticals']) > 0:
                 continue
 
             this_df = r['mutations']
             this_df = this_df.rename(columns={'mutation' : 'Mutation',
                                               'PMID'     : 'References'})
+            this_df['HGVSp'] = this_df.apply(lambda r: f"{this_refseq_id}:{mutation_to_HGVSp(r['Mutation'])}", axis=1)
             this_df = this_df.set_index('Mutation')
 
             for mod_name in mode.module_order:
