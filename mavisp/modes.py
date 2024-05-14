@@ -51,8 +51,9 @@ class MAVISpSimpleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense ]
-    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'cancermuts', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+                          AlphaMissense,
+                          EFoldMine ]
+    module_order = ['stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'efoldmine', 'cancermuts', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
