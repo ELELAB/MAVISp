@@ -680,8 +680,6 @@ class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
     module_dir = "sas"
     name = "sas"
 
-
-
 class EFoldMine(MavispModule):
 
     module_dir = "efoldmine"
@@ -706,35 +704,42 @@ class EFoldMine(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        # Filter only the required columns:
+        # Filterbrequired columns:
         efoldmine_parsed = ef_res[['residue_index', 'earlyFolding']]
 
-
-
-        # Create an empty list to append the results:
+        # Precompute early folding regions:
+        efoldmine_scores = efoldmine_parsed['earlyFolding'].tolist()
+        seq_length = len(efoldmine_scores)
+        window_size = 3
+        thres = 0.169
+        
+        # Initialize early_foding_regions list:
+        early_folding_regions = [False] * seq_length
+        
+        # Find the residues in early folding regions:
+        for i in range(seq_length - window_size + 1):
+            window = efoldmine_scores[i:i + window_size]
+            if all(score > thres for score in window):
+                early_folding_regions[i:i + window_size] = [True] * window_size   
+        
+        efoldmine_parsed['is_early_folding'] = early_folding_regions   
+                
+        # Compare with mutations:
         result = []
         
-        # Check if mutations correspond to early folding residues:
         for mut in mutations:
             mut_resn = int(mut[1:-1])
-            row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn] 
-            if not row.empty and row['earlyFolding'].iloc[0] > 0.169:
-                prev_row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn - 1]
-                next_row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn + 1]
-                if not prev_row.empty and not next_row.empty and prev_row['earlyFolding'].iloc[0] > 0.169 and next_row['earlyFolding'].iloc[0] > 0.169:
-                    result.append((True, row['earlyFolding'].iloc[0]))
-                else:
-                    result.append((False, row['earlyFolding'].iloc[0])) 
+            row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn]
+            if not row.empty:
+                is_early_folding = row['is_early_folding'].iloc[0]
+                efoldmine_score = row['earlyFolding'].iloc[0]
+                result.append((is_early_folding, efoldmine_score))
             else:
-                result.append((False, row['earlyFolding'].iloc[0]))  
+                result.append((False, None))  
 
         # Create DataFrame:
         df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
-
         self.data = df
-
-
-
 
 class DenovoPhospho(MavispModule):
     module_dir = "denovo_phospho"
