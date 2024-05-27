@@ -704,7 +704,7 @@ class EFoldMine(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        # Filterbrequired columns:
+        # Filter required columns:
         efoldmine_parsed = ef_res[['residue_index', 'earlyFolding']]
 
         # Precompute early folding regions:
