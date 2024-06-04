@@ -706,6 +706,16 @@ class EFoldMine(MavispModule):
 
         # Filter required columns:
         efoldmine_parsed = ef_res[['residue_index', 'earlyFolding']]
+        if 'residue_index' not in ef_res.columns or 'earlyFolding' not in ef_res.columns:
+            this_error = "Required columns 'residue_index' or 'earlyFolding' are missing from the file."
+            raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
+            
+        # Inspect early folding scores:
+        try:
+            pd.to_numeric(efoldmine_parsed['earlyFolding'], errors='raise')
+        except ValueError:
+            this_error = "Invalid or missing early folding scores in the file."
+            raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
 
         # Precompute early folding regions:
         efoldmine_scores = efoldmine_parsed['earlyFolding'].tolist()
@@ -730,12 +740,12 @@ class EFoldMine(MavispModule):
         for mut in mutations:
             mut_resn = int(mut[1:-1])
             row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn]
-            if not row.empty:
-                is_early_folding = row['is_early_folding'].iloc[0]
-                efoldmine_score = row['earlyFolding'].iloc[0]
-                result.append((is_early_folding, efoldmine_score))
-            else:
-                result.append((False, None))  
+            if len(row) != 1:
+                this_error = f"Expected exactly one row for residue index {mut_resn}, but found {len(row)} rows."
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])    
+            is_early_folding = row['is_early_folding'].iloc[0]
+            efoldmine_score = row['earlyFolding'].iloc[0]
+            result.append((is_early_folding, efoldmine_score))         
 
         # Create DataFrame:
         df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
