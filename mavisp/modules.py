@@ -1283,7 +1283,7 @@ class CancermutsTable(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # check if all the required columns are present
-        required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']
+        required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources', 'genomic_mutation']
         if not set(required_columns).issubset(cancermuts.columns):
             this_error = f"input table doesn't have all the required columns"
             raise MAVISpMultipleError(warning=warnings,
@@ -1308,9 +1308,10 @@ class CancermutsTable(MavispModule):
         #     warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
 
         # filter by column and pretty rename column names
-        cancermuts = cancermuts[['gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
+        cancermuts = cancermuts[['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
 
-        self.data = cancermuts.rename(columns={ 'gnomad_genome_af' : 'gnomAD genome allele frequency',
+        self.data = cancermuts.rename(columns={ 'genomic_mutation' : 'HGVSg',
+                                                'gnomad_genome_af' : 'gnomAD genome allele frequency',
                                                 'gnomad_exome_af'  : 'gnomAD exome allele frequency',
                                                 'REVEL_score'      : 'REVEL score',
                                                 'sources'          : 'Mutation sources' })
