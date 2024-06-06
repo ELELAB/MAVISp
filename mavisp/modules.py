@@ -750,7 +750,8 @@ class EFoldMine(MavispModule):
 
         # Create DataFrame:
         df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
-        self.data = df
+        self.data = df.rename(columns={'efoldmine_is_early_folding' : 'EFoldMine - part of early folding region',
+                                       'efoldmine_score'            : 'EFoldMine score'})
 
 class DenovoPhospho(MavispModule):
     module_dir = "denovo_phospho"
