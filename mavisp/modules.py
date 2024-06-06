@@ -709,7 +709,7 @@ class EFoldMine(MavispModule):
         if 'residue_index' not in ef_res.columns or 'earlyFolding' not in ef_res.columns:
             this_error = "Required columns 'residue_index' or 'earlyFolding' are missing from the file."
             raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
-            
+
         # Inspect early folding scores:
         try:
             pd.to_numeric(efoldmine_parsed['earlyFolding'], errors='raise')
@@ -722,30 +722,30 @@ class EFoldMine(MavispModule):
         seq_length = len(efoldmine_scores)
         window_size = 3
         thres = 0.169
-        
+
         # Initialize early_foding_regions list:
         early_folding_regions = [False] * seq_length
-        
+
         # Find the residues in early folding regions:
         for i in range(seq_length - window_size + 1):
             window = efoldmine_scores[i:i + window_size]
             if all(score > thres for score in window):
-                early_folding_regions[i:i + window_size] = [True] * window_size   
-        
-        efoldmine_parsed['is_early_folding'] = early_folding_regions   
-                
+                early_folding_regions[i:i + window_size] = [True] * window_size
+
+        efoldmine_parsed['is_early_folding'] = early_folding_regions
+
         # Compare with mutations:
         result = []
-        
+
         for mut in mutations:
             mut_resn = int(mut[1:-1])
             row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn]
             if len(row) != 1:
                 this_error = f"Expected exactly one row for residue index {mut_resn}, but found {len(row)} rows."
-                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])    
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
             is_early_folding = row['is_early_folding'].iloc[0]
             efoldmine_score = row['earlyFolding'].iloc[0]
-            result.append((is_early_folding, efoldmine_score))         
+            result.append((is_early_folding, efoldmine_score))
 
         # Create DataFrame:
         df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
@@ -815,7 +815,7 @@ class DenovoPhospho(MavispModule):
                         gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
                         loss_of_function[mutation].append(restype_resnum_kinase)
- 
+
         except Exception as e:
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -843,12 +843,12 @@ class DenovoPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class TaccDenovoPhospho(DenovoPhospho):
- 
+
     expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
     sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
- 
+
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
