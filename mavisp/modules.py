@@ -2,6 +2,7 @@
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
+#           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -680,6 +681,78 @@ class EnsembleSAS(MavispMultiEnsembleModule, module_class=TaccSAS):
     module_dir = "sas"
     name = "sas"
 
+class EFoldMine(MavispModule):
+
+    module_dir = "efoldmine"
+    name = "efoldmine"
+
+    def ingest(self, mutations):
+        warnings = []
+        efoldmine_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(efoldmine_file) != 1:
+            this_error = f"multiple or no files found in {efoldmine_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        efoldmine_file = efoldmine_file[0]
+
+        log.info(f"parsing efoldmine file {efoldmine_file}")
+
+        try:
+            ef_res = pd.read_csv(os.path.join(self.data_dir, self.module_dir, efoldmine_file))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the efoldmine file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        # Filter required columns:
+        efoldmine_parsed = ef_res[['residue_index', 'earlyFolding']]
+        if 'residue_index' not in ef_res.columns or 'earlyFolding' not in ef_res.columns:
+            this_error = "Required columns 'residue_index' or 'earlyFolding' are missing from the file."
+            raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
+
+        # Inspect early folding scores:
+        try:
+            pd.to_numeric(efoldmine_parsed['earlyFolding'], errors='raise')
+        except ValueError:
+            this_error = "Invalid or missing early folding scores in the file."
+            raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
+
+        # Precompute early folding regions:
+        efoldmine_scores = efoldmine_parsed['earlyFolding'].tolist()
+        seq_length = len(efoldmine_scores)
+        window_size = 3
+        thres = 0.169
+
+        # Initialize early_foding_regions list:
+        early_folding_regions = [False] * seq_length
+
+        # Find the residues in early folding regions:
+        for i in range(seq_length - window_size + 1):
+            window = efoldmine_scores[i:i + window_size]
+            if all(score > thres for score in window):
+                early_folding_regions[i:i + window_size] = [True] * window_size
+
+        efoldmine_parsed['is_early_folding'] = early_folding_regions
+
+        # Compare with mutations:
+        result = []
+
+        for mut in mutations:
+            mut_resn = int(mut[1:-1])
+            row = efoldmine_parsed[efoldmine_parsed['residue_index'] == mut_resn]
+            if len(row) != 1:
+                this_error = f"Expected exactly one row for residue index {mut_resn}, but found {len(row)} rows."
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
+            is_early_folding = row['is_early_folding'].iloc[0]
+            efoldmine_score = row['earlyFolding'].iloc[0]
+            result.append((is_early_folding, efoldmine_score))
+
+        # Create DataFrame:
+        df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
+        self.data = df.rename(columns={'efoldmine_is_early_folding' : 'EFoldMine - part of early folding region',
+                                       'efoldmine_score'            : 'EFoldMine score'})
+
 class DenovoPhospho(MavispModule):
     module_dir = "denovo_phospho"
     name = "denovo_phospho"
@@ -744,7 +817,7 @@ class DenovoPhospho(MavispModule):
                         gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
                         loss_of_function[mutation].append(restype_resnum_kinase)
-        
+
         except Exception as e:
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -772,12 +845,12 @@ class DenovoPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class TaccDenovoPhospho(DenovoPhospho):
-    
+
     expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
     sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
-        
+
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
@@ -1741,3 +1814,4 @@ class FunctionalSites(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+

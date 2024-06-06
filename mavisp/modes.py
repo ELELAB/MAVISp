@@ -2,6 +2,7 @@
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
+#           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -51,8 +52,9 @@ class MAVISpSimpleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense ]
-    module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+                          AlphaMissense,
+                          EFoldMine ]
+    module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
     index_col_labels = {'system' : "Protein",
