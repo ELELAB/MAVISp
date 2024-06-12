@@ -80,7 +80,7 @@ def get_database_dir(var_name='MAVISP_DATABASE', default_dir='./database'):
     dir_name = os.getenv(var_name)
     if dir_name is None:
         return default_dir
-    return var_name
+    return dir_name
 
 def add_affiliation_logo():
     columns = st.sidebar.columns(2)
@@ -112,6 +112,38 @@ def plot_dotplot(df, demask_co, revel_co, fig_width=14, fig_height=4, n_muts=50,
 # JavaScript column renderers, to dynamically add web links
 
 cell_renderers = {}
+
+cell_renderers['GitBook report'] = JsCode('''
+class PTMCellRenderer {
+    init(params) {
+        this.eGui = document.createElement('span');
+        if (params.value == null) {
+            this.eGui.innerHTML = '';
+        } else {
+            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">report</a>`;
+        }
+    }
+  getGui() {
+    return this.eGui;
+  }
+}
+''')
+
+cell_renderers['OSF repository for ensemble data'] = JsCode('''
+class PTMCellRenderer {
+    init(params) {
+        this.eGui = document.createElement('span');
+        if (params.value == null) {
+            this.eGui.innerHTML = '';
+        } else {
+            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">OSF</a>`;
+        }
+    }
+  getGui() {
+    return this.eGui;
+  }
+}
+''')
 
 cell_renderers['Mutation sources'] = JsCode('''
 class SourceCellRenderer {
