@@ -64,6 +64,8 @@ else:
 
 gb_datasets_grid.configure_selection(selection_mode='single',
                                      use_checkbox=True)
+gb_datasets_grid.configure_column('GitBook report', cellRenderer=cell_renderers['GitBook report'])
+
 
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
@@ -71,6 +73,7 @@ datasets_grid = AgGrid(show_table,
                       fit_columns_on_grid_load = True,
                       reload_data = False,
                       height=200,
+                      allow_unsafe_jscode=True,
                       key="id_row")
 
 if len(datasets_grid["selected_rows"]) == 1:
