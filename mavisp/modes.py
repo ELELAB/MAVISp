@@ -54,15 +54,22 @@ class MAVISpSimpleMode(MAVISpMode):
                           EVE,
                           AlphaMissense,
                           EFoldMine ]
-    module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
-    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators']
+    module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions',
+    'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
+    'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
+    'demask', 'gemme', 'eve', 'alphamissense']
+    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
+    'gitbook_entry', 'allosigma_distance_cutoff']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
+    'gitbook_entry', 'allosigma_distance_cutoff' ]
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
-                        }
+                        'gitbook_entry' : 'GitBook report',
+                        'allosigma_distance_cutoff' : 'Distance cut-off used for AlloSigma2'}
+
 
     def parse_metadata(self, data_dir, system):
 
@@ -89,6 +96,16 @@ class MAVISpSimpleMode(MAVISpMode):
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
 
+        if 'allosigma_distance_cutoff' in metadata.keys():
+            out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
+        else:
+            out_metadata['allosigma_distance_cutoff'] = ''
+
+        if 'gitbook_entry' in metadata.keys():
+            out_metadata['gitbook_entry'] = metadata['gitbook_entry']
+        else:
+            out_metadata['gitbook_entry'] = ''
+
         return out_metadata, mavisp_criticals
 
 class MAVISpEnsembleMode(MAVISpMode):
@@ -110,26 +127,29 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense ]
-    module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask', 'gemme', 'eve', 'alphamissense']
+    module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
+    'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
+    'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
+    'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
-    'review_status', 'curators']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
-    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics',
-    'review_status', 'curators']
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta',  'sampling_functional_dynamics',
+    'interfaces_functional_dynamics', 'review_status', 'curators',
+    'gitbook_entry', 'ensemble_files_osf']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
                         'ensemble_sources' : "Ensemble sources",
                         'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
                         'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
+                        'ensemble_files_osf' : 'OSF repository for ensemble data',
                         'sampling_functional_dynamics' : "Sampling methods for functional dynamics",
                         'interfaces_functional_dynamics' : "Regions of interest for functional dynamics",
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
-                        }
-
+                        'gitbook_entry' : 'GitBook report'}
 
     def parse_metadata(self, data_dir, system):
 
@@ -188,5 +208,10 @@ class MAVISpEnsembleMode(MAVISpMode):
             log.debug("There is no curators field in metadata file")
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
+
+        for k in ['ensemble_files_osf', 'gitbook_entry']:
+            if k not in metadata.keys():
+                metadata[k] = ''
+            out_metadata[k] = metadata[k]
 
         return out_metadata, mavisp_criticals
