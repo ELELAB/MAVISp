@@ -64,6 +64,7 @@ else:
 gb_datasets_grid.configure_selection(selection_mode='single',
                                      use_checkbox=True)
 gb_datasets_grid.configure_column('OSF repository for ensemble data', cellRenderer=cell_renderers['OSF repository for ensemble data'])
+gb_datasets_grid.configure_column('GitBook report', cellRenderer=cell_renderers['GitBook report'])
 
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
