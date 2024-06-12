@@ -53,7 +53,6 @@ except FileNotFoundError:
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
-
 if "id_row" not in st.session_state:
     st.session_state["id_row"] = ''
     st.session_state.selected_row = ''
