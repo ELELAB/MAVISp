@@ -1054,9 +1054,11 @@ class PTMs(MavispModule):
                 delim_whitespace=True,
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
+            binding_energies_available = True
         except FileNotFoundError as e:
             ddg_binding = pd.DataFrame(columns=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
             warnings.append(MAVISpWarningError(f"summary_binding.txt not found - changes in free energy will not be used to classify function"))
+            binding_energies_available = False
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary_binding.txt file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1140,7 +1142,6 @@ class PTMs(MavispModule):
         binding_ptm_muts    = ddg_binding[  is_ptm_binding]
         binding_cancer_muts = ddg_binding[~ is_ptm_binding]
 
-
         # process DDG PTM information. We do only one check since we already
         # checked that binding and stability have the same mutations
         if not set(stability_ptm_muts['alt']).issubset(set(self.allowed_ptms)):
@@ -1199,6 +1200,9 @@ class PTMs(MavispModule):
                  'regulation', 'stability', 'function', 'acc_rel' ]
 
         final_table = final_table[final_table.columns.intersection(cols)]
+
+        if not binding_energies_available:
+            final_table = final_table.drop(columns=['binding_ddg_mut', 'binding_ddg_ptm'])
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
