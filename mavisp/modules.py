@@ -2,6 +2,7 @@
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
+#           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -709,7 +710,7 @@ class EFoldMine(MavispModule):
         if 'residue_index' not in ef_res.columns or 'earlyFolding' not in ef_res.columns:
             this_error = "Required columns 'residue_index' or 'earlyFolding' are missing from the file."
             raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
-            
+
         # Inspect early folding scores:
         try:
             pd.to_numeric(efoldmine_parsed['earlyFolding'], errors='raise')
@@ -722,34 +723,35 @@ class EFoldMine(MavispModule):
         seq_length = len(efoldmine_scores)
         window_size = 3
         thres = 0.169
-        
+
         # Initialize early_foding_regions list:
         early_folding_regions = [False] * seq_length
-        
+
         # Find the residues in early folding regions:
         for i in range(seq_length - window_size + 1):
             window = efoldmine_scores[i:i + window_size]
             if all(score > thres for score in window):
-                early_folding_regions[i:i + window_size] = [True] * window_size   
-        
-        efoldmine_parsed['is_early_folding'] = early_folding_regions   
-                
+                early_folding_regions[i:i + window_size] = [True] * window_size
+
+        efoldmine_parsed['is_early_folding'] = early_folding_regions
+
         # Compare with mutations:
         result = []
-        
+
         for mut in mutations:
             mut_resn = int(mut[1:-1])
             row = efoldmine_parsed[efoldmine_parsed['residue_index']+1 == mut_resn]
             if len(row) != 1:
                 this_error = f"Expected exactly one row for residue index {mut_resn}, but found {len(row)} rows."
-                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])    
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
             is_early_folding = row['is_early_folding'].iloc[0]
             efoldmine_score = row['earlyFolding'].iloc[0]
-            result.append((is_early_folding, efoldmine_score))         
+            result.append((is_early_folding, efoldmine_score))
 
         # Create DataFrame:
         df = pd.DataFrame(result, columns=['efoldmine_is_early_folding', 'efoldmine_score'], index=mutations)
-        self.data = df
+        self.data = df.rename(columns={'efoldmine_is_early_folding' : 'EFoldMine - part of early folding region',
+                                       'efoldmine_score'            : 'EFoldMine score'})
 
 class DenovoPhospho(MavispModule):
     module_dir = "denovo_phospho"
@@ -815,7 +817,7 @@ class DenovoPhospho(MavispModule):
                         gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
                         loss_of_function[mutation].append(restype_resnum_kinase)
- 
+
         except Exception as e:
             this_error = f"Error during mutation analysis: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -843,12 +845,12 @@ class DenovoPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class TaccDenovoPhospho(DenovoPhospho):
- 
+
     expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
     sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
- 
+
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
@@ -1286,7 +1288,7 @@ class CancermutsTable(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # check if all the required columns are present
-        required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']
+        required_columns = ['aa_position', 'ref_aa', 'alt_aa', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources', 'genomic_mutation']
         if not set(required_columns).issubset(cancermuts.columns):
             this_error = f"input table doesn't have all the required columns"
             raise MAVISpMultipleError(warning=warnings,
@@ -1311,9 +1313,10 @@ class CancermutsTable(MavispModule):
         #     warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
 
         # filter by column and pretty rename column names
-        cancermuts = cancermuts[['gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
+        cancermuts = cancermuts[['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
 
-        self.data = cancermuts.rename(columns={ 'gnomad_genome_af' : 'gnomAD genome allele frequency',
+        self.data = cancermuts.rename(columns={ 'genomic_mutation' : 'HGVSg',
+                                                'gnomad_genome_af' : 'gnomAD genome allele frequency',
                                                 'gnomad_exome_af'  : 'gnomAD exome allele frequency',
                                                 'REVEL_score'      : 'REVEL score',
                                                 'sources'          : 'Mutation sources' })
