@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 import os
 import pandas as pd
 from mavisp.methods import *
@@ -245,7 +244,6 @@ class Stability(MultiMethodMavispModule):
 
         if pd.isna(row[foldx_header]) or pd.isna(row[rosetta_header]):
             return pd.NA
-
         if row[foldx_header] >= stab_co and row[rosetta_header] >= stab_co:
             return 'Destabilizing'
         if row[foldx_header] <= (- stab_co) and row[rosetta_header] <= (- stab_co):
@@ -1303,7 +1301,9 @@ class CancermutsTable(MavispModule):
         # check if all mutations are present in the cancermuts table
         available_mutations = cancermuts.index.intersection(mutations)
         if len(available_mutations) != len(mutations):
-            warnings.append(MAVISpWarningError("Not all the annotated mutations were found in the Cancermuts table"))
+            this_error = f"Not all the annotated mutations were found in the Cancermuts table"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
 
         # keep rows with mutations only
         cancermuts = cancermuts.loc[available_mutations]
