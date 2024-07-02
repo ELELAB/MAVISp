@@ -1,7 +1,7 @@
 #ClinVar	Internal_dictionary
 Benign	Benign
-	Class
 nan	Uncertain 
+Uncertain significance,not specified	Uncertain
 Uncertain significance,Pathogenic	Conflicting interpretation
 Conflicting interpretations of pathogenicity	Conflicting interpretation
 Uncertain significance,Likely pathogenic,Likely pathogenic	Conflicting interpretation
@@ -62,7 +62,118 @@ Pathogenic,Pathogenic	Pathogenic
 Pathogenic	Pathogenic
 Uncertain significance,Uncertain significance,Uncertain significance	Uncertain 
 Uncertain significance,not provided	Uncertain 
-drug response	Uncertain 
+drug response	Drug response 
 Uncertain significance	Uncertain 
 Uncertain significance,Uncertain significance	Uncertain 
-Uncertain significance,drug response	Uncertain 
+Uncertain significance,drug response	Uncertain
+protective	Protective
+not provided,Pathogenic/Likely pathogenic	Likely pathogenic
+Uncertain significance,not provided,not provided	Uncertain
+not provided,not provided,not provided	Uncertain
+Uncertain significance,Uncertain significance,Conflicting classifications of pathogenicity	Uncertain
+not provided,not provided,Uncertain significance	Uncertain
+Benign,Uncertain significance	Uncertain
+Likely benign,not provided	Likely benign
+not provided,Uncertain significance,Conflicting classifications of pathogenicity	Uncertain
+Likely pathogenic,Tier I - Strong	Likely pathogenic
+Likely pathogenic; drug response	Likely pathogenic
+Pathogenic,Pathogenic/Likely pathogenic	Likely pathogenic
+Conflicting classifications of pathogenicity	Uncertain
+Likely pathogenic,Conflicting classifications of pathogenicity	Uncertain
+Conflicting classifications of pathogenicity,Benign	Uncertain
+Likely pathogenic,Likely pathogenic,drug response	Likely pathogenic
+Uncertain significance,not provided,Uncertain significance	Uncertain
+Likely pathogenic,Pathogenic/Likely pathogenic,Pathogenic,Pathogenic	Likely pathogenic
+not provided,Benign	Uncertain
+not provided,Conflicting classifications of pathogenicity	Uncertain
+risk factor	Risk Factor
+Likely pathogenic,not provided	Likely pathogenic
+not provided,not provided,Conflicting classifications of pathogenicity	Uncertain
+Pathogenic,Likely pathogenic,Pathogenic	Likely pathogenic
+Uncertain significance,Benign	Uncertain
+not provided,Pathogenic	Pathogenic
+Likely pathogenic; risk factor	Likely pathogenic
+Conflicting interpretations of pathogenicity,Pathogenic	Uncertain
+Benign,Conflicting interpretations of pathogenicity	Uncertain
+Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity	Uncertain
+not provided,Conflicting classifications of pathogenicity,Uncertain significance	Uncertain
+Benign,Benign	Benign
+Benign,Likely benign	Likely benign
+Pathogenic/Likely pathogenic; drug response	Likely pathogenic
+Likely benign,Likely benign,Conflicting classifications of pathogenicity	Uncertain
+Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity,Likely pathogenic	Uncertain
+Uncertain significance; drug response	Uncertain
+not provided,not provided,Conflicting interpretations of pathogenicity	Uncertain
+Pathogenic/Likely pathogenic,Likely pathogenic	Likely pathogenic
+Likely oncogenic	Likely pathogenic
+Pathogenic/Likely pathogenic,Pathogenic/Likely pathogenic	Likely pathogenic
+Likely pathogenic,Likely pathogenic,drug response,Tier I - Strong Likely pathogenic
+Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity,Benign	Uncertain
+not provided,Conflicting interpretations of pathogenicity,Uncertain significance	Uncertain
+Likely pathogenic,Likely pathogenic,Likely pathogenic	Likely pathogenic
+not provided,Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity	Uncertain
+no interpretation for the single variant,Pathogenic	Pathogenic
+Conflicting classifications of pathogenicity,Pathogenic	Uncertain
+Likely benign,Conflicting classifications of pathogenicity	Uncertain
+Likely benign,not provided,Conflicting classifications of pathogenicity	Uncertain
+other	Uncertain
+Conflicting classifications of pathogenicity,not provided	Uncertain
+Uncertain significance,Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity	Uncertain
+Pathogenic; risk factor	Pathogenic
+Pathogenic/Likely pathogenic,Pathogenic/Likely pathogenic,Pathogenic	Likely pathogenic
+Likely benign,Benign/Likely benign,Benign	Likely benign
+Likely pathogenic,Pathogenic,Pathogenic	Likely pathogenic
+not provided,not provided,Likely pathogenic	Likely pathogenic
+Benign,Conflicting classifications of pathogenicity	Uncertain
+Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity	Uncertain
+not provided,Conflicting interpretations of pathogenicity	Uncertain
+Conflicting interpretations of pathogenicity,Benign	Uncertain
+Likely benign,Pathogenic	Uncertain
+Conflicting classifications of pathogenicity,Uncertain significance	Uncertain
+Likely pathogenic,Pathogenic/Likely pathogenic,Tier I - Strong	Uncertain
+Uncertain significance,Uncertain significance,Likely benign	Uncertain
+Likely benign,Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity	Uncertain
+Pathogenic; other	Uncertain
+Pathogenic/Likely pathogenic/Pathogenic, low penetrance/Established risk allele	Likely pathogenic
+Benign/Likely benign,Conflicting interpretations of pathogenicity	Uncertain
+Likely pathogenic/Likely risk allele	Likely pathogenic
+Benign/Likely benign,Conflicting classifications of pathogenicity	Uncertain
+Conflicting classifications of pathogenicity,Pathogenic/Likely pathogenic	Uncertain
+Uncertain significance,other	Uncertain
+Conflicting interpretations of pathogenicity,Likely benign	Uncertain
+Conflicting classifications of pathogenicity,Likely pathogenic	Uncertain
+not provided,not provided,Benign	Benign
+Likely pathogenic,Pathogenic/Likely pathogenic	Likely pathogenic
+Uncertain significance; risk factor	Uncertain
+Pathogenic/Likely pathogenic,Conflicting classifications of pathogenicity Uncertain
+Benign,Benign/Likely benign Likely benign
+Conflicting classifications of pathogenicity,Uncertain significance,Uncertain significance	Uncertain
+Conflicting classifications of pathogenicity,Likely benign	Uncertain
+Likely risk allele	Likely risk
+Uncertain risk allele	Uncertain risk
+Conflicting interpretations of pathogenicity,Conflicting interpretations of pathogenicity,Benign	Uncertain
+Pathogenic,Pathogenic; risk factor	Pathogenic
+Conflicting classifications of pathogenicity; association; risk factor	Uncertain
+not provided,Likely pathogenic	Likely pathogenic
+Benign/Likely benign,Benign	Likely benign
+Conflicting interpretations of pathogenicity; risk factor	Uncertain
+not provided,Likely benign	Likely benign
+Uncertain significance/Uncertain risk allele	Uncertain
+not provided,Uncertain significance,Conflicting interpretations of pathogenicity	Uncertain
+Uncertain significance,Conflicting classifications of pathogenicity,Uncertain significance	Uncertain
+Pathogenic,Conflicting classifications of pathogenicity Uncertain
+not provided,Uncertain significance	Uncertain
+Uncertain significance,Conflicting classifications of pathogenicity Uncertain
+Likely benign,Likely benign,Benign	Likely benign
+Conflicting classifications of pathogenicity; risk factor	Uncertain
+not provided,Pathogenic,not provided	Pathogenic
+Pathogenic,not provided,Likely pathogenic	Likely pathogenic
+not provided,not provided	Uncertain
+not provided,Conflicting classifications of pathogenicity,Conflicting classifications of pathogenicity	Uncertain
+Pathogenic/Likely pathogenic,Uncertain significance,Pathogenic	Uncertain
+Likely pathogenic,Pathogenic; drug response; other Likely pathogenic
+Benign,Likely benign,Benign	Benign
+Conflicting classifications of pathogenicity,Tier II - Potential	Uncertain
+Conflicting classifications of pathogenicity,Uncertain significance,Conflicting classifications of pathogenicity	Uncertain
+no interpretation for the single variant	Uncertain
+ 
