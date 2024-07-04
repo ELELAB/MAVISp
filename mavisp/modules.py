@@ -873,7 +873,7 @@ class PTMs(MavispModule):
                         'T' : 'p',
                         'Y' : 'y'}
     protein_chain = 'A'
-    slim_pattern = re.compile('.* \((CLV|DEG|DOC|LIG|MOD|TRG)_[A-Za-z0-9_-]+\), [0-9]+-[0-9]+, ELM')
+    slim_pattern = re.compile('.* \((CLV|DEG|DOC|LIG|MOD|TRG)_[A-Za-z0-9_-]+\), [0-9]+-[0-9]+, (ggetELM|ELM)')
 
     def _assign_regulation_class(self, row):
         ref = row.name[0]
