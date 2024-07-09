@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Matteo Tiberti 
+# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Matteo Tiberti
 # Danish Cancer Society & Technical University of Denmark
 
 # This program is free software: you can redistribute it and/or modify
@@ -88,7 +88,9 @@ def color_markers(data):
                       6 : 'black',
                       2 : '#d5bdaf',
                       3 : 'white',
-                      4 : 'lightgray'}
+                      4 : 'lightgray',
+                      7 : '#8E5466',
+                      8 : '#636D87'}
 
     # Make np.zeros array with the shape of the plotted grid
     zeros_array = np.zeros([data.shape[0], data.shape[1]], dtype = int)
@@ -137,8 +139,13 @@ def color_yticklabels(labels):
 
     # Define the prefix to classify the labels as having
     # an effect on stability, function or other
-    stability = ['Stability classification', 'PTM effect in stability']
-    function = ['Local Int.', 'PTM', 'AlloSigma2']
+    stability = ['Stability classification',
+                 'PTM effect in stability',
+                 'Functional sites (cofactor)',
+                 'Functional sites (active site)']
+    function = ['Local Int.',
+                'PTM',
+                'AlloSigma2']
 
     # Iterate over the labels and append to the color list
     # the color based on the effect
@@ -192,61 +199,55 @@ def convert_to_float(value):
     else:
         return value
 
-def process_input(df, d_cutoff, r_cutoff, all):
-    '''Process MAVISp aggregated table.
+def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
+    ''' Read MAVISp aggregated table.
 
     The function takes as input a MAVISp csv file and returns
     a dataframe formatted in a plot-compatible way.
 
     Parameters
     ----------
-    df: dataframe
+    data: dataframe
 	   input MAVISp dataframe
     r_cutoff: float
         REVEL score cutoff
-    d_cutoff:
-        DeMaSk score cut-off
-    all:
-        whether to keep both Rosetta and Rasp results
     Returns
     ----------
     df: dataframe
         output dataframe in which the classification is
         converted to number to facilitate the plotting.
+    full_df: dataframe
+              mavisp csv without altered columns
+
     '''
 
-    # Define columns of interest
+    f = lambda x: '(Rosetta, FoldX)' in x or \
+                    '(RaSP, FoldX)' in x or \
+                    'Local Int. classification' in x or \
+                    x == 'Local Int. With DNA' or \
+                    'Functional sites (cofactor)' in x or \
+                    'Functional sites (active site)' in x or \
+                    'AlloSigma2 predicted consequence - active sites' in x or \
+                    'AlloSigma2 predicted consequence - cofactor sites' in x or \
+                    'AlloSigma2 predicted consequence - pockets and interfaces' in x or \
+                    'PTM effect in ' in x or 'REVEL score' in x or \
+                    'EVE classification (25% Uncertain)' in x or \
+                    'DeMaSk delta fitness' in x or \
+                    'DeMaSk predicted consequence' in x or \
+                    'GEMME Score (rank-normalized)' in x or \
+                    'AlphaMissense classification' in x or \
+                    'Mutation' in x and not 'Mutation sources' in x
 
-    df['REVEL score'] = df['REVEL score'].apply(convert_to_float)
-    df_full = df.copy()
+    df = full_df.copy()
+    df = df[df.columns[list(map(f, df.columns))]]
 
-    likes = ['(Rosetta, FoldX)',
-              'Local Int. classification',
-              'Local Int. With DNA',
-              'AlloSigma2 predicted consequence - active sites',
-              'AlloSigma2 predicted consequence - cofactor sites',
-              'AlloSigma2 predicted consequence - pockets and interfaces',
-              'Functional sites (cofactor)',
-              'Functional sites (active site)',
-              'PTM effect in ',
-              'REVEL score',
-              'EVE classification (25% Uncertain)',
-              'DeMaSk delta fitness',
-              'AlphaMissense classification',
-              'Mutation']
-    drops = ['Mutation sources']
+    # If pltRevel is True then convert REVEL score column to float
+    # In case multiple REVEL scores are present it returns the average
+    # of the values
 
-    if all:
-        likes.insert(1, '(RaSP, FoldX)')
+    for d in [df, full_df]:
+        d['REVEL score'] = d['REVEL score'].apply(convert_to_float)
 
-    selected_cols = []
-    for c in df.columns:
-        for l in likes:
-            if l in c:
-                selected_cols.append(c)
-                break
-    df = df[selected_cols]
-    df = df.drop(columns=drops)
 
     # Add REVEL score interpretation column
     df['REVEL'] = np.where(df['REVEL score'].isna(), None,
@@ -254,19 +255,34 @@ def process_input(df, d_cutoff, r_cutoff, all):
                                     'Damaging', 'Neutral'))
                                         # Add Demask score interpretation column
 
+    try:
+        # Add GEMME score interpretation column
+        df['GEMME Score (rank-normalized)'] = np.where(df['GEMME Score (rank-normalized)'].isna(), None,
+                                    np.where(df['GEMME Score (rank-normalized)'] >= g_cutoff,
+                                        'Damaging', 'Neutral'))
+    except:
+        log.warning(f'- no GEMME found in MAVISp csv.')
+
+
     # Convert Demask delta fitness into absolute value
     df['DeMaSk'] = np.where(df['DeMaSk delta fitness'].isna(), None,
-                   np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
-                   np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
-                   'Neutral')))
+                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
+                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
+                'Neutral')))
+
+    # Only keep Demask consequence for those mutations that satisfy the Demask threshold
+    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk'] == 'Damaging', df['DeMaSk predicted consequence'], None)
 
     # Drop REVEL score column
     df.drop(columns = ['REVEL score','DeMaSk delta fitness'],
             inplace = True)
 
     # Sort df columns by group: stability effects, functional effects, others
-    df = df[[col for col in df.columns if 'stability' in col.lower()] +
-            [col for col in df.columns if not 'stability' in col.lower()]]
+    df = df[
+    [col for col in df.columns if 'functional' in col.lower()] +
+    [col for col in df.columns if 'stability' in col.lower()] +
+    [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower()]
+    ]
 
     # Define a dictionary of effect: code_number
     # Damaging : 1, 5, 6
@@ -277,6 +293,8 @@ def process_input(df, d_cutoff, r_cutoff, all):
     # -> pathogenic = 1
     # -> benign = 2
     # -> uncertain = 4
+    # -> loss of function = 7
+    # -> gain of function = 8
     effect_code = {'(?i)destabilizing': 1,
                    '(?i)pathogenic': 1,
                    '(?i)damaging': 1,
@@ -286,38 +304,39 @@ def process_input(df, d_cutoff, r_cutoff, all):
                    '(?i)benign': 2,
                    None : 3,
                    '(?i)uncertain': 4,
-                   'ambiguous': 4}
+                   'ambiguous': 4,
+                   'loss_of_function' : 7,
+                   'gain_of_function' : 8}
     # Replace the string nomenclature with the
     # effect code
     df.replace(effect_code,
                regex = True,
                inplace = True)
-    return df, df_full
 
-def plot(df, width, height, xlim, reshape_last=True):
-    '''
+    # Ensure 'DeMaSk predicted consequence' is the last column
+    if 'DeMaSk predicted consequence' in df.columns:
+        columns_to_keep = [col for col in df.columns if col != 'DeMaSk predicted consequence']
+        columns_to_keep.append('DeMaSk predicted consequence')
+        df = df[columns_to_keep]
+
+    return df, full_df
+
+def plot(df, width, height, xlim, use_demask_classification):
+    ''' Plot
+
     The function is aimed at plotting a matrix showing the effect of
-    selected mutations. Plots several dot plots, depending on the
-    requested number of mutations per dot-plot
+    selected mutations
 
     Parameters
     ----------
-    data: pandas.DataFrame
+    data: dataframe
         input MAVISp dataframe
-    width: float
-        width of the plot in inches
-    height: float
-        height of the plot in inches
-    xlim: int
-        number of mutations per dot plot
-    reshape_last: bool
-        whether to change the figure width of a panel
-        if the number of mutations is lower than xlim
-
     Returns
     ----------
-    data: list of matplotlib.pyplot.Figure objects
-        list of matplotlib Figure objects, one per plot
+    data: dataframe
+        output dataframe in which the classification is
+        converted to number to facilitate the plotti.ng
+
     '''
     # Define font of the plot
     mpl.rcParams['font.family'] = 'sans-serif'
@@ -346,7 +365,7 @@ def plot(df, width, height, xlim, reshape_last=True):
 
             # If the remainig mutations are less than
             # the chosen xlimit
-            if filtered_df.shape[0] != xlim and reshape_last:
+            if filtered_df.shape[0] != xlim:
 
                 # Adjust width
                 width = adjust_figsize_w(x_mut = filtered_df.shape[0],
@@ -391,9 +410,14 @@ def plot(df, width, height, xlim, reshape_last=True):
         legend_dict = {'black': 'Damaging',
                     '#d5bdaf': 'Neutral',
                     'lightgray': 'Uncertain',
-                    'white': 'Not_available'}
+                    'white': 'Not_available',
+                    }
+        if use_demask_classification is True:
+            legend_dict.update({'#8E5466' : 'Loss of Function',
+                    '#636D87' : 'Gain of Function'})
 
         legend_list = []
+
         for k in legend_dict.keys():
             legend_list.append(Line2D([0], [0],
                                     color = 'w',
@@ -406,19 +430,18 @@ def plot(df, width, height, xlim, reshape_last=True):
         ax.legend(handles = legend_list,
                 loc='upper right',
                 bbox_to_anchor=(1, 1.2),
-                ncol = 4,
+                ncol = 6,
                 fancybox=True,
                 shadow=True)
 
-        # Save plot as png and pdf
         fig.tight_layout()
 
-        # add figure to output list
         figures.append(fig)
 
         # Update upper and lower limits
         l += xlim
         u += xlim
+    # close merged pdf file
 
     return figures
 
