@@ -445,3 +445,246 @@ def plot(df, width, height, xlim, use_demask_classification):
 
     return figures
 
+def generate_summary(data):
+    ''' Summary log.txt file.
+
+    The function is aimed at summarizing the number of mutations
+    with uncertain or damaging consequences for each type of
+    effect (structural and/or functional).
+    Additionally, it identified mutations with a mavisp
+    effect and with AM pathogenic classification and return
+    them as a df.
+
+    Parameters
+    ----------
+    data: dataframe matrix
+    out: output file to be written
+    Returns
+    ----------
+    out: str
+        string containing the summary information
+    alpha_d_df: df
+        df containing damaging mutations with AM pathogenic class.
+    '''
+
+    # Convert all the strings to lowercase
+    data = data.apply(lambda x: x.str.lower() if x.dtype == object else x)
+
+
+    # Colnames ptm and allosigma
+
+    filter_col_stability = [col for col in data if '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
+    filter_col_local = [col for col in data if ('Local Int. classification') in col]
+    ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
+    ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
+    ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
+    allosigma_clmn = [col for col in data if 'AlloSigma2 predicted consequence' in col]
+    cofactor_active = [col for col in data if 'Functional sites' in col]
+    # # Check if columns with well-defined names are in the dataframe
+    # for col in [ptm_stab_clmn, ptm_reg_clmn, ptm_funct_clmn, allosigma_clmn]:
+    #     if col not in data.columns:
+    #         log.warning(f'{col} not found in csv. Skipping associated analyses for summary file.')
+
+    ### Damaging stability ###
+    all_stability = []
+
+    # Define columns and effects' variables
+    clinvar_clmn = 'ClinVar Interpretation'
+    vus = '(?i)uncertain'
+    conflict = 'conflicting interpretations of pathogenicity'
+    d_s = ['destabilizing', 'stabilizing']
+
+    pattern = r'\[.*?\]'
+    interactors = r'\((.*?)\)'
+    lr_type = r'-(.*)'
+
+    if filter_col_stability:
+        for col in filter_col_stability:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                stab_d = str(len(data[data[col].isin(d_s)]))
+
+                # List damaging mutations
+                all_stability_list = data.index[data[col].isin(d_s)].to_list()
+                all_stability.extend(all_stability_list)
+            except:
+                continue
+
+    ### Damaging local interactions ###
+    all_local = []
+
+    # If local interactions are found
+    if len(filter_col_local) > 0:
+        for col in filter_col_local:
+            ensemble = re.findall(pattern, col)
+            inter = re.findall(interactors, col) # search for interactors
+            # Calculate number of damaging mutations
+            loc_d = str(len(data[data[col].isin(d_s)]))
+
+            # List damaging mutations
+            loc_d_list = data.index[data[col].isin(d_s)].to_list()
+            all_local.extend(loc_d_list)
+
+    ### Damaging PTM_stability ###
+    if ptm_stab_clmn:
+        for col in ptm_stab_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_s_d = str(len(data[data[col] == 'damaging']))
+
+                # List damaging mutations
+                ptm_s_d_list = data.index[data[col] == 'damaging'].to_list()
+            except:
+                continue
+    else:
+        ptm_s_d_list = []
+
+
+    ### Damaging PTM_regulation ###
+    if ptm_reg_clmn:
+        for col in ptm_reg_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_r_d = str(len(data[data[col] == 'damaging']))
+
+                # List damaging mutations
+                ptm_r_d_list = data.index[data[col] == 'damaging'].to_list()
+            except:
+                continue
+    else:
+        log.warning(f'- PTM effect in regulation not found in MAVISp csv.')
+        ptm_r_d_list = []
+
+
+
+    ### Damaging PTM_function ###
+    dmg_str = ['damaging', 'potentially_damaging']
+    if ptm_funct_clmn:
+        for col in ptm_funct_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_f_d = str(len(data[data[col].isin(dmg_str)]))
+                # List damaging mutations
+                ptm_f_d_list = data.index[data[col].isin(dmg_str)].to_list()
+                # Print list of mutations only if the are less than 10
+            except:
+                continue
+    else:
+        ptm_f_d_list = []
+
+    ### Assess presence of PTM module ####
+    # Start counter
+    count_ptm_na = 0
+    d = {}
+    # Iterate over the ptm columns
+    ptm_module = ptm_stab_clmn + ptm_reg_clmn + ptm_funct_clmn
+
+    # Create dict for counting ptm per ensemble
+    for ptm in ptm_module:
+        matches = re.findall(pattern, ptm)
+        if matches:
+            d[matches[0]] = 0
+
+    for col in ptm_module:
+        ensemble = re.findall(pattern, col)
+        # If column not in dataframe
+        if ensemble:
+            for ens in d:
+                if col not in data.columns and ensemble[0] == ens:
+                    d[ens] += 1
+                else:
+                    continue
+        else:
+            if col not in data.columns:
+                # Increase counter by 1
+                count_ptm_na += 1
+    # Per ensemble if none is in the table
+    for ensemble in d:
+        if d[ensemble] == 3:
+             out += f'- No classification for PTM available yet for the {ensemble[0]} ensemble.'
+    # If none of the PTM columns is found in the table
+    if count_ptm_na == 3:
+        out += '- No classification for PTM available yet.\n'
+
+    all_ptm = ptm_s_d_list + ptm_r_d_list + ptm_f_d_list
+
+    ### Damaging long-range Allosigma2 ###
+    multiple = []
+    for col in allosigma_clmn:
+        try:
+            lr = re.findall(lr_type, col)
+            # Calculate number of damaging mutations (by class)
+            long_d = str(len(data[data[col] == 'destabilizing']))
+            long_me = str(len(data[data[col] == 'mixed_effects']))
+            long_s = str(len(data[data[col] == 'stabilizing']))
+            tot = str(int(long_d) + int(long_me) + int(long_s))
+
+            # List damaging mutations (by class)
+            long_d_list = data.index[data[col] == 'destabilizing'].to_list()
+            long_me_list = data.index[data[col] == 'mixed_effects'].to_list()
+            long_s_list = data.index[data[col] == 'stabilizing'].to_list()
+            all_long = long_d_list + long_me_list + long_s_list
+
+            # add long range type to a list to evaluate multiple effect later
+            multiple.append(all_long)
+
+        except KeyError:
+            multiple.append([])
+
+    multiple = [item for sublist in multiple if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+
+
+    multiple_1 = []
+    for col in cofactor_active:
+        try:
+            funct = re.findall(funct_sites, col)
+            # Calculate number of damaging mutations (by class)
+            funct_sites_d = str(len(data[data[col] == 'damaging']))
+            #tot = str(int(funct_sites_d) + int(long_me) + int(long_s))
+
+            # List damaging mutations (by class)
+            funct_sites_d_list = data.index[data[col] == 'damaging'].to_list()
+            #all_long = long_d_list + long_me_list + long_s_list
+
+            # add long range type to a list to evaluate multiple effect later
+            multiple_1.append(funct_sites_d_list)
+        except KeyError:
+            multiple_1.append([])
+
+    multiple_1= [item for sublist in multiple_1 if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+
+
+    ### DAMAGING ###
+    damaging_full = set(all_stability + all_local + all_ptm + multiple + multiple_1)
+    full_data_d = data.query('index in @damaging_full')
+
+
+    # Initialise AlphaMissense df
+    alpha_d_df = pd.DataFrame()
+
+    try:
+        # Alphamissense
+        # Subset the df for damaging mutations and with alphamissense pathogenic classification
+        alpha_d_df = full_data_d[full_data_d['AlphaMissense classification'] == 'pathogenic']
+        #alpha_d = data_d.index[data_d['AlphaMissense classification'] == 'pathogenic'].to_list()
+    except KeyError:
+        pass
+
+    f = lambda x: 'Stability classification' in x or \
+              'Local Int. classification' in x or \
+              'AlloSigma2 predicted consequence' in x or \
+              'PTM effect' in x or \
+              'Functional sites' in x or \
+              ('Mutation' in x and 'Mutation sources' not in x)
+
+    # Filter the columns to keep only classification info
+    filter_columns = [col for col in alpha_d_df.columns if f(col)]
+
+    # Create a new df with the selected columns
+    filtered_am = alpha_d_df[filter_columns]
+
+    return filtered_am
