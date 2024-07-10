@@ -85,7 +85,7 @@ if len(datasets_grid["selected_rows"]) == 1:
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
-    dataset, dotplots = st.tabs(["Dataset", "Classification"])
+    dataset, dotplots, lolliplots = st.tabs(["Dataset", "Classification", "Damaging mutations"])
 
     with dataset:
         with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
@@ -120,8 +120,10 @@ if len(datasets_grid["selected_rows"]) == 1:
 
         with col1:
             do_revel = st.checkbox('Show available REVEL classification', )
+            do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
+            gemme_co = st.number_input("Curoff for GEMME", value=0.3)
         with col2:
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
@@ -130,10 +132,12 @@ if len(datasets_grid["selected_rows"]) == 1:
         plots = plot_dotplot(this_dataset_table,
                              demask_co=demask_co,
                              revel_co=revel_co,
+                             gemme_co=gemme_co,
                              n_muts=n_muts,
                              fig_width=fig_width,
                              fig_height=fig_height,
-                             do_revel=do_revel)
+                             do_revel=do_revel,
+                             do_demask=do_demask)
 
         with BytesIO() as pdf_stream:
             with PdfPages(pdf_stream) as pdf:
@@ -144,6 +148,26 @@ if len(datasets_grid["selected_rows"]) == 1:
                                data=pdf_stream,
                                mime="application/pdf",
                                file_name=f'{protein}-{mode}_dotplots.pdf')
+
+        for fig in plots:
+            st.pyplot(fig, use_container_width=False)
+
+    with lolliplots:
+
+        this_dataset_table = this_dataset.copy()
+        this_dataset_table = this_dataset_table.set_index('Mutation')
+
+        plots = plot_lolliplots(this_dataset_table)
+
+        with BytesIO() as pdf_stream:
+            with PdfPages(pdf_stream) as pdf:
+                for fig in plots:
+                    fig.savefig(pdf, format='pdf', dpi=300)
+
+            st.download_button(label="Download as PDF",
+                               data=pdf_stream,
+                               mime="application/pdf",
+                               file_name=f'{protein}-{mode}_lolliplots.pdf')
 
         for fig in plots:
             st.pyplot(fig, use_container_width=False)

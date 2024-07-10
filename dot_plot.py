@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Matteo Tiberti 
+# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Matteo Tiberti
 # Danish Cancer Society & Technical University of Denmark
 
 # This program is free software: you can redistribute it and/or modify
@@ -88,7 +88,9 @@ def color_markers(data):
                       6 : 'black',
                       2 : '#d5bdaf',
                       3 : 'white',
-                      4 : 'lightgray'}
+                      4 : 'lightgray',
+                      7 : '#8E5466',
+                      8 : '#636D87'}
 
     # Make np.zeros array with the shape of the plotted grid
     zeros_array = np.zeros([data.shape[0], data.shape[1]], dtype = int)
@@ -137,8 +139,13 @@ def color_yticklabels(labels):
 
     # Define the prefix to classify the labels as having
     # an effect on stability, function or other
-    stability = ['Stability classification', 'PTM effect in stability']
-    function = ['Local Int.', 'PTM', 'AlloSigma2']
+    stability = ['Stability classification',
+                 'PTM effect in stability',
+                 'Functional sites (cofactor)',
+                 'Functional sites (active site)']
+    function = ['Local Int.',
+                'PTM',
+                'AlloSigma2']
 
     # Iterate over the labels and append to the color list
     # the color based on the effect
@@ -192,61 +199,56 @@ def convert_to_float(value):
     else:
         return value
 
-def process_input(df, d_cutoff, r_cutoff, all):
-    '''Process MAVISp aggregated table.
+def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
+    ''' Read MAVISp aggregated table.
 
     The function takes as input a MAVISp csv file and returns
     a dataframe formatted in a plot-compatible way.
 
     Parameters
     ----------
-    df: dataframe
+    data: dataframe
 	   input MAVISp dataframe
     r_cutoff: float
         REVEL score cutoff
-    d_cutoff:
-        DeMaSk score cut-off
-    all:
-        whether to keep both Rosetta and Rasp results
     Returns
     ----------
     df: dataframe
         output dataframe in which the classification is
         converted to number to facilitate the plotting.
+    full_df: dataframe
+              mavisp csv without altered columns
+
     '''
 
-    # Define columns of interest
+    f = lambda x: '(Rosetta, FoldX)' in x or \
+                    '(RaSP, FoldX)' in x or \
+                    'Local Int. classification' in x or \
+                    x == 'Local Int. With DNA' or \
+                    'Functional sites (cofactor)' in x or \
+                    'Functional sites (active site)' in x or \
+                    'AlloSigma2 predicted consequence - active sites' in x or \
+                    'AlloSigma2 predicted consequence - cofactor sites' in x or \
+                    'AlloSigma2 predicted consequence - pockets and interfaces' in x or \
+                    'PTM effect in ' in x or 'REVEL score' in x or \
+                    'EVE classification (25% Uncertain)' in x or \
+                    'DeMaSk delta fitness' in x or \
+                    'DeMaSk predicted consequence' in x or \
+                    'GEMME Score (rank-normalized)' in x or \
+                    'AlphaMissense classification' in x or \
+                    'Mutation' in x and not 'Mutation sources' in x
 
-    df['REVEL score'] = df['REVEL score'].apply(convert_to_float)
-    df_full = df.copy()
+    df = full_df.copy()
+    filter_columns = [col for col in full_df.columns if f(col)]
+    df = df[filter_columns]
 
-    likes = ['(Rosetta, FoldX)',
-              'Local Int. classification',
-              'Local Int. With DNA',
-              'AlloSigma2 predicted consequence - active sites',
-              'AlloSigma2 predicted consequence - cofactor sites',
-              'AlloSigma2 predicted consequence - pockets and interfaces',
-              'Functional sites (cofactor)',
-              'Functional sites (active site)',
-              'PTM effect in ',
-              'REVEL score',
-              'EVE classification (25% Uncertain)',
-              'DeMaSk delta fitness',
-              'AlphaMissense classification',
-              'Mutation']
-    drops = ['Mutation sources']
+    # If pltRevel is True then convert REVEL score column to float
+    # In case multiple REVEL scores are present it returns the average
+    # of the values
 
-    if all:
-        likes.insert(1, '(RaSP, FoldX)')
+    for d in [df, full_df]:
+        d['REVEL score'] = d['REVEL score'].apply(convert_to_float)
 
-    selected_cols = []
-    for c in df.columns:
-        for l in likes:
-            if l in c:
-                selected_cols.append(c)
-                break
-    df = df[selected_cols]
-    df = df.drop(columns=drops)
 
     # Add REVEL score interpretation column
     df['REVEL'] = np.where(df['REVEL score'].isna(), None,
@@ -254,19 +256,34 @@ def process_input(df, d_cutoff, r_cutoff, all):
                                     'Damaging', 'Neutral'))
                                         # Add Demask score interpretation column
 
+    try:
+        # Add GEMME score interpretation column
+        df['GEMME Score (rank-normalized)'] = np.where(df['GEMME Score (rank-normalized)'].isna(), None,
+                                    np.where(df['GEMME Score (rank-normalized)'] >= g_cutoff,
+                                        'Damaging', 'Neutral'))
+    except:
+        log.warning(f'- no GEMME found in MAVISp csv.')
+
+
     # Convert Demask delta fitness into absolute value
     df['DeMaSk'] = np.where(df['DeMaSk delta fitness'].isna(), None,
-                   np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
-                   np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
-                   'Neutral')))
+                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
+                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
+                'Neutral')))
+
+    # Only keep Demask consequence for those mutations that satisfy the Demask threshold
+    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk'] == 'Damaging', df['DeMaSk predicted consequence'], None)
 
     # Drop REVEL score column
     df.drop(columns = ['REVEL score','DeMaSk delta fitness'],
             inplace = True)
 
     # Sort df columns by group: stability effects, functional effects, others
-    df = df[[col for col in df.columns if 'stability' in col.lower()] +
-            [col for col in df.columns if not 'stability' in col.lower()]]
+    df = df[
+    [col for col in df.columns if 'functional' in col.lower()] +
+    [col for col in df.columns if 'stability' in col.lower()] +
+    [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower()]
+    ]
 
     # Define a dictionary of effect: code_number
     # Damaging : 1, 5, 6
@@ -277,6 +294,8 @@ def process_input(df, d_cutoff, r_cutoff, all):
     # -> pathogenic = 1
     # -> benign = 2
     # -> uncertain = 4
+    # -> loss of function = 7
+    # -> gain of function = 8
     effect_code = {'(?i)destabilizing': 1,
                    '(?i)pathogenic': 1,
                    '(?i)damaging': 1,
@@ -286,38 +305,39 @@ def process_input(df, d_cutoff, r_cutoff, all):
                    '(?i)benign': 2,
                    None : 3,
                    '(?i)uncertain': 4,
-                   'ambiguous': 4}
+                   'ambiguous': 4,
+                   'loss_of_function' : 7,
+                   'gain_of_function' : 8}
     # Replace the string nomenclature with the
     # effect code
     df.replace(effect_code,
                regex = True,
                inplace = True)
-    return df, df_full
 
-def plot(df, width, height, xlim, reshape_last=True):
-    '''
+    # Ensure 'DeMaSk predicted consequence' is the last column
+    if 'DeMaSk predicted consequence' in df.columns:
+        columns_to_keep = [col for col in df.columns if col != 'DeMaSk predicted consequence']
+        columns_to_keep.append('DeMaSk predicted consequence')
+        df = df[columns_to_keep]
+
+    return df, full_df
+
+def plot(df, width, height, xlim, use_demask_classification):
+    ''' Plot
+
     The function is aimed at plotting a matrix showing the effect of
-    selected mutations. Plots several dot plots, depending on the
-    requested number of mutations per dot-plot
+    selected mutations
 
     Parameters
     ----------
-    data: pandas.DataFrame
+    data: dataframe
         input MAVISp dataframe
-    width: float
-        width of the plot in inches
-    height: float
-        height of the plot in inches
-    xlim: int
-        number of mutations per dot plot
-    reshape_last: bool
-        whether to change the figure width of a panel
-        if the number of mutations is lower than xlim
-
     Returns
     ----------
-    data: list of matplotlib.pyplot.Figure objects
-        list of matplotlib Figure objects, one per plot
+    data: dataframe
+        output dataframe in which the classification is
+        converted to number to facilitate the plotti.ng
+
     '''
     # Define font of the plot
     mpl.rcParams['font.family'] = 'sans-serif'
@@ -346,7 +366,7 @@ def plot(df, width, height, xlim, reshape_last=True):
 
             # If the remainig mutations are less than
             # the chosen xlimit
-            if filtered_df.shape[0] != xlim and reshape_last:
+            if filtered_df.shape[0] != xlim:
 
                 # Adjust width
                 width = adjust_figsize_w(x_mut = filtered_df.shape[0],
@@ -391,9 +411,14 @@ def plot(df, width, height, xlim, reshape_last=True):
         legend_dict = {'black': 'Damaging',
                     '#d5bdaf': 'Neutral',
                     'lightgray': 'Uncertain',
-                    'white': 'Not_available'}
+                    'white': 'Not_available',
+                    }
+        if use_demask_classification is True:
+            legend_dict.update({'#8E5466' : 'Loss of Function',
+                    '#636D87' : 'Gain of Function'})
 
         legend_list = []
+
         for k in legend_dict.keys():
             legend_list.append(Line2D([0], [0],
                                     color = 'w',
@@ -406,19 +431,261 @@ def plot(df, width, height, xlim, reshape_last=True):
         ax.legend(handles = legend_list,
                 loc='upper right',
                 bbox_to_anchor=(1, 1.2),
-                ncol = 4,
+                ncol = 6,
                 fancybox=True,
                 shadow=True)
 
-        # Save plot as png and pdf
         fig.tight_layout()
 
-        # add figure to output list
         figures.append(fig)
 
         # Update upper and lower limits
         l += xlim
         u += xlim
+    # close merged pdf file
 
     return figures
 
+def generate_summary(data):
+    ''' Summary log.txt file.
+
+    The function is aimed at summarizing the number of mutations
+    with uncertain or damaging consequences for each type of
+    effect (structural and/or functional).
+    Additionally, it identified mutations with a mavisp
+    effect and with AM pathogenic classification and return
+    them as a df.
+
+    Parameters
+    ----------
+    data: dataframe matrix
+    out: output file to be written
+    Returns
+    ----------
+    out: str
+        string containing the summary information
+    alpha_d_df: df
+        df containing damaging mutations with AM pathogenic class.
+    '''
+
+    # Convert all the strings to lowercase
+    data = data.apply(lambda x: x.str.lower() if x.dtype == object else x)
+
+
+    # Colnames ptm and allosigma
+
+    filter_col_stability = [col for col in data if '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
+    filter_col_local = [col for col in data if ('Local Int. classification') in col]
+    ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
+    ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
+    ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
+    allosigma_clmn = [col for col in data if 'AlloSigma2 predicted consequence' in col]
+    cofactor_active = [col for col in data if 'Functional sites' in col]
+    # # Check if columns with well-defined names are in the dataframe
+    # for col in [ptm_stab_clmn, ptm_reg_clmn, ptm_funct_clmn, allosigma_clmn]:
+    #     if col not in data.columns:
+    #         log.warning(f'{col} not found in csv. Skipping associated analyses for summary file.')
+
+    ### Damaging stability ###
+    all_stability = []
+
+    # Define columns and effects' variables
+    clinvar_clmn = 'ClinVar Interpretation'
+    vus = '(?i)uncertain'
+    conflict = 'conflicting interpretations of pathogenicity'
+    d_s = ['destabilizing', 'stabilizing']
+
+    pattern = r'\[.*?\]'
+    interactors = r'\((.*?)\)'
+    lr_type = r'-(.*)'
+
+    if filter_col_stability:
+        for col in filter_col_stability:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                stab_d = str(len(data[data[col].isin(d_s)]))
+
+                # List damaging mutations
+                all_stability_list = data.index[data[col].isin(d_s)].to_list()
+                all_stability.extend(all_stability_list)
+            except:
+                continue
+
+    ### Damaging local interactions ###
+    all_local = []
+
+    # If local interactions are found
+    if len(filter_col_local) > 0:
+        for col in filter_col_local:
+            ensemble = re.findall(pattern, col)
+            inter = re.findall(interactors, col) # search for interactors
+            # Calculate number of damaging mutations
+            loc_d = str(len(data[data[col].isin(d_s)]))
+
+            # List damaging mutations
+            loc_d_list = data.index[data[col].isin(d_s)].to_list()
+            all_local.extend(loc_d_list)
+
+    ### Damaging PTM_stability ###
+    if ptm_stab_clmn:
+        for col in ptm_stab_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_s_d = str(len(data[data[col] == 'damaging']))
+
+                # List damaging mutations
+                ptm_s_d_list = data.index[data[col] == 'damaging'].to_list()
+            except:
+                continue
+    else:
+        ptm_s_d_list = []
+
+
+    ### Damaging PTM_regulation ###
+    if ptm_reg_clmn:
+        for col in ptm_reg_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_r_d = str(len(data[data[col] == 'damaging']))
+
+                # List damaging mutations
+                ptm_r_d_list = data.index[data[col] == 'damaging'].to_list()
+            except:
+                continue
+    else:
+        log.warning(f'- PTM effect in regulation not found in MAVISp csv.')
+        ptm_r_d_list = []
+
+
+
+    ### Damaging PTM_function ###
+    dmg_str = ['damaging', 'potentially_damaging']
+    if ptm_funct_clmn:
+        for col in ptm_funct_clmn:
+            try:
+                ensemble = re.findall(pattern, col)
+                # Calculate number of damaging mutations
+                ptm_f_d = str(len(data[data[col].isin(dmg_str)]))
+                # List damaging mutations
+                ptm_f_d_list = data.index[data[col].isin(dmg_str)].to_list()
+                # Print list of mutations only if the are less than 10
+            except:
+                continue
+    else:
+        ptm_f_d_list = []
+
+    ### Assess presence of PTM module ####
+    # Start counter
+    count_ptm_na = 0
+    d = {}
+    # Iterate over the ptm columns
+    ptm_module = ptm_stab_clmn + ptm_reg_clmn + ptm_funct_clmn
+
+    # Create dict for counting ptm per ensemble
+    for ptm in ptm_module:
+        matches = re.findall(pattern, ptm)
+        if matches:
+            d[matches[0]] = 0
+
+    for col in ptm_module:
+        ensemble = re.findall(pattern, col)
+        # If column not in dataframe
+        if ensemble:
+            for ens in d:
+                if col not in data.columns and ensemble[0] == ens:
+                    d[ens] += 1
+                else:
+                    continue
+        else:
+            if col not in data.columns:
+                # Increase counter by 1
+                count_ptm_na += 1
+    # Per ensemble if none is in the table
+    for ensemble in d:
+        if d[ensemble] == 3:
+             out += f'- No classification for PTM available yet for the {ensemble[0]} ensemble.'
+    # If none of the PTM columns is found in the table
+    if count_ptm_na == 3:
+        out += '- No classification for PTM available yet.\n'
+
+    all_ptm = ptm_s_d_list + ptm_r_d_list + ptm_f_d_list
+
+    ### Damaging long-range Allosigma2 ###
+    multiple = []
+    for col in allosigma_clmn:
+        try:
+            lr = re.findall(lr_type, col)
+            # Calculate number of damaging mutations (by class)
+            long_d = str(len(data[data[col] == 'destabilizing']))
+            long_me = str(len(data[data[col] == 'mixed_effects']))
+            long_s = str(len(data[data[col] == 'stabilizing']))
+            tot = str(int(long_d) + int(long_me) + int(long_s))
+
+            # List damaging mutations (by class)
+            long_d_list = data.index[data[col] == 'destabilizing'].to_list()
+            long_me_list = data.index[data[col] == 'mixed_effects'].to_list()
+            long_s_list = data.index[data[col] == 'stabilizing'].to_list()
+            all_long = long_d_list + long_me_list + long_s_list
+
+            # add long range type to a list to evaluate multiple effect later
+            multiple.append(all_long)
+
+        except KeyError:
+            multiple.append([])
+
+    multiple = [item for sublist in multiple if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+
+
+    multiple_1 = []
+    for col in cofactor_active:
+        try:
+            funct = re.findall(funct_sites, col)
+            # Calculate number of damaging mutations (by class)
+            funct_sites_d = str(len(data[data[col] == 'damaging']))
+            #tot = str(int(funct_sites_d) + int(long_me) + int(long_s))
+
+            # List damaging mutations (by class)
+            funct_sites_d_list = data.index[data[col] == 'damaging'].to_list()
+            #all_long = long_d_list + long_me_list + long_s_list
+
+            # add long range type to a list to evaluate multiple effect later
+            multiple_1.append(funct_sites_d_list)
+        except KeyError:
+            multiple_1.append([])
+
+    multiple_1= [item for sublist in multiple_1 if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+
+
+    ### DAMAGING ###
+    damaging_full = set(all_stability + all_local + all_ptm + multiple + multiple_1)
+    full_data_d = data.query('index in @damaging_full')
+
+
+    # Initialise AlphaMissense df
+    alpha_d_df = pd.DataFrame()
+
+    try:
+        # Alphamissense
+        # Subset the df for damaging mutations and with alphamissense pathogenic classification
+        alpha_d_df = full_data_d[full_data_d['AlphaMissense classification'] == 'pathogenic']
+        #alpha_d = data_d.index[data_d['AlphaMissense classification'] == 'pathogenic'].to_list()
+    except KeyError:
+        pass
+
+    f = lambda x: 'Stability classification' in x or \
+              'Local Int. classification' in x or \
+              'AlloSigma2 predicted consequence' in x or \
+              'PTM effect' in x or \
+              'Functional sites' in x or \
+              ('Mutation' in x and 'Mutation sources' not in x)
+
+    # Filter the columns to keep only classification info
+    filter_columns = [col for col in alpha_d_df.columns if f(col)]
+
+    # Create a new df with the selected columns
+    filtered_am = alpha_d_df[filter_columns]
+
+    return filtered_am

@@ -20,8 +20,10 @@ import os
 import pandas as pd
 from st_aggrid import JsCode
 from dot_plot import plot as do_dotplots
-from dot_plot import process_input as process_data
-
+from dot_plot import process_input as process_input_for_dotplot
+from dot_plot import generate_summary
+from lolliplot import process_input as process_input_for_lolliplot
+from lolliplot import plot as do_lolliplot
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -100,14 +102,25 @@ def load_main_table(data_dir, mode):
     return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
 @st.cache_data
-def plot_dotplot(df, demask_co, revel_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False):
+def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
     df = df.copy()
-    processed_df, _ = process_data(df, d_cutoff=demask_co, r_cutoff=revel_co, all=False)
+    processed_df, _ = process_input_for_dotplot(df, d_cutoff=demask_co, r_cutoff=revel_co, g_cutoff=gemme_co)
+
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, reshape_last=False)
+    my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, do_demask)
     return my_plots
+
+@st.cache_data
+def plot_lolliplots(df, muts_per_plot=50):
+    df = df.copy()
+
+    # notice: cut-offs do not influence the second output of process_input_for_dotplot
+    _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
+    summary_df = generate_summary(processed_df)
+    lolliplot_input = process_input_for_lolliplot(summary_df)
+    return do_lolliplot(lolliplot_input, muts_per_plot)
 
 # JavaScript column renderers, to dynamically add web links
 
