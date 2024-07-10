@@ -36,6 +36,8 @@ add_mavisp_logo("static/logo_small.png")
 
 add_affiliation_logo()
 
+st.header("MAVISp ensemble mode")
+
 st.write('''Please choose a dataset in the table below by clicking on the
 checkbox on the left. The corresponding MAVISp results table will be displayed underneath.
 Alternatively, check out the Classification tab for a graphical representation
@@ -83,8 +85,7 @@ if len(datasets_grid["selected_rows"]) == 1:
     st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
-
-    dataset, dotplots = st.tabs(["Dataset", "Classification"])
+    dataset, dotplots, lolliplots = st.tabs(["Dataset", "Classification", "Damaging mutations"])
 
     ptm_columns = [c for c in this_dataset.columns if c.startswith('PTMs')]
 
@@ -97,7 +98,11 @@ if len(datasets_grid["selected_rows"]) == 1:
                                 mime="text/csv",
                                 key='download-csv')
 
-        this_gb = GridOptionsBuilder.from_dataframe(this_dataset)
+        this_dataset_table = this_dataset.copy()
+        this_dataset_table = this_dataset_table.fillna(pd.NA)
+        this_dataset_table['UniProtAC'] = upac
+
+        this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
         this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
         this_gb.configure_column('UniProt AC', hide=True)
         col = 'Mutation sources'
@@ -113,7 +118,6 @@ if len(datasets_grid["selected_rows"]) == 1:
 
     with dotplots:
 
-
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.set_index('Mutation')
 
@@ -123,6 +127,7 @@ if len(datasets_grid["selected_rows"]) == 1:
             do_revel = st.checkbox('Show available REVEL classification', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
+            gemme_co = st.number_input("Cutoff for GEMME", value=0.3)
         with col2:
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
@@ -131,10 +136,12 @@ if len(datasets_grid["selected_rows"]) == 1:
         plots = plot_dotplot(this_dataset_table,
                              demask_co=demask_co,
                              revel_co=revel_co,
+                             gemme_co=gemme_co,
                              n_muts=n_muts,
                              fig_width=fig_width,
                              fig_height=fig_height,
-                             do_revel=do_revel)
+                             do_revel=do_revel,
+                             do_demask=do_demask)
 
         with BytesIO() as pdf_stream:
             with PdfPages(pdf_stream) as pdf:
@@ -145,6 +152,26 @@ if len(datasets_grid["selected_rows"]) == 1:
                                data=pdf_stream,
                                mime="application/pdf",
                                file_name=f'{protein}-{mode}_dotplots.pdf')
+
+        for fig in plots:
+            st.pyplot(fig, use_container_width=False)
+
+    with lolliplots:
+
+        this_dataset_table = this_dataset.copy()
+        this_dataset_table = this_dataset_table.set_index('Mutation')
+
+        plots = plot_lolliplots(this_dataset_table)
+
+        with BytesIO() as pdf_stream:
+            with PdfPages(pdf_stream) as pdf:
+                for fig in plots:
+                    fig.savefig(pdf, format='pdf', dpi=300)
+
+            st.download_button(label="Download as PDF",
+                               data=pdf_stream,
+                               mime="application/pdf",
+                               file_name=f'{protein}-{mode}_lolliplots.pdf')
 
         for fig in plots:
             st.pyplot(fig, use_container_width=False)
