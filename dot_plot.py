@@ -239,7 +239,8 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
                     'Mutation' in x and not 'Mutation sources' in x
 
     df = full_df.copy()
-    df = df[df.columns[list(map(f, df.columns))]]
+    filter_columns = [col for col in full_df.columns if f(col)]
+    df = df[filter_columns]
 
     # If pltRevel is True then convert REVEL score column to float
     # In case multiple REVEL scores are present it returns the average
