@@ -112,15 +112,16 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
     my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, do_demask)
     return my_plots
 
-@st.cache_data
-def plot_lolliplots(df, muts_per_plot=50):
-    df = df.copy()
 
-    # notice: cut-offs do not influence the second output of process_input_for_dotplot
+@st.cache_data
+def process_df_for_lolliplot(df):
     _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
     summary_df = generate_summary(processed_df)
-    lolliplot_input = process_input_for_lolliplot(summary_df)
-    return do_lolliplot(lolliplot_input, muts_per_plot)
+    return process_input_for_lolliplot(summary_df)
+
+@st.cache_data
+def plot_lolliplots(df, muts_per_plot=50):
+    return do_lolliplot(df, muts_per_plot)
 
 # JavaScript column renderers, to dynamically add web links
 
