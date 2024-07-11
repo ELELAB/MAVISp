@@ -160,7 +160,7 @@ if len(datasets_grid["selected_rows"]) == 1:
             with BytesIO() as pdf_stream:
                 with PdfPages(pdf_stream) as pdf:
                     for fig in plots:
-                        fig.savefig(pdf, format='pdf', dpi=300)
+                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
 
                 st.download_button(label="Download as PDF",
                                 data=pdf_stream,
