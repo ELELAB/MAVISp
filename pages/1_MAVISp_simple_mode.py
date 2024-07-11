@@ -134,15 +134,13 @@ if len(datasets_grid["selected_rows"]) == 1:
         selected_muts = st.multiselect(label="Mutations to be displayed",
                                        options=this_dataset_table.index,
                                        default=None,
+                                       max_selections=50,
                                        placeholder="Type or select one mutation or more")
 
-        if len(selected_muts) > 3:
-            st.write("Please select no more than 50 mutations at the time")
-
-        if st.button('Generate plot', disabled=len(selected_muts) == 0 or len(selected_muts) > 3):
+        if st.button('Generate plot',
+                      disabled=len(selected_muts) == 0):
             this_dataset_table = this_dataset_table.loc[selected_muts]
             this_dataset_table.to_csv('does_error.csv')
-            print(this_dataset_table)
     
             plots = plot_dotplot(this_dataset_table,
                                 demask_co=demask_co,
@@ -171,19 +169,24 @@ if len(datasets_grid["selected_rows"]) == 1:
 
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.set_index('Mutation')
+        this_dataset_table = process_df_for_lolliplot(this_dataset_table)
+
+        st.write(f"""Select one or more mutations below, up to 50, to be included
+        in the plot. These are only those mutations that are classified as pathogenic
+        for AlphaMissense and have an explanation for MAVISp. They are 
+        {this_dataset_table.shape[0]} in this daataset.""")
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
                                        options=this_dataset_table.index,
                                        default=None,
                                        placeholder="Type or select one mutation or more",
+                                       max_selections=50,
                                        key='sj17h39')
 
-        if len(selected_muts) > 3:
-            st.write("Please select no more than 50 mutations at the time")
-
         if st.button('Generate plot',
-                     disabled=len(selected_muts) == 0 or len(selected_muts) > 3,
+                     disabled=len(selected_muts) == 0,
                      key='qwe123'):
+    
             this_dataset_table = this_dataset_table.loc[selected_muts]
 
             plots = plot_lolliplots(this_dataset_table)
@@ -191,7 +194,7 @@ if len(datasets_grid["selected_rows"]) == 1:
             with BytesIO() as pdf_stream:
                 with PdfPages(pdf_stream) as pdf:
                     for fig in plots:
-                        fig.savefig(pdf, format='pdf', dpi=300)
+                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
 
                 st.download_button(label="Download as PDF",
                                 data=pdf_stream,
