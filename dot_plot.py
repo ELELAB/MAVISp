@@ -303,11 +303,15 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
                    '(?i)stabilizing': 6,
                    '(?i)neutral': 2,
                    '(?i)benign': 2,
-                   None : 3,
                    '(?i)uncertain': 4,
                    'ambiguous': 4,
                    'loss_of_function' : 7,
                    'gain_of_function' : 8}
+
+    # pre-fill empty cells as a workaround for pandas bug
+    # see pandas-dev/pandas#54399
+    df.fillna(value=3, inplace=True)
+    
     # Replace the string nomenclature with the
     # effect code
     df.replace(effect_code,
