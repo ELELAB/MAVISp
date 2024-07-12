@@ -28,7 +28,7 @@ mode = 'simple_mode'
 
 st.set_page_config(layout="wide",
     page_title="MAVISp simple mode",
-    page_icon="📖")
+    page_icon="📊")
 
 database_dir = get_database_dir()
 
