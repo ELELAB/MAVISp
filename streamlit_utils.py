@@ -123,6 +123,12 @@ def process_df_for_lolliplot(df):
 def plot_lolliplots(df, muts_per_plot=50):
     return do_lolliplot(df, muts_per_plot)
 
+@st.cache_data
+def get_compact_dataset(this_dataset_table):
+    default_cols = ['Mutation', 'HGVSp', 'HGVSg', 'Mutation sources']
+    selected_cols = [c for c in this_dataset_table.columns if "classification" in c ]
+    return this_dataset_table[default_cols + selected_cols]
+
 # JavaScript column renderers, to dynamically add web links
 
 cell_renderers = {}
