@@ -51,7 +51,6 @@ except FileNotFoundError:
     st.write('No entries are currently available for ensemble mode.')
     st.stop()
 
-
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
 
 if "id_row" not in st.session_state:
@@ -75,7 +74,11 @@ datasets_grid = AgGrid(show_table,
                       reload_data=False,
                       allow_unsafe_jscode=True,
                       height=200,
-                      key="id_row")
+                      key="id_row",
+                      custom_css={"#gridToolBar": {
+                                      "padding-bottom": "0px !important",
+                                      }
+                                  })
 
 if len(datasets_grid["selected_rows"]) == 1:
 
@@ -91,30 +94,48 @@ if len(datasets_grid["selected_rows"]) == 1:
 
     with dataset:
 
-        with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
-            st.download_button(label="Download dataset",
-                                data=data,
-                                file_name=f'{protein}-{mode}.csv',
-                                mime="text/csv",
-                                key='download-csv')
+        data_type = st.radio("Select the data representation to be shown or downloaded",
+                            options=["Compact dataset", "Full dataset"],
+                            index=0)
 
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.fillna(pd.NA)
         this_dataset_table['UniProtAC'] = upac
 
+        if data_type == 'Compact dataset':
+            this_dataset_table = get_compact_dataset(this_dataset_table)
+            st.download_button(label="Download dataset",
+                                data=this_dataset_table.to_csv(),
+                                file_name=f'{protein}-{mode}-compact.csv',
+                                mime="text/csv",
+                                key='download-csv-compact')
+
+        else:
+            with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+                st.download_button(label="Download dataset",
+                                    data=data,
+                                    file_name=f'{protein}-{mode}.csv',
+                                    mime="text/csv",
+                                    key='download-csv')
+
         this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
         this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
-        this_gb.configure_column('UniProt AC', hide=True)
-        col = 'Mutation sources'
-        this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+        this_gb.configure_column('UniProtAC', hide=True)
+        if 'Mutation sources' in this_dataset_table.columns:
+            this_gb.configure_column('Mutation sources', cellRenderer=cell_renderers['Mutation sources'])
         for col in ptm_columns:
-            this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
+            if col in this_dataset_table.columns:
+                this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
 
         mutations_grid = AgGrid(this_dataset,
                                 gridOptions=this_gb.build(),
                                 reload_data=False,
                                 allow_unsafe_jscode=True,
-                                height=400)
+                                height=400,
+                                custom_css={"#gridToolBar": {
+                                            "padding-bottom": "0px !important",
+                                                }
+                                            })
 
     with dotplots:
 
@@ -142,7 +163,7 @@ if len(datasets_grid["selected_rows"]) == 1:
                                        max_selections=50,
                                        placeholder="Type or select one mutation or more")
 
-        if st.button('Generate plot', 
+        if st.button('Generate plot',
                       disabled=len(selected_muts) == 0):
             this_dataset_table = this_dataset_table.loc[selected_muts]
             this_dataset_table.to_csv('does_error.csv')
@@ -178,7 +199,7 @@ if len(datasets_grid["selected_rows"]) == 1:
 
         st.write(f"""Select one or more mutations below, up to 50, to be included
         in the plot. These are only those mutations that are classified as pathogenic
-        for AlphaMissense and have an explanation for MAVISp. They are 
+        for AlphaMissense and have an explanation for MAVISp. They are
         {this_dataset_table.shape[0]} in this daataset.""")
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
