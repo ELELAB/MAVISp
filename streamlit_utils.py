@@ -127,7 +127,7 @@ def plot_lolliplots(df, muts_per_plot=50):
 def get_compact_dataset(this_dataset_table):
     default_cols = ['Mutation', 'HGVSp', 'HGVSg', 'Mutation sources']
     selected_cols = [c for c in this_dataset_table.columns if "classification" in c ]
-    return this_dataset_table[default_cols + selected_cols]
+    return this_dataset_table[default_cols + selected_cols + ['References']]
 
 # JavaScript column renderers, to dynamically add web links
 
