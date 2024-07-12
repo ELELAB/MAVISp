@@ -120,54 +120,87 @@ if len(datasets_grid["selected_rows"]) == 1:
 
         with col1:
             do_revel = st.checkbox('Show available REVEL classification', )
-            do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
             gemme_co = st.number_input("Curoff for GEMME", value=0.3)
         with col2:
+            do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
             fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
+        
+        st.write("""Select up to 50 mutations to be shown in the dot plot below. They should be expressed in plain `[reference amino acid][residue number][mutant amino acid]` format, for example `A49G`.""")
 
-        plots = plot_dotplot(this_dataset_table,
-                             demask_co=demask_co,
-                             revel_co=revel_co,
-                             gemme_co=gemme_co,
-                             n_muts=n_muts,
-                             fig_width=fig_width,
-                             fig_height=fig_height,
-                             do_revel=do_revel,
-                             do_demask=do_demask)
+        selected_muts = st.multiselect(label="Mutations to be displayed",
+                                       options=this_dataset_table.index,
+                                       default=None,
+                                       max_selections=50,
+                                       placeholder="Type or select one mutation or more")
 
-        with BytesIO() as pdf_stream:
-            with PdfPages(pdf_stream) as pdf:
-                for fig in plots:
-                    fig.savefig(pdf, format='pdf', dpi=300)
+        if st.button('Generate plot',
+                      disabled=len(selected_muts) == 0):
+            this_dataset_table = this_dataset_table.loc[selected_muts]
+            this_dataset_table.to_csv('does_error.csv')
+    
+            plots = plot_dotplot(this_dataset_table,
+                                demask_co=demask_co,
+                                revel_co=revel_co,
+                                gemme_co=gemme_co,
+                                n_muts=n_muts,
+                                fig_width=fig_width,
+                                fig_height=fig_height,
+                                do_revel=do_revel,
+                                do_demask=do_demask)
 
-            st.download_button(label="Download as PDF",
-                               data=pdf_stream,
-                               mime="application/pdf",
-                               file_name=f'{protein}-{mode}_dotplots.pdf')
+            with BytesIO() as pdf_stream:
+                with PdfPages(pdf_stream) as pdf:
+                    for fig in plots:
+                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
 
-        for fig in plots:
-            st.pyplot(fig, use_container_width=False)
+                st.download_button(label="Download as PDF",
+                                data=pdf_stream,
+                                mime="application/pdf",
+                                file_name=f'{protein}-{mode}_dotplots.pdf')
+
+            for fig in plots:
+                st.pyplot(fig, use_container_width=False)
 
     with lolliplots:
 
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.set_index('Mutation')
+        this_dataset_table = process_df_for_lolliplot(this_dataset_table)
 
-        plots = plot_lolliplots(this_dataset_table)
+        st.write(f"""Select one or more mutations below, up to 50, to be included
+        in the plot. These are only those mutations that are classified as pathogenic
+        for AlphaMissense and have an explanation for MAVISp. They are 
+        {this_dataset_table.shape[0]} in this daataset.""")
 
-        with BytesIO() as pdf_stream:
-            with PdfPages(pdf_stream) as pdf:
-                for fig in plots:
-                    fig.savefig(pdf, format='pdf', dpi=300)
+        selected_muts = st.multiselect(label="Mutations to be displayed",
+                                       options=this_dataset_table.index,
+                                       default=None,
+                                       placeholder="Type or select one mutation or more",
+                                       max_selections=50,
+                                       key='sj17h39')
 
-            st.download_button(label="Download as PDF",
-                               data=pdf_stream,
-                               mime="application/pdf",
-                               file_name=f'{protein}-{mode}_lolliplots.pdf')
+        if st.button('Generate plot',
+                     disabled=len(selected_muts) == 0,
+                     key='qwe123'):
+    
+            this_dataset_table = this_dataset_table.loc[selected_muts]
 
-        for fig in plots:
-            st.pyplot(fig, use_container_width=False)
+            plots = plot_lolliplots(this_dataset_table)
+
+            with BytesIO() as pdf_stream:
+                with PdfPages(pdf_stream) as pdf:
+                    for fig in plots:
+                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
+
+                st.download_button(label="Download as PDF",
+                                data=pdf_stream,
+                                mime="application/pdf",
+                                file_name=f'{protein}-{mode}_lolliplots.pdf',
+                                key='1231')
+
+            for fig in plots:
+                st.pyplot(fig, use_container_width=False)
