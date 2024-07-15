@@ -66,7 +66,6 @@ gb_datasets_grid.configure_selection(selection_mode='single',
                                      use_checkbox=True)
 gb_datasets_grid.configure_column('GitBook report', cellRenderer=cell_renderers['GitBook report'])
 
-
 datasets_grid = AgGrid(show_table,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
@@ -74,7 +73,11 @@ datasets_grid = AgGrid(show_table,
                       reload_data = False,
                       height=200,
                       allow_unsafe_jscode=True,
-                      key="id_row")
+                      key="id_row",
+                      custom_css={"#gridToolBar" : {
+                                      "padding-bottom": "0px !important",
+                                      }
+                                  })
 
 if len(datasets_grid["selected_rows"]) == 1:
 
@@ -88,28 +91,47 @@ if len(datasets_grid["selected_rows"]) == 1:
     dataset, dotplots, lolliplots = st.tabs(["Dataset", "Classification", "Damaging mutations"])
 
     with dataset:
-        with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
-            st.download_button(label="Download dataset",
-                                data=data,
-                                file_name=f'{protein}-{mode}.csv',
-                                mime="text/csv",
-                                key='download-csv')
+
+        data_type = st.radio("Select the data representation to be shown or downloaded",
+                            options=["Compact dataset", "Full dataset"],
+                            index=0)
 
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.fillna(pd.NA)
         this_dataset_table['UniProtAC'] = upac
 
+        if data_type == 'Compact dataset':
+            this_dataset_table = get_compact_dataset(this_dataset_table)
+            st.download_button(label="Download dataset",
+                                data=this_dataset_table.to_csv(),
+                                file_name=f'{protein}-{mode}-compact.csv',
+                                mime="text/csv",
+                                key='download-csv-compact')
+
+        else:
+            with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+                st.download_button(label="Download dataset",
+                                    data=data,
+                                    file_name=f'{protein}-{mode}.csv',
+                                    mime="text/csv",
+                                    key='download-csv')
+
         this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
         this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
-        this_gb.configure_column('UniProt AC', hide=True)
+        this_gb.configure_column('UniProtAC', hide=True)
         for col in ['Mutation sources', 'PTMs']:
-            this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+            if col in this_dataset_table.columns:
+                this_gb.configure_column(col, cellRenderer=cell_renderers[col])
 
         mutations_grid = AgGrid(this_dataset_table,
                                 gridOptions=this_gb.build(),
                                 reload_data=False,
                                 allow_unsafe_jscode=True,
-                                height=400)
+                                height=400,
+                                custom_css={"#gridToolBar": {
+                                                "padding-bottom": "0px !important",
+                                                }
+                                            })
 
     with dotplots:
 
@@ -128,7 +150,7 @@ if len(datasets_grid["selected_rows"]) == 1:
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
             fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
-        
+
         st.write("""Select up to 50 mutations to be shown in the dot plot below. They should be expressed in plain `[reference amino acid][residue number][mutant amino acid]` format, for example `A49G`.""")
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
@@ -141,7 +163,7 @@ if len(datasets_grid["selected_rows"]) == 1:
                       disabled=len(selected_muts) == 0):
             this_dataset_table = this_dataset_table.loc[selected_muts]
             this_dataset_table.to_csv('does_error.csv')
-    
+
             plots = plot_dotplot(this_dataset_table,
                                 demask_co=demask_co,
                                 revel_co=revel_co,
@@ -173,7 +195,7 @@ if len(datasets_grid["selected_rows"]) == 1:
 
         st.write(f"""Select one or more mutations below, up to 50, to be included
         in the plot. These are only those mutations that are classified as pathogenic
-        for AlphaMissense and have an explanation for MAVISp. They are 
+        for AlphaMissense and have an explanation for MAVISp. They are
         {this_dataset_table.shape[0]} in this daataset.""")
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
@@ -186,7 +208,7 @@ if len(datasets_grid["selected_rows"]) == 1:
         if st.button('Generate plot',
                      disabled=len(selected_muts) == 0,
                      key='qwe123'):
-    
+
             this_dataset_table = this_dataset_table.loc[selected_muts]
 
             plots = plot_lolliplots(this_dataset_table)
