@@ -42,9 +42,17 @@ Navigating the website is as simple as selecting one of the links on the
 panel on the left. These are:
 
   - Welcome: a welcome page
-  - MAVISp simple mode: this page contains all the data that we collected in MAVISp using the simple mode in MAVISp, as detailed in the MAVISp paper. Briefly, this includes data collected working on a single protein structure, most often a model from the AlphaFold Protein Structure Database
-  - MAVISp ensemble mode: similarly as the previous page, this contains the data collected using the ensemble mode of MAVISp, i.e. data collected on structural ensembles, most often (but not exclusively) from atomistic simulations
-  - Acknowledgements and data usage: this page contains acknowledgements on our data sources, used software, and instructions, information on data reuse and how to cite our work.
+  - MAVISp simple mode: this page contains all the data that we collected
+  in MAVISp using the simple mode in MAVISp, as detailed in the MAVISp paper.
+  Briefly, this includes data collected working on a single protein structure,
+  most often a model from the AlphaFold Protein Structure Database
+  - MAVISp ensemble mode: similarly as the previous page, this contains the
+  data collected using the ensemble mode of MAVISp, i.e. data collected on
+  structural ensembles, most often (but not exclusively) from atomistic
+  simulations
+  - Acknowledgements and data usage: this page contains acknowledgements
+  on our data sources, used software, and instructions, information on
+  data reuse and how to cite our work.
   - Documentation: (to be added)
   - Help: this page""")
 
@@ -52,7 +60,9 @@ st.header("MAVISp simple mode and MAVISp ensemble mode")
 
 st.subheader("First look at the dataset")
 
-st.write("""These two pages have very similar layout and content and they are designed for users to download the content of the database and explore its content.
+st.write("""These two pages have very similar layout and content and they
+are designed for users to download the content of the database and explore
+its content.
 
 Users are first shown a list of proteins to choose from, by clicking on the 
 checkbox at the beginning of each row in the table. Each row also contains a 
@@ -60,11 +70,55 @@ link to the corresponding report, hosted on GitBook. In the case of ensemble
 mode, the table also includes a link to the Open Science Foundation repository 
 where the structural ensemble is stored.
 
-Once a protein of interest has been selected, users can choose betwen three tabs to explore and visualize the data: XX, YY and ZZ.
+Once a protein of interest has been selected, users can choose betwen three
+tabs to explore and visualize the data: XX, YY and ZZ.
 """)
 
 st.subheader("First exploration and download of the dataset")
 
-st.write("""The Dataset tab contains, a table with the MAVISp dataset for the selected protein. Users can select between two visualization formats for the dataset: Compact and full. Both dataset contains one protein-level mutation per row. The compact dataset is a more streamlined version of the full dataset, containing only the most important outcomes of the MAVISp framework (mostly, the effect classification for each module), while the Full dataset contains all the availbile data in MAVISp. These datasets only differ in the number of columns and contain the same mutations.
+st.write("""The Dataset tab contains, a table with the MAVISp dataset for
+the selected protein. Users can select between two visualization formats
+for the dataset: Compact and full. Both dataset contains one protein-level
+mutation per row. The compact dataset is a more streamlined version of the
+full dataset, containing only the most important outcomes of the MAVISp
+framework (mostly, the effect classification for each module), while the
+Full dataset contains all the availbile data in MAVISp. These datasets
+only differ in the number of columns and contain the same mutations.
 
-By using the button on each column header, which becomes visibile on when hovering the mouse point over the header itself, users can further explore and refine the dataset, by for instance adding or removing columns, hiding or showing specific rows. Clicking on any table header allows to sort the table by that column, in either ascending or descending order.""")
+By using the button on each column header, which becomes visibile on when
+hovering the mouse point over the header itself, users can further explore
+and refine the dataset, by for instance adding or removing columns, hiding
+or showing specific rows. Clicking on any table header allows to sort the
+table by that column, in either ascending or descending order.""")
+
+st.subheader("Plotting MAVISp classification for a custom set of mutations")
+
+st.write("""This is performed by selecting the second tab, Classification. This
+tab aims at creating a dot plot that shows the classification of each mutation
+according to each of the available MAVISp module for this protein, as well as
+for reference pathogenicity score. The user interface allows to customize whether
+to show or hide the classification for the DeMaSk and REVEL predictors (if available) 
+and configure the cut-off for the classification of the mutations done using such
+predictors. It also allows to customize the size of the plot(s) and how many mutations
+should be plotted per plot. If the total value of mutations plotted exceeds this
+value, more than one plot will be generated.
+
+Finally the user is asked to select a number of mutations to plot in the dataset.
+There is no hard limit to how many these should be, nonetheless, generating many
+plot of the same time is considerably slower than just one at the time.""")
+
+st.subheader("Plotting summary of MAVISp classification using a reduced set of classifications")
+
+st.write("""The MAVISp website also allows to download an even more succint representation
+of the classification performed by MAVISp. This is carried out in the Damaging mutations tab.
+This section plots those mutations that have been classified as damaging for AlphaMissense as
+well as for one or more of the main MAVISp modules. Consequences are grouped in the following
+broad categories: stability, PTM, long range effects, local interactions. The user is asked
+to select a number of mutations as done for the previous tab. It should be noticed that not
+all the mutations available in the dataset will be available in this panel, as not all mutations
+will satisfy the aforamentioned criteria.
+
+The final representation is a lollipop plot, in which mutations are found on the X axis and
+one or more vertical bars are present in corresponde of the mutation, displaying which of the
+broad categories are affected by the mutation.""")
+
