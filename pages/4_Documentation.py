@@ -27,13 +27,13 @@ st.set_page_config(layout="wide",
 
 st.header('Documentation')
 
-This page contains an introduction to the MAVISp framework and a guide on the
+st.write("""This page contains an introduction to the MAVISp framework and a guide on the
 available data and on its interpretation. If you're looking on a guide on how to
-use the MAVISp website, please look into the Help section on the left.
+use the MAVISp website, please look into the Help section on the left.""")
 
 st.subheader("Introduction to MAVISp")
 
-A complete description of the MAVISp framework is available in the MAVISp manuscript:
+st.write("""A complete description of the MAVISp framework is available in the MAVISp manuscript:
 
 ref
 
@@ -69,9 +69,8 @@ refers to a MD ensemble.
 
 Finally, it should be noted that not all data will be available for all the rows. This can depend
 on the trimming we perform on the structural models we have available (e.g. because the stability
-module would not be reliable if ran on disordered regions) or other factors.
+module would not be reliable if ran on disordered regions) or other factors.""")
 
-    
 st.subheader("Stability")
 
 st.write("""The Stability module predicts changes of folding free energy upon mutation, i.e. how the stability
@@ -102,7 +101,7 @@ The possible classification values are:""")
 data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein structure'),
          ( 'Stabilizing'  , 'The mutation is destabilizing for the protein structure'),
          ( 'Neutral'      , 'The mutation has no significant effect on stability'),
-         ( 'Uncertain'    , 'The mutation has a border line effect on stability, or the two methods are not in agreement',
+         ( 'Uncertain'    , 'The mutation has a border line effect on stability, or the two methods are not in agreement'),
          ( 'N.A'          , 'No data available to perform the classification') ]
 st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
@@ -140,8 +139,8 @@ The possible classification values are:""")
 data = [ ( 'Destabilizing', 'The mutation is destabilizes the binding between the two proteins'),
          ( 'Stabilizing'  , 'The mutation is stabilizes the binding between the two proteins'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between the two proteins'),
-         ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 20%',
-         ( 'N.A'          , 'free energy values are not available and SAS < 20%',') ]
+         ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 20%'),
+         ( 'N.A'          , 'free energy values are not available and SAS < 20%',) ]
 st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("Local interactions with DNA")
@@ -162,6 +161,103 @@ following values:""")
 data = [ ( 'Destabilizing', 'The mutation is destabilizes the binding between our protein and DNA'),
          ( 'Stabilizing'  , 'The mutation is stabilizes the binding between our protein and DNA'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between our protein and DNA'),
-         ( 'Uncertain'    , 'free energy values are not available and SAS >= 20%',
-         ( 'N.A'          , 'free energy values are not available and SAS < 20%',') ]
+         ( 'Uncertain'    , 'free energy values are not available and SAS >= 20%'),
+         ( 'N.A'          , 'free energy values are not available and SAS < 20%',) ]
 st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+
+st.subheader("Cancermuts table")
+
+st.write("""MAVISp includes data from a table which is the output of Cancermuts.
+Cancermuts is our Python package for gathering and annotating known cancer-associated
+mutations from cancer genomics and mutations database, as well as to annotate the
+mutations with a wealth of information. A pipeline running cancermuts is part of our
+standard data collection strategy. From the Cancermuts output, we collect the following
+information:""")
+
+data = [ ( 'HGVSg'                           , 'Genomic mutation(s) cause of the protein mutation'),
+         ( 'gnomAD genome allele frequency'  , 'gnomAD allele frequency on genomes dataset'),
+         ( 'gnomAD exome allele frequency'   , 'gnomAD allelel frequency on exome dataset'),
+         ( 'REVEL score'                     , 'REVEL score(s) associated with the genomic mutation(s)'),
+         ( 'Mutation sources'                , 'which database or dataset the mutations were gathered from',) ]
+st.table(pd.DataFrame(data, columns=['Column', 'Description']))
+
+st.subheader("PTMs")
+
+st.write("""The `PTMs` module tries to predict the effect of mutations on residues
+that are affected by post-translational modifications. It currently supports 
+phosphorylation only as well as phosphorylatable residues. The module predicts the
+effect of the mutation on three different aspects: regulation, function and stability,
+as detailed in the MAVISp paper. The final columns produced by this module are:""")
+
+data = [ ( "PTMs", "whether this position was found to be phosphorylatable or not in the protein", "P for phosphorylatable residues, nothing otherwise"),
+         ( "is site part of phospho-SLiM", "Whether this residue is included in a short linear motif that is known to be phosphorylatable", "True if it is, False if it's not"),
+         ( "PTM residue SASA (%)" , "SAS for wild-type, unmodified residue in the selected structure or structural ensemble", "number (%)"),
+         ( "Change in stability with PTM (FoldX5, kcal/mol)", "Change in folding free energy upon phosphorylation", "number (kcal/mol)"),
+         ( "Change in binding with mutation (FoldX5, kcal/mol)", "Change in binding free energy upon mutation", "number (kcal/mol)"),
+         ( "Change in binding with PTM (FoldX5, kcal/mol)", "Change in binding free energy upon phosphorylation", "number (kcal/mol)"),
+         ( "PTM effect in regulation", "Final classification of the effect of PTM in terms of regulation", "see below"),
+         ( "PTM effect in stability", "Final classification of the effect of PTM in terms of stability", "see below"),
+         ( "PTM effect in function", "Final classification of the effect of PTM in terms of function", "see below") ]
+st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
+st.write("""The PTM regulation classification predicts on whether the mutation
+will have consequences on the functional regulation of the protein. The classification
+follows the following flowchart:
+
+The PTM stability classification predicts whether the presence of the mutation is
+likely to have an effect on stability, by removing the possibility of a residue
+to be phosphorylated. This is important because phosphorylation itself can have
+an effect on stability. The classification follows the following flowchart:
+
+The PTM function classification predicts whether the presence of the mutation is
+likely to have consequences on function. In this context, we consider binding with
+other protein as the function that we test. The classification follows the
+following flowchart:""")
+
+st.subheader("""Denovo Phospho""")
+
+st.write("""This module predicts ...""")
+
+st.subheader("""Long range""")
+
+st.write("""This module predicts the capability of mutations to affect other residues
+long range, through allosteric mechanisms. This module is based on the output of
+the AlloSigma2 web server. The module processes the output of the web server to
+understand whether the mutations are likely to have a long range effect.
+
+Briefly, AlloSigma2 provides with an allosteric free energy value which is a measure
+of how much a mutation at a certain position is likely to have a long-range effect on
+any other residue of the protein (allosteric signaling map). AlloSigma2 considers two
+possible classes of mutations: smaller to larger residues (UP mutations) or larger to
+smaller residue (DOWN mutations). In MAVISp, we use residue a size cut-off to classify our
+mutations in UP, DOWN or neither; for UP and DOWN mutations, we then identify if
+other residues in the protein are affected by the mutation by using AlloSigma2.
+Of these, we only consider residues that are likely to have a functional meaning,
+by filtering them for their belonging to a pocket in the protein surface, identified
+using fPocket. Alternatively, we also occasionally consider residues that are in
+functional sites or active sites.
+
+The dataset columns generated by this module are:""")
+
+data = [ ( "AlloSigma2 mutation type", "Mutation type for Allosigma2", "DOWN, UP or empty"),
+         ( "AlloSigma2 predicted consequence - pockets and interfaces", "Classification for long range effects", "see below") ]
+st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
+st.write("""The classification column can have the following values:""")
+
+data = [ ( 'destabilizing'  , 'The mutation has destabilizing long-range effects on the protein structure'),
+         ( 'stabilizing'    , 'The mutation has stabilizing long-range effects on the protein structure'),
+         ( 'mixed_effects'  , 'The mutation has both stabilizing an destabilizing long-range effects on the protein structure'),
+         ( 'neutral'        , 'The mutation has neither stabilizing or destabilizing long-range effects on the protein structure'),
+         ( 'uncertain'      , 'The mutation results in a too small change of side-chain volume to be considered either UP or DOWN'),
+         ( 'N.A.'           , 'The mutation site could not be predicted (for instance, because it is located in an unstructured region)') ]
+st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+
+st.subheader("")
+
+damaging = if there is a path and allosigma2 has a prediction
+uncertain = if allosigma predicted an effect but effect not validated by path analysis or mutation is not classified UP or DOWN
+neutral = if the mutation is not found in the file BUT it was assigned UP or DOWN
+NA = the mutation was not in allosigma_mut.Text
+
+
