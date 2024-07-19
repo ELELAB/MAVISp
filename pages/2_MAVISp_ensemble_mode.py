@@ -28,7 +28,7 @@ mode = 'ensemble_mode'
 
 st.set_page_config(layout="wide",
     page_title="MAVISp ensemble mode",
-    page_icon="📖")
+    page_icon="📊")
 
 database_dir = get_database_dir()
 
