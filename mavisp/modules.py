@@ -3,6 +3,8 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
+#           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -1655,9 +1657,9 @@ class GEMME(MavispModule):
         # rename for pretty
         gemme = gemme.rename(columns={'score'    : 'GEMME Score',
                                       'score_rn' : 'GEMME Score (rank-normalized)'})
-
+        
         self.data = gemme.set_index('mutations')
-
+        
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
@@ -1728,6 +1730,7 @@ class FunctionalDynamics(MavispModule):
 
             # join this functional dynamics table to main table
             self.data = self.data.join(fd)
+            
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -1819,3 +1822,118 @@ class FunctionalSites(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class EnsembleAllosigmaPSN(MavispModule):
+
+    mode = ['simple_mode', 'ensemble_mode']
+    working_dirs = {'simple_mode': 'long_range',
+                  'ensemble_mode': 'long_range_psn'}
+    module_dir = "long_range_psn"
+    name = "long_range_psn"
+    method_dir = "allosigma2"
+    
+    exp_files = {
+        'simple_mode': 'allosigma_mut.txt',
+        'ensemble_mode': 'results_summary.txt'}
+    
+    req_columns = {
+        'simple_mode': ['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
+        'ensemble_mode': ['Variant_Site', 'Total_Paths']
+    }
+
+    def _generate_allosigma_psn_classification(self, row):
+        res_num = row['res_num']
+        allosigma_mode = row['allosigma-mode']
+        variant_sites = self.ensemble_data[self.ensemble_data['Variant_Site'].astype(str) == res_num]
+       
+       # For mutations with predicted effects
+        if not variant_sites.empty:
+            total_paths = variant_sites['Total_Paths'].max()
+            # Check if path found
+            if total_paths > 0:
+                if allosigma_mode in ['UP', 'DOWN']:
+                    return 'damaging'
+                else:
+                # case where path was found but no allosigma
+                # classification i.e. NaN 
+                    return 'neutral'
+            elif total_paths == 0:
+                return 'uncertain'
+        
+        # For mutations not predicted to have effects
+        if pd.isna(allosigma_mode):
+            return 'uncertain'
+       
+        if allosigma_mode in ['UP', 'DOWN']:
+            return 'neutral'
+    
+    def _strip_data_dir(self):
+        # Strip mode_dir from data_dir  
+        if self.data_dir:
+            parts = self.data_dir.rstrip('/').split('/')
+            if parts[-1] in self.mode:
+                return '/'.join(parts[:-1])
+        return self.data_dir
+    
+    def _read_file(self, mode, warnings):
+        base_dir = self._strip_data_dir()
+        file_path = os.path.join(base_dir, mode, self.working_dirs[mode], 
+                                 self.method_dir, self.exp_files[mode])
+        
+        # Check file path is true 
+        if not os.path.isfile(file_path):
+            this_error = f"No files found in {file_path}; one or more expected"
+            raise MAVISpMultipleError(warning=[this_error], critical=[MAVISpCriticalError(this_error)])
+
+        df =  pd.read_csv(file_path, sep='\t')
+        
+        # Check req columns are present 
+        missing_columns = [col for col in self.req_columns[mode] if col not in df.columns]
+        if missing_columns:
+            this_error = f"Missing required columns {missing_columns} in {file_path}"
+            raise MAVISpMultipleError(warning=[this_error], critical=[MAVISpCriticalError(this_error)])
+
+        return df
+        
+    def ingest(self, mutations):
+
+        warnings = []
+
+        self.data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+        self.simple_data = self._read_file('simple_mode', warnings)
+        self.ensemble_data = self._read_file('ensemble_mode', warnings)
+        
+        try:
+            self.simple_data['mutations'] = self.simple_data['wt_residue'] + self.simple_data['position'].astype(str) + self.simple_data['mutated_residue']
+            self.simple_data = self.simple_data[['mutations', 'allosigma-mode']]
+            self.ensemble_data = self.ensemble_data[['Variant_Site', 'Total_Paths']]
+
+        except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred whilst preparing input files. Arguments:{e.args}"
+                raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+        try:
+            # Define working copy of data
+            psn = self.data.copy()
+            
+            # Add residue number column
+            psn['res_num'] = psn.index.str[1:-1].astype(str)
+
+            # Merge allosigma data with psn 
+            psn = psn.merge(self.simple_data, on='mutations', how='left') 
+            
+            # Perform classification
+            psn['Allosigma-MD PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, axis=1)
+            
+            # Drop unnecessary columns
+            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+            
+            # Add new Allosigma-PSN column to data
+            self.data = psn.set_index('mutations')
+
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
+            raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
