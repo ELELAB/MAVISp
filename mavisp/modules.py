@@ -1922,7 +1922,7 @@ class EnsembleAllosigmaPSN(MavispModule):
             psn = psn.merge(self.simple_data, on='mutations', how='left') 
             
             # Perform classification
-            psn['Allosigma-MD PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, axis=1)
+            psn['AlloSigma2-MD PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, axis=1)
             
             # Drop unnecessary columns
             psn = psn.drop(columns=['res_num', 'allosigma-mode'])
