@@ -1853,8 +1853,7 @@ class EnsembleAllosigmaPSN(MavispModule):
             df = pd.read_csv(file_path, sep='\t', usecols=columns)
         except Exception as e:
             this_error = f"Error reading file {file_path}: {e}"
-            raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+            raise TypeError(this_error)
         return df
         
     def ingest(self, mutations):
@@ -1864,7 +1863,8 @@ class EnsembleAllosigmaPSN(MavispModule):
         psn_files = os.listdir(os.path.join(self.data_dir, self.module_dir, self.method_dir))
 
         if not set(psn_files).issubset(set(self.exp_files.keys())):
-            this_error = f"the input files for AlloSigma2-MD PSN must be named {', '.join(self.exp_files)}"
+            this_error = (f"the input files for AlloSigma2-MD PSN must be named {', '.join(self.exp_files)}, "
+            f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
         
