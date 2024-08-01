@@ -128,7 +128,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense ]
+                          AlphaMissense
+                          ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'long_range_psn',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
