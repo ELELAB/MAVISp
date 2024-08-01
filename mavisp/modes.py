@@ -3,7 +3,6 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
-#           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -128,8 +127,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense
-                          ]
+                          AlphaMissense ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'long_range_psn',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
