@@ -1837,7 +1837,7 @@ class AllosigmaPSNLongRange(MavispModule):
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
         
-        # No predicted Allosigme effects
+        # No predicted Allosigma effects
         if variant_sites.empty:
             return 'neutral'
         # Predicted Allosigma effects
