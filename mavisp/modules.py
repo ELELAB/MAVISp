@@ -1833,16 +1833,20 @@ class AllosigmaPSNLongRange(MavispModule):
         allosigma_mode = row['allosigma-mode']
         variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
         
+        # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
-
+        
+        # No predicted Allosigme effects
         if variant_sites.empty:
             return 'neutral'
-
+        # Predicted Allosigma effects
         total_paths = variant_sites['Total_Paths'].max()
         if total_paths >= 1:
+            # Predictions validated
             return 'damaging' 
         else:
+            # Predictions could not be validated
             return 'uncertain' 
 
     def _read_file(self, file_path, columns, warnings):
