@@ -112,8 +112,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
                           EnsemblePTMs,
-                          LongRange,
-                          EnsembleAllosigmaPSN,
+                          AllosigmaPSNLongRange,
                           EnsembleStability,
                           EnsembleLocalInteractions,
                           EnsembleSAS,
@@ -129,7 +128,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EVE,
                           AlphaMissense ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
-    'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range', 'long_range_psn',
+    'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense']
     name = 'ensemble_mode'
