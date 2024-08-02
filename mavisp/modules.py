@@ -1840,6 +1840,7 @@ class AllosigmaPSNLongRange(MavispModule):
         # No predicted Allosigma effects
         if variant_sites.empty:
             return 'neutral'
+
         # Predicted Allosigma effects
         total_paths = variant_sites['Total_Paths'].max()
         if total_paths >= 1:
