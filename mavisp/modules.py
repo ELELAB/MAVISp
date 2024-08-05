@@ -1832,11 +1832,11 @@ class AllosigmaPSNLongRange(MavispModule):
         res_num = row['res_num']
         allosigma_mode = row['allosigma-mode']
         variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
-        
+
         # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
-        
+
         # No predicted Allosigma effects
         if variant_sites.empty:
             return 'neutral'
@@ -1845,10 +1845,10 @@ class AllosigmaPSNLongRange(MavispModule):
         total_paths = variant_sites['Total_Paths'].max()
         if total_paths >= 1:
             # Predictions validated
-            return 'damaging' 
+            return 'damaging'
         else:
             # Predictions could not be validated
-            return 'uncertain' 
+            return 'uncertain'
 
     def _read_file(self, file_path, columns, warnings):
         try:
@@ -1859,7 +1859,7 @@ class AllosigmaPSNLongRange(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
         return df
-        
+
     def ingest(self, mutations):
 
         warnings = []
@@ -1872,45 +1872,49 @@ class AllosigmaPSNLongRange(MavispModule):
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
-        
+
         # Parsing input files + required columns
         df_simple_data = self._read_file(
-            file_path=os.path.join(base_path, self.exp_files[0]), 
-            columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'], 
+            file_path=os.path.join(base_path, self.exp_files[0]),
+            columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
             warnings=warnings)
         df_ensemble_data = self._read_file(
             file_path=os.path.join(base_path, self.exp_files[1]),
-            columns=['Variant_Site', 'Total_Paths'], 
+            columns=['Variant_Site', 'Total_Paths'],
             warnings=warnings)
-        
+
         # Build mutations column + order columns
-        df_simple_data['mutations'] = (df_simple_data['wt_residue'] + 
-            df_simple_data['position'].astype(str) + 
+        df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+            df_simple_data['position'].astype(str) +
             df_simple_data['mutated_residue'])
         df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
-        
+
         #Define working copy of data
         psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
-                        
+
         # Add residue number column
         psn['res_num'] = psn.index.str[1:-1].astype(str)
 
-        # Merge allosigma data with psn 
-        psn = psn.merge(df_simple_data, on='mutations', how='left') 
-        
+        # Merge allosigma data with psn
+        psn = psn.merge(df_simple_data, on='mutations', how='left')
+
         try:
             # Perform classification
-            psn['AlloSigma2-MD PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)      
-        except Exception as e:   
+            psn['AlloSigma2-PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+        except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
             raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
         # Drop unnecessary columns
         psn = psn.drop(columns=['res_num', 'allosigma-mode'])
- 
+
         # Add new Allosigma-PSN column to data
         self.data = psn.set_index('mutations')
-        
+
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class EnsembleAllosigmaPSNLongRange(MavispMultiEnsembleModule, module_class=AllosigmaPSNLongRange):
+    module_dir = "long_range"
+    name = "long_range"
