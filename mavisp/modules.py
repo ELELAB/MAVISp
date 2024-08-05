@@ -1868,7 +1868,7 @@ class AllosigmaPSNLongRange(MavispModule):
         psn_files = os.listdir(base_path)
 
         if not set(psn_files).issubset(set(self.exp_files)):
-            this_error = (f"the input files for AlloSigma2-MD PSN must be named {', '.join(self.exp_files)}, "
+            this_error = (f"the input files for AlloSigma2-PSN must be named {', '.join(self.exp_files)}, "
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
