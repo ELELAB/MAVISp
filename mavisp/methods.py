@@ -29,22 +29,13 @@ class MutateXStability(Method):
 
     unit = "kcal/mol"
     type = "Stability"
+    averages_filename = 'energies.csv'
+    stds_filename = 'energies_std.csv'
 
-    def parse(self, dir_path):
-
-        warnings = []
-
-        mutatex_files = os.listdir(dir_path)
-
-        if len(mutatex_files) != 1:
-            this_error = f"zero or multiple files found in {dir_path}; only one expected"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        mutatex_file = mutatex_files[0]
+    def _parse_mutatex_energy_file(self, fname, data_type):
 
         try:
-            df = pd.read_csv(os.path.join(dir_path, mutatex_file))
+            df = pd.read_csv(fname)
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -70,7 +61,27 @@ class MutateXStability(Method):
 
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
-        df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit})"})
+        df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit}, {data_type})"})
+
+    def parse(self, dir_path):
+
+        warnings = []
+
+        mutatex_files = os.listdir(dir_path)
+
+        if self.averages_filename not in mutatex_files:
+            this_error = f"energies.csv file not found in {dir_path}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        averages_df = parse_energy_file(os.path.join(dir_path, self.averages_filename), 'average')
+
+        if self.stds_filename in mutatex_files:
+            stds_df = parse_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
+            df = averages_df.join(stds_df)
+        else:
+            warnings.append(MAVISpWarningError("standard deviation file not found for MutateX data"))
+            df = averages_df
 
         return df, warnings
 
@@ -138,7 +149,6 @@ class MutateXBinding(Method):
                 message = "chain ID in FoldX energy file must be either A or B (heterodimer case) or AB (homodimer case)"
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(message)],
                                           warning=[])
-
 
             df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
