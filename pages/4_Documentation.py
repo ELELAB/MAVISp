@@ -208,8 +208,8 @@ st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']
 st.write("""they follow a similar structure as those for `Local interactions`.
 The classification column che have the following values:""")
 
-data = [ ( 'Destabilizing', 'The mutation is destabilizes the binding between our protein and DNA'),
-         ( 'Stabilizing'  , 'The mutation is stabilizes the binding between our protein and DNA'),
+data = [ ( 'Destabilizing', 'The mutation destabilizes the binding between our protein and DNA'),
+         ( 'Stabilizing'  , 'The mutation stabilizes the binding between our protein and DNA'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between our protein and DNA'),
          ( 'Uncertain'    , 'free energy values are not available and SAS >= 20%'),
          ( 'N.A.'          , 'free energy values are not available and SAS < 20%',) ]
