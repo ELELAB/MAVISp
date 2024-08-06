@@ -112,7 +112,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
                           EnsemblePTMs,
-                          LongRange,
+                          EnsembleAllosigmaPSNLongRange,
                           EnsembleStability,
                           EnsembleLocalInteractions,
                           EnsembleSAS,

@@ -3,6 +3,8 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
+#           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -1819,3 +1821,100 @@ class FunctionalSites(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class AllosigmaPSNLongRange(MavispModule):
+
+    module_dir = "long_range"
+    name = "long_range"
+    method_dir = "allosigma2_psn"
+    exp_files = ['allosigma_mut.txt', 'results_summary.txt']
+
+    def _generate_allosigma_psn_classification(self, row, ensemble_data):
+        res_num = row['res_num']
+        allosigma_mode = row['allosigma-mode']
+        variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
+
+        # Mutation not classified by Allosigma
+        if not allosigma_mode in ['UP', 'DOWN']:
+            return 'uncertain'
+
+        # No predicted Allosigma effects
+        if variant_sites.empty:
+            return 'neutral'
+
+        # Predicted Allosigma effects
+        total_paths = variant_sites['Total_Paths'].max()
+        if total_paths >= 1:
+            # Predictions validated
+            return 'damaging'
+        else:
+            # Predictions could not be validated
+            return 'uncertain'
+
+    def _read_file(self, file_path, columns, warnings):
+        try:
+            # Read the file with the specified columns
+            df = pd.read_csv(file_path, sep='\t', usecols=columns)
+        except Exception as e:
+            this_error = f"Error while parsing file {file_path}: {e}"
+            raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+        return df
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        base_path = os.path.join(self.data_dir, self.module_dir, self.method_dir)
+        psn_files = os.listdir(base_path)
+
+        if not set(psn_files).issubset(set(self.exp_files)):
+            this_error = (f"the input files for AlloSigma2-PSN must be named {', '.join(self.exp_files)}, "
+            f"found {', '.join(psn_files)}")
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        # Parsing input files + required columns
+        df_simple_data = self._read_file(
+            file_path=os.path.join(base_path, self.exp_files[0]),
+            columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
+            warnings=warnings)
+        df_ensemble_data = self._read_file(
+            file_path=os.path.join(base_path, self.exp_files[1]),
+            columns=['Variant_Site', 'Total_Paths'],
+            warnings=warnings)
+
+        # Build mutations column + order columns
+        df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+            df_simple_data['position'].astype(str) +
+            df_simple_data['mutated_residue'])
+        df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
+
+        #Define working copy of data
+        psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        # Add residue number column
+        psn['res_num'] = psn.index.str[1:-1].astype(str)
+
+        # Merge allosigma data with psn
+        psn = psn.merge(df_simple_data, on='mutations', how='left')
+
+        try:
+            # Perform classification
+            psn['AlloSigma2-PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
+            raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+        # Drop unnecessary columns
+        psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+
+        # Add new Allosigma-PSN column to data
+        self.data = psn.set_index('mutations')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class EnsembleAllosigmaPSNLongRange(MavispMultiEnsembleModule, module_class=AllosigmaPSNLongRange):
+    module_dir = "long_range"
+    name = "long_range"
