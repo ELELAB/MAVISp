@@ -79,12 +79,11 @@ class MutateXStability(Method):
 
         if self.stds_filename in mutatex_files:
             stds_df = parse_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
-            df = averages_df.join(stds_df)
         else:
             warnings.append(MAVISpWarningError("standard deviation file not found for MutateX data"))
-            df = averages_df
+            stds_df = None
 
-        return df, warnings
+        return averages_df, stds_df, warnings
 
 class MutateXBinding(Method):
 
@@ -295,7 +294,7 @@ class RosettaDDGPredictionStability(Method):
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-        return mutation_data, warnings
+        return mutation_data, None, warnings
 
 class RosettaDDGPredictionBinding(Method):
 
@@ -604,4 +603,4 @@ class RaSP(Method):
 
         mutation_data = mutation_data.sort_index()
 
-        return mutation_data, warnings
+        return mutation_data, None, warnings
