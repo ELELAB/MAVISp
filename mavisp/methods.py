@@ -61,7 +61,8 @@ class MutateXStability(Method):
 
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
-        df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit}, {data_type})"})
+
+        return df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit}, {data_type})"})
 
     def parse(self, dir_path):
 
@@ -74,7 +75,7 @@ class MutateXStability(Method):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        averages_df = parse_energy_file(os.path.join(dir_path, self.averages_filename), 'average')
+        averages_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.averages_filename), 'average')
 
         if self.stds_filename in mutatex_files:
             stds_df = parse_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
