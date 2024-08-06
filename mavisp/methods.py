@@ -237,7 +237,8 @@ class RosettaDDGPredictionStability(Method):
         if len(rosetta_files) == 1 and os.path.isfile(os.path.join(dir_path, rosetta_files[0])):
             rosetta_file = rosetta_files[0]
 
-            mutation_data = self._parse_aggregate_csv(os.path.join(dir_path, rosetta_file), warnings)
+            avg_mutation_data = self._parse_aggregate_csv(os.path.join(dir_path, rosetta_file), warnings)
+            std_mutation_data = None
 
         else:
             csv_files = []
@@ -287,14 +288,21 @@ class RosettaDDGPredictionStability(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-            ddg_colname = f'{self.type} ({self.version}, {self.unit})'
-            mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-            mutation_data = mutation_data[[ddg_colname]]
+            avg_ddg_colname = f'{self.type} ({self.version}, {self.unit}, average)'
+            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
+
+            std_ddg_colname = f'{self.type} ({self.version}, {self.unit}, st. dev.)'
+            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
+
+            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
 
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-        return mutation_data, None, warnings
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', average)' in c ]]
+            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+
+        return avg_mutation_data, std_mutation_data, warnings
 
 class RosettaDDGPredictionBinding(Method):
 
@@ -547,7 +555,8 @@ class RaSP(Method):
 
             rasp_file = rasp_files[0]
 
-            mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
+            avg_mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
+            std_mutation_data = None
 
         else:
             csv_files = []
@@ -597,10 +606,17 @@ class RaSP(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-        ddg_colname = f'{self.type} ({self.unit})'
-        mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-        mutation_data = mutation_data[[ddg_colname]]
+            avg_ddg_colname = f'{self.type} ({self.unit}, average)'
+            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
 
-        mutation_data = mutation_data.sort_index()
+            std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
+            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
 
-        return mutation_data, None, warnings
+            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+
+            mutation_data = mutation_data.sort_index()
+
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', average)' in c ]]
+            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+
+        return avg_mutation_data, std_mutation_data, warnings
