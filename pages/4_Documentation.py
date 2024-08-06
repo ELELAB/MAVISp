@@ -328,17 +328,21 @@ st.subheader("""Long range: AlloSigma2-PSN""")
 st.write("""This module is available only for ensemble mode.
 
 The module aims to validate the simple mode Long Range module predictions, performed on a single 
-structure using AlloSigma2, by analysing an ensemble of structures using Protein Structure Network
+structure using AlloSigma2, by analysing an ensemble of structures using a Protein Structure Network
 (PSN)-based method.
 
 The module takes as input the predictions of the Long Range module, specifically the mutations 
-predicted to affect pocket residues, that satisfy the thresholds described in the section above. 
+predicted to affect pocket residues, that satisfy the thresholds described in the previous section. 
 
-Briefly, these predictions are then used as input for identifying potential 
-communication paths between mutations and their respective pocket sites using PyInteraph2 
-(https://doi.org/10.1021/acs.jcim.3c00574). PyInteraph2 applies graph theory to depict the contact network 
-of the protein structure, representing residues as nodes and pairwise contacts between nodes as edges. 
-As input for constructing the graph, an ensemble structure is used (e.g., trajectory of an MD simulation). 
+Briefly, these predictions are then validated by identifying potential 
+communication paths between mutations and their respective response pocket sites using
+[PyInteraph2](https://doi.org/10.1021/acs.jcim.3c00574).
+
+PyInteraph2 derives an inter-residue network from the contacts between pairs of residues
+in an ensemble of structures. Such network can then be analyzed to identify potential
+pathways through which long-range happens.
+
+As input for constructing the network, an ensemble structure is used (e.g., trajectory of an MD simulation). 
 Subsequently, the path_analysis tool of PyInteraph2 is used to identify
 shortest paths of communication between the mutation and pocket sites. 
 We retain only paths that are 4 residues in length or more. 
@@ -359,7 +363,7 @@ st.write("""The classification column can have the following values:""")
 
 data = [ ( 'damaging'       , 'The mutation effect on pocket site(s) was identified by both methods'),
          ( 'neutral'        , 'The mutation was not predicted to have any effect on pocket site(s)'),
-         ( 'uncertain'      , 'The the two methods are not in agreement, or the mutation results in a too small change of side-chain volume to be considered either UP or DOWN') ]
+         ( 'uncertain'      , 'The the two methods are not in agreement, or the mutation results in a too small change of side-chain volume to be considered either UP or DOWN in AlloSigma2') ]
 st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("AlphaFold Metadata")
