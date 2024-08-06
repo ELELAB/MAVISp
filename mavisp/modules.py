@@ -207,7 +207,7 @@ class Stability(MultiMethodMavispModule):
                     model_stds.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit}, st. dev.)" ]
 
                     model_data_stds_list.append(model_stds)
-                    model_data_stds = pd.concate(model_data_stds_list, axis=1)
+                    model_data_stds = pd.concat(model_data_stds_list, axis=1)
 
         keys = [ k for k in model_data.columns if k.startswith('Stability') and 'average' in k ]
 

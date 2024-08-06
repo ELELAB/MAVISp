@@ -78,7 +78,7 @@ class MutateXStability(Method):
         averages_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.averages_filename), 'average')
 
         if self.stds_filename in mutatex_files:
-            stds_df = parse_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
+            stds_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
         else:
             warnings.append(MAVISpWarningError("standard deviation file not found for MutateX data"))
             stds_df = None
