@@ -17,7 +17,6 @@
 import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
-from streamlit_extras.app_logo import add_logo
 import pandas as pd
 from collections import defaultdict
 from streamlit_utils import *
