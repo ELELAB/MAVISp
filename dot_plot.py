@@ -262,7 +262,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
                                     np.where(df['GEMME Score (rank-normalized)'] >= g_cutoff,
                                         'Damaging', 'Neutral'))
     except:
-        log.warning(f'- no GEMME found in MAVISp csv.')
+        pass
 
 
     # Convert Demask delta fitness into absolute value
@@ -560,7 +560,6 @@ def generate_summary(data):
             except:
                 continue
     else:
-        log.warning(f'- PTM effect in regulation not found in MAVISp csv.')
         ptm_r_d_list = []
 
 
