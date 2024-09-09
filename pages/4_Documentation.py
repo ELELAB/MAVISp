@@ -17,10 +17,15 @@
 
 import streamlit as st
 import pandas as pd
-
+from streamlit_utils import add_mavisp_logo, add_affiliation_logo
 st.set_page_config(layout="wide",
+
     page_title="Documentation",
     page_icon="📖")
+
+add_mavisp_logo("static/logo_small.png", image_width='50%')
+
+add_affiliation_logo()
 
 st.header('Documentation')
 

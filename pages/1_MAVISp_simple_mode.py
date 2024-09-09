@@ -30,11 +30,11 @@ st.set_page_config(layout="wide",
     page_title="MAVISp simple mode",
     page_icon="📊")
 
-database_dir = get_database_dir()
-
-add_mavisp_logo("static/logo_small.png")
+add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
+
+database_dir = get_database_dir()
 
 st.header('MAVISp simple mode')
 
@@ -79,10 +79,10 @@ datasets_grid = AgGrid(show_table,
                                       }
                                   })
 
-if len(datasets_grid["selected_rows"]) == 1:
+if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_rows"]) == 1:
 
-    protein = datasets_grid["selected_rows"][0]['Protein']
-    upac = datasets_grid["selected_rows"][0]['Uniprot AC']
+    protein = datasets_grid["selected_rows"].iloc[0]['Protein']
+    upac = datasets_grid["selected_rows"].iloc[0]['Uniprot AC']
 
     st.write(f"Currently viewing: {protein}")
 
