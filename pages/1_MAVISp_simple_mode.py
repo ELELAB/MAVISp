@@ -17,6 +17,7 @@
 import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
+from streamlit_extras.app_logo import add_logo
 import pandas as pd
 from collections import defaultdict
 from streamlit_utils import *
@@ -30,11 +31,11 @@ st.set_page_config(layout="wide",
     page_title="MAVISp simple mode",
     page_icon="📊")
 
-database_dir = get_database_dir()
-
-add_mavisp_logo("static/logo_small.png")
+add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
+
+database_dir = get_database_dir()
 
 st.header('MAVISp simple mode')
 

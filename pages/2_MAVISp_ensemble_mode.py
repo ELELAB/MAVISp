@@ -32,7 +32,7 @@ st.set_page_config(layout="wide",
 
 database_dir = get_database_dir()
 
-add_mavisp_logo("static/logo_small.png")
+add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
