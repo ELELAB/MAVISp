@@ -33,7 +33,7 @@ def get_base64_of_bin_file(png_file):
 
 def build_markup_for_logo(
     png_file,
-    background_position="50% 10%",
+    background_position="center top",
     margin_top="0%",
     margin_bottom="10%",
     image_width="60%",
