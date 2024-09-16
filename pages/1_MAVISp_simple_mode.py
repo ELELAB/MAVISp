@@ -162,7 +162,6 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         if st.button('Generate plot',
                       disabled=len(selected_muts) == 0):
             this_dataset_table = this_dataset_table.loc[selected_muts]
-            this_dataset_table.to_csv('does_error.csv')
 
             plots = plot_dotplot(this_dataset_table,
                                 demask_co=demask_co,
