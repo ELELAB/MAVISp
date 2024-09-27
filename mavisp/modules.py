@@ -1943,7 +1943,7 @@ class ExperimentalData(MavispModule):
                 mask = series == thres
                 masks.append(mask.rename(desc))
             else:
-                mask = t[0] <= thres < t[1]
+                mask = (series >= thres[0]) & (series < thres[1])
                 masks.append(mask.rename(desc))
 
         masks = pd.concat(masks, axis=1)
@@ -1967,7 +1967,7 @@ class ExperimentalData(MavispModule):
         module_path = os.path.join(self.data_dir, self.module_dir)
 
         yaml_files = os.listdir(module_path)
-        yaml_files = [ f for f in yaml_files if f.endswith('.yaml')]
+        yaml_files = [ f for f in yaml_files if f.endswith('.yaml') ]
 
         if len(yaml_files) == 0:
             this_error = f"At least one metadata yaml file is required"
@@ -1985,7 +1985,6 @@ class ExperimentalData(MavispModule):
                 raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-
             for col in metadata['columns'].keys():
 
                 col_metadata = metadata['columns'][col]
@@ -1997,15 +1996,24 @@ class ExperimentalData(MavispModule):
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
 
-                data = data[ ~ data[col_metadata['hgvsp_column']].str.endswith('=') ]
-                data = data[ ~ data[col_metadata['hgvsp_column']].str.endswith('Ter') ]
-                full_data_len = data.shape[0]
-                data = data[   data[col_metadata['hgvsp_column']].str.contains(self.hgvsp_regexp, regex=True, na=False) ]
+                if col_metadata['mutation_format'] == 'hgvsp':
+                    data = data[ ~ data[col_metadata['mutation_column']].str.endswith('=') ]
+                    data = data[ ~ data[col_metadata['mutation_column']].str.endswith('Ter') ]
+                    full_data_len = data.shape[0]
+                    data = data[   data[col_metadata['mutation_column']].str.contains(self.hgvsp_regexp, regex=True, na=False) ]
+                    if data.shape[0] != full_data_len:
+                        warnings.append(MAVISpWarningError("rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
 
-                if data.shape[0] != full_data_len:
-                    warnings.append(MAVISpWarningError("Rows with inconsistent HGVSp mutation were removed from the dataset"))
+                    data['mutations'] = data[col_metadata['mutation_column']].apply(self._hgvs_to_mavisp, offset=col_metadata['offset'])
 
-                data['mutations'] = data[col_metadata['hgvsp_column']].apply(self._hgvs_to_mavisp, offset=col_metadata['offset'])
+                elif col_metadata['mutation_format'] == 'mavisp':
+                    data['mutations'] = data[col_metadata['mutation_column']]
+
+                else:
+                    this_error = f"in file {yaml_file}, mutations format should be either hgvsp or mavisp"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
 
                 data = data[['mutations', col]].set_index('mutations')
 
@@ -2018,6 +2026,3 @@ class ExperimentalData(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
-        
-
-

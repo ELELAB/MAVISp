@@ -33,7 +33,6 @@ class MAVISpMode:
         with open(metadata_path) as fh:
             return yaml.safe_load(fh)
 
-
 class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
@@ -127,18 +126,20 @@ class MAVISpEnsembleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense ]
+                          AlphaMissense,
+                          ExperimentalData ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense']
+    'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf',
+    'experimental_data']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta',  'sampling_functional_dynamics',
-    'interfaces_functional_dynamics', 'review_status', 'curators',
-    'gitbook_entry', 'ensemble_files_osf']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",

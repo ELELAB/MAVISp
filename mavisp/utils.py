@@ -56,6 +56,8 @@ one_to_three_hgvsp = {'A': 'Ala',
                       'W': 'Trp',
                       'Y': 'Tyr'}
 
+three_to_one_hgvsp = { v: k for k, v in one_to_three_hgvsp.items() }
+
 def mutation_to_HGVSp(mutation):
     return f"p.{one_to_three_hgvsp[mutation[0]]}{mutation[1:-1]}{one_to_three_hgvsp[mutation[-1]]}"
 
