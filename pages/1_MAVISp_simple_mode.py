@@ -143,8 +143,8 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         with col1:
             do_revel = st.checkbox('Show available REVEL classification', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
-            demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.3, min_value=0.0)
-            gemme_co = st.number_input("Curoff for GEMME", value=0.3)
+            demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
+            gemme_co = st.number_input("Curoff for GEMME", value=0.5)
         with col2:
             do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
