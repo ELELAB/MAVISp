@@ -21,11 +21,13 @@
 import os
 import pandas as pd
 from mavisp.methods import *
-from mavisp.utils import three_to_one
+from mavisp.utils import three_to_one, three_to_one_hgvsp
 from collections import defaultdict
 import logging as log
 import re
 import pkg_resources
+import numbers
+import yaml
 
 class MavispModule(object):
     def __init__(self, data_dir=None, module_dir=None, stop_at='critical'):
@@ -1918,3 +1920,108 @@ class AllosigmaPSNLongRange(MavispModule):
 class EnsembleAllosigmaPSNLongRange(MavispMultiEnsembleModule, module_class=AllosigmaPSNLongRange):
     module_dir = "long_range"
     name = "long_range"
+
+class ExperimentalData(MavispModule):
+
+    module_dir = "experimental_data"
+    name = "experimental_data"
+
+    hgvsp_regexp = "p\.[A-Z][a-z][a-z][0-9]+[A-Z][a-z][a-z]"
+
+    def _hgvs_to_mavisp(self, hgvsp, offset):
+        return f"{three_to_one_hgvsp[hgvsp[2:5]]}{int(hgvsp[5:-3]) + int(offset)}{three_to_one_hgvsp[hgvsp[-3:]]}"
+
+    def _get_classification(self, series, thresholds):
+        masks = []
+
+        # create a mask for every threshold we have
+        for desc, thres in thresholds.items():
+            if isinstance(thres, numbers.Number):
+                mask = series == thres
+                masks.append(mask.rename(desc))
+            else:
+                mask = (series >= thres[0]) & (series < thres[1])
+                masks.append(mask.rename(desc))
+
+        masks = pd.concat(masks, axis=1)
+
+        # check if any threshold overlap
+        if any(masks.sum(axis=1) > 1):
+            raise RuntimeError("One or more mutations belong to multiple classes; are your definitions overlapping?")
+
+        # generate classification
+        out_series = series.copy()
+
+        for desc, thres in thresholds.items():
+            out_series[masks[desc]] = desc
+
+        return out_series
+
+    def ingest(self, mutations):
+        warnings = []
+
+        module_path = os.path.join(self.data_dir, self.module_dir)
+
+        yaml_files = os.listdir(module_path)
+        yaml_files = [ f for f in yaml_files if f.endswith('.yaml') ]
+
+        if len(yaml_files) == 0:
+            this_error = f"At least one metadata yaml file is required"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        all_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        for yaml_file in yaml_files:
+            try:
+                with open(os.path.join(module_path, yaml_file)) as fh:
+                    metadata = yaml.safe_load(fh)
+            except Exception as e:
+                this_error = f"Error parsing YAML metadata {yaml_file}: {e}"
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+            for col in metadata['columns'].keys():
+
+                col_metadata = metadata['columns'][col]
+
+                try:
+                    data = pd.read_csv(os.path.join(module_path, col_metadata['data_file']))
+                except Exception as e:
+                    this_error = f"Error parsing data file {col_metadata['data_fle']}: {e}"
+                    raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+
+                if col_metadata['mutation_format'] == 'hgvsp':
+                    data = data[ ~ data[col_metadata['mutation_column']].str.endswith('=') ]
+                    data = data[ ~ data[col_metadata['mutation_column']].str.endswith('Ter') ]
+                    full_data_len = data.shape[0]
+                    data = data[   data[col_metadata['mutation_column']].str.contains(self.hgvsp_regexp, regex=True, na=False) ]
+                    if data.shape[0] != full_data_len:
+                        warnings.append(MAVISpWarningError("rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
+
+                    data['mutations'] = data[col_metadata['mutation_column']].apply(self._hgvs_to_mavisp, offset=col_metadata['offset'])
+
+                elif col_metadata['mutation_format'] == 'mavisp':
+                    data['mutations'] = data[col_metadata['mutation_column']]
+
+                else:
+                    this_error = f"in file {yaml_file}, mutations format should be either hgvsp or mavisp"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+
+                data = data[['mutations', col]].set_index('mutations')
+
+                data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'])
+
+                data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
+                                            f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
+
+                all_data = all_data.join(data)
+
+        self.data = all_data
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
