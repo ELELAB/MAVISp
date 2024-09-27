@@ -2015,6 +2015,9 @@ class ExperimentalData(MavispModule):
 
                 data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'])
 
+                data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
+                                            f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
+
                 all_data = all_data.join(data)
 
         self.data = all_data
