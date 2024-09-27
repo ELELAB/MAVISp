@@ -135,8 +135,7 @@ class MAVISpEnsembleMode(MAVISpMode):
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
-    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf',
-    'experimental_data']
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
