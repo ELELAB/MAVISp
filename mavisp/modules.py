@@ -304,9 +304,6 @@ class SimpleStability(Stability):
                     warnings += this_warnings
                     model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]
                     model_data_list.append(model_data)
-                    print(model_data_list[0])
-                    print(len(model_data_list[0].index.tolist()))
-                    print(len(set(model_data_list[0].index.tolist())))
                     model_data = pd.concat(model_data_list, axis=1)
 
             keys = [ k for k in model_data.columns if k.startswith('Stability') ]
@@ -1956,7 +1953,6 @@ class ExperimentalData(MavispModule):
         out_series = series.copy()
 
         for desc, thres in thresholds.items():
-            print(masks)
             out_series[masks[desc]] = desc
 
         return out_series
