@@ -67,7 +67,7 @@ gb_datasets_grid.configure_selection(selection_mode='single',
 gb_datasets_grid.configure_column('OSF repository for ensemble data', cellRenderer=cell_renderers['OSF repository for ensemble data'])
 gb_datasets_grid.configure_column('GitBook report', cellRenderer=cell_renderers['GitBook report'])
 
-datasets_grid = AgGrid(show_table,
+datasets_grid = AgGrid(show_table, enable_enterprise_modules=False,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True,
@@ -127,7 +127,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             if col in this_dataset_table.columns:
                 this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
 
-        mutations_grid = AgGrid(this_dataset,
+        mutations_grid = AgGrid(this_dataset, enable_enterprise_modules=False,
                                 gridOptions=this_gb.build(),
                                 reload_data=False,
                                 allow_unsafe_jscode=True,
