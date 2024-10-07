@@ -137,7 +137,7 @@ class MAVISpEnsembleMode(MAVISpMode):
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
-    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics',
+    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
@@ -148,6 +148,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'ensemble_files_osf' : 'OSF repository for ensemble data',
                         'sampling_functional_dynamics' : "Sampling methods for functional dynamics",
                         'interfaces_functional_dynamics' : "Regions of interest for functional dynamics",
+                        'simulation_length' : 'Simulation length (ns)',
+                        'simulation_force_field' : 'Simulation force field',
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
                         'gitbook_entry' : 'GitBook report'}
@@ -187,7 +189,6 @@ class MAVISpEnsembleMode(MAVISpMode):
             except KeyError:
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
-
         try:
             if not len(set( len(metadata[m]) for m in ["ensemble_size_foldx", "ensemble_size_rosetta", "ensemble_sources"])) == 1:
                 mavisp_criticals.append(MAVISpCriticalError(f"the ensemble metadata must all have the same length"))
@@ -195,7 +196,8 @@ class MAVISpEnsembleMode(MAVISpMode):
         except (KeyError, TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
             pass
 
-        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics']:
+        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length',
+        'simulation_force_field']:
             try:
                 out_metadata[k] = str(metadata[k])
             except KeyError:
