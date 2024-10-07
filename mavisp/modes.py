@@ -179,7 +179,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
 
-        for k in ['ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta']:
+        for k in ['ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'simulation_length',
+        'simulation_force_field']:
             try:
                 if isinstance(metadata[k], list):
                     out_metadata[k] = ", ".join([str(value) for value in metadata[k]])
@@ -196,8 +197,7 @@ class MAVISpEnsembleMode(MAVISpMode):
         except (KeyError, TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
             pass
 
-        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length',
-        'simulation_force_field']:
+        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics']:
             try:
                 out_metadata[k] = str(metadata[k])
             except KeyError:
