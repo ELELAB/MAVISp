@@ -1948,6 +1948,8 @@ class ExperimentalData(MavispModule):
                         masks.append(mask)
                         mask_descriptions.append(desc)
             else:
+                if len(thres) != 2 or not thres[0] < thres[1]:
+                    raise RuntimeError("When using threshold type ranges, classes need to be made of a list of two values (min, max)")
                 mask = (series >= thres[0]) & (series < thres[1])
                 masks.append(mask)
                 mask_descriptions.append(desc)
@@ -2027,8 +2029,12 @@ class ExperimentalData(MavispModule):
 
 
                 data = data[['mutations', col]].set_index('mutations')
-
-                data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
+                try:
+                    data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
+                except Exception as e:
+                    this_error = f"Error while generating classification for {col} in {yaml_file}: {e}"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
 
                 data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
                                             f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
