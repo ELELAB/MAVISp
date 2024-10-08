@@ -1931,29 +1931,38 @@ class ExperimentalData(MavispModule):
     def _hgvs_to_mavisp(self, hgvsp, offset):
         return f"{three_to_one_hgvsp[hgvsp[2:5]]}{int(hgvsp[5:-3]) + int(offset)}{three_to_one_hgvsp[hgvsp[-3:]]}"
 
-    def _get_classification(self, series, thresholds):
+    def _get_classification(self, series, thresholds, threshold_type):
         masks = []
+        mask_descriptions = []
 
         # create a mask for every threshold we have
         for desc, thres in thresholds.items():
-            if isinstance(thres, numbers.Number):
-                mask = series == thres
-                masks.append(mask.rename(desc))
+            if threshold_type == 'values':
+                if isinstance(thres, numbers.Number):
+                    mask = series == thres
+                    masks.append(mask)
+                    mask_descriptions.append(desc)
+                else:
+                    for t in thres:
+                        mask = series == t
+                        masks.append(mask)
+                        mask_descriptions.append(desc)
             else:
                 mask = (series >= thres[0]) & (series < thres[1])
-                masks.append(mask.rename(desc))
+                masks.append(mask)
+                mask_descriptions.append(desc)
 
-        masks = pd.concat(masks, axis=1)
+        all_masks = pd.concat(masks, axis=1)
 
         # check if any threshold overlap
-        if any(masks.sum(axis=1) > 1):
+        if any(all_masks.sum(axis=1) > 1):
             raise RuntimeError("One or more mutations belong to multiple classes; are your definitions overlapping?")
 
         # generate classification
         out_series = series.copy()
 
-        for desc, thres in thresholds.items():
-            out_series[masks[desc]] = desc
+        for mask, desc in zip(masks, mask_descriptions):
+            out_series[mask] = desc
 
         return out_series
 
@@ -1985,10 +1994,16 @@ class ExperimentalData(MavispModule):
 
                 col_metadata = metadata['columns'][col]
 
+                if col_metadata['threshold_type'] not in ['values', 'ranges']:
+                    this_error = f"Error in {yaml_file}, {col}: threshold_type can either be values or ranges"
+                    raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
+
+
                 try:
                     data = pd.read_csv(os.path.join(module_path, col_metadata['data_file']))
                 except Exception as e:
-                    this_error = f"Error parsing data file {col_metadata['data_fle']}: {e}"
+                    this_error = f"Error parsing data file {col_metadata['data_file']}: {e}"
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
 
@@ -2013,7 +2028,7 @@ class ExperimentalData(MavispModule):
 
                 data = data[['mutations', col]].set_index('mutations')
 
-                data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'])
+                data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
 
                 data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
                                             f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
