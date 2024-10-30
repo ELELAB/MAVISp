@@ -20,6 +20,8 @@ from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 import pandas as pd
 from collections import defaultdict
 from streamlit_utils import *
+import py3Dmol
+from stmol import showmol
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -88,7 +90,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
-    dataset, dotplots, lolliplots = st.tabs(["Dataset", "Classification", "Damaging mutations"])
+    dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Structure"])
 
     with dataset:
 
@@ -123,7 +125,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             if col in this_dataset_table.columns:
                 this_gb.configure_column(col, cellRenderer=cell_renderers[col])
 
-        mutations_grid = AgGrid(this_dataset_table, enable_enterprise_modules=False
+        mutations_grid = AgGrid(this_dataset_table, enable_enterprise_modules=False,
                                 gridOptions=this_gb.build(),
                                 reload_data=False,
                                 allow_unsafe_jscode=True,
@@ -225,3 +227,88 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
             for fig in plots:
                 st.pyplot(fig, use_container_width=False)
+
+    with structure:
+
+        structure_colors = {'Stability'  : 'red',
+                            'Local Int.' : 'yellow',
+                            'PTM'        : 'green',
+                            'Long range' : 'blue',
+                            'Multiple'   : 'purple'}
+
+        st.write("""This tab displays the AlphaFold model for the selected protein,
+        if available. The checkbox below will activate colouring of mutations that
+        are at the same time i) Damaging for AlphaMissense and ii) Damaging for the
+        respective module in MAVISp. You can have multiple checkboxes active at the same
+        time; residues with mutations that have multiple effects for MAVISp will
+        be coloured in purple.""")
+
+        this_dataset_table = this_dataset.copy()
+        this_dataset_table = this_dataset_table.set_index('Mutation')
+        this_dataset_table = process_df_for_lolliplot(this_dataset_table)
+        print(this_dataset_table)
+
+        col_structure1, col_structure2 = st.columns(2)
+
+        with col_structure1:
+            structure_stability = st.checkbox('Stability')
+            structure_li        = st.checkbox('Local Int.')            
+        with col_structure2:
+            structure_ptm       = st.checkbox('PTM')
+            structure_lr        = st.checkbox('Long range')
+
+        interesting_cols = []
+        for col, checkbox in [('Stability',  structure_stability),
+                              ('Local Int.', structure_li),
+                              ('PTM',        structure_ptm),
+                              ('Long range', structure_lr)]:
+            if checkbox:
+                interesting_cols.append(col)
+
+        try:
+            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
+            response.raise_for_status()
+        except ConnectionError:
+            st.write("Failed connecting to the AlphaFold Protein Structure Database")
+            model = None
+        except HTTPError:
+            st.write("Could not fetch protein structure model from the AlphaFold Protein Structure Database")
+            model = None
+        else:
+            model = response.text
+
+        if model is not None:
+            viewer = py3Dmol.view(width=900, height=600)
+
+            viewer.addModel(model, 'pdb')
+            viewer.setStyle({ "cartoon": { "color" : "lightgray", "style" : "parabola" } })
+
+            if( any( [structure_stability, structure_li, structure_ptm, structure_lr] )):
+
+                print(this_dataset_table)
+                print(interesting_cols)
+
+                this_dataset_table = this_dataset_table[interesting_cols]
+
+                this_dataset_table['residue'] = this_dataset_table.index.str[1:-1]
+                tmp_df1 = this_dataset_table.reset_index().groupby('residue').agg({'Mutation':lambda x: " ".join(x.tolist())})
+                tmp_df2 = this_dataset_table.groupby('residue').agg(sum)
+                this_dataset_table = tmp_df1.join(tmp_df2)
+
+                this_dataset_table['color'] = ''
+                for col in interesting_cols:
+                    this_dataset_table[this_dataset_table[col] > 0]['color'] = structure_colors[col]
+                    print(this_dataset_table[this_dataset_table[col] > 0])
+                this_dataset_table[this_dataset_table[interesting_cols].sum(axis=1) > 1] = structure_colors['Multiple']
+
+                for color in this_dataset_table['color'].unique():
+                    residues = this_dataset_table[this_dataset_table['color'] == color].index.tolist()
+                    viewer.addStyle({'resi': residues}, {'stick': {'colorscheme': color}})
+                
+                #for idx, row in this_dataset_table.iterrows():
+                #    viewer.addLabel(row['Mutation'], {'fontColor':row['color'], 'backgroundColor':'lightgray'},
+                #        {'resi': idx})
+
+            showmol(viewer, width=900, height=600)
+
+
