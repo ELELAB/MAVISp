@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import streamlit as st
 import os
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
@@ -22,6 +23,8 @@ from collections import defaultdict
 from streamlit_utils import *
 import py3Dmol
 from stmol import showmol
+import requests as rq
+from requests import HTTPError
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from io import BytesIO
@@ -90,7 +93,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
     this_dataset = load_dataset(database_dir, protein, mode)
 
-    dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Structure"])
+    dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Damaging mutations on structure"])
 
     with dataset:
 
@@ -318,7 +321,13 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             this_dataset_table = this_dataset_table.loc[selected_muts]
 
         labels = st.radio("Show residue labels:", options=['none', 'for mutations', 'for sites'])
-        
+        labels_in_front_checkbox = st.checkbox("Labels are always in front of the structure")
+
+        if labels_in_front_checkbox:
+            front_labels = 'true'
+        else:
+            front_labels = 'false'
+
         # stop unless at least one classification has been selected
         if len(interesting_cols) == 0:
             st.stop()
@@ -349,7 +358,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
         elif labels == 'for sites':
             for idx, row in this_dataset_table.iterrows():
-                viewer.addLabel(idx, {'fontColor':'black', 'backgroundColor':'lightgray'}, {'resi':idx})
+                viewer.addLabel(idx, {'fontColor':'black', 'backgroundColor':'lightgray', 'inFront':front_labels}, {'resi':idx})
 
         viewer.zoomTo()
         showmol(viewer, width=900, height=600)
