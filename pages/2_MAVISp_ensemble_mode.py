@@ -256,8 +256,6 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.set_index('Mutation')
         this_dataset_table = process_df_for_lolliplot(this_dataset_table)
-        print(this_dataset_table)
-        this_dataset_table.to_csv('dataset_table.csv')
 
         # download model and stop if it can't be found
         try:
