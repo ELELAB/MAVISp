@@ -88,11 +88,6 @@ def process_input(df):
         'Local Int. ': 'Local Int.',
         'PTM effect': 'PTM'
     }
-    # Print warning if not one column identified
-    for pattern, name in regex_patterns.items():
-        if not any(df.filter(regex=pattern).columns):
-            log.warning(f" No columns matching '{pattern}' found for '{name}'.")
-
     # Define a dictionary of effect nomenclature 
     # to numerical value
     mechanism_code = {'(?i)destabilizing': 1,

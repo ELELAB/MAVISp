@@ -19,10 +19,15 @@
 # Danish Technical University) on 2023-11-20
 
 import streamlit as st
+from streamlit_utils import add_mavisp_logo, add_affiliation_logo
 
 st.set_page_config(layout="wide",
     page_title="Help",
     page_icon="❓")
+
+add_mavisp_logo("static/logo_small.png", image_width='50%')
+
+add_affiliation_logo()
 
 st.title('Usage of the web app')
 
@@ -109,7 +114,7 @@ plot of the same time is considerably slower than just one at the time.""")
 
 st.subheader("Plotting summary of MAVISp classification using a reduced set of classifications")
 
-st.write("""The MAVISp website also allows to download an even more succint representation
+st.write("""The MAVISp website allows to download an even more succint representation
 of the classification performed by MAVISp. This is carried out in the Damaging mutations tab.
 This section plots those mutations that have been classified as damaging for AlphaMissense as
 well as for one or more of the main MAVISp modules. Consequences are grouped in the following
@@ -122,3 +127,12 @@ The final representation is a lollipop plot, in which mutations are found on the
 one or more vertical bars are present in corresponde of the mutation, displaying which of the
 broad categories are affected by the mutation.""")
 
+st.subheader("Visualizing a summary of MAVISp classification on the 3D structure")
+
+st.write("""The MAVISp website also include an interactive 3D visualization of the
+protein structure on which it is possible to visualize the same mutation sites
+and mutations as per the previous section. It also allows to customize which
+type of MAVISp classification should be considered. It supports two analysis modes:
+one in which only the mutation sites that have at least a specified number of mutations
+that are classified as damaging are displayed; and another in which the user
+can freely select a set of mutation sites to be shown on the protein structure.""")

@@ -21,7 +21,7 @@ import pandas as pd
 from st_aggrid import JsCode
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
-from dot_plot import generate_summary
+from dot_plot import generate_summary, filter_am_summary
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
 
@@ -33,7 +33,7 @@ def get_base64_of_bin_file(png_file):
 
 def build_markup_for_logo(
     png_file,
-    background_position="50% 10%",
+    background_position="center top",
     margin_top="0%",
     margin_bottom="10%",
     image_width="60%",
@@ -104,20 +104,21 @@ def load_main_table(data_dir, mode):
 @st.cache_data
 def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
     df = df.copy()
-    processed_df, _ = process_input_for_dotplot(df, d_cutoff=demask_co, r_cutoff=revel_co, g_cutoff=gemme_co)
+    processed_df, processed_df2 = process_input_for_dotplot(df, d_cutoff=demask_co, r_cutoff=revel_co, g_cutoff=gemme_co)
 
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, fig_width, fig_height, n_muts, do_demask)
+    my_plots = do_dotplots(processed_df, processed_df2, fig_width, fig_height, n_muts, False, None)
     return my_plots
 
 
 @st.cache_data
 def process_df_for_lolliplot(df):
     _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
-    summary_df = generate_summary(processed_df)
-    return process_input_for_lolliplot(summary_df)
+    text, summary_df = generate_summary(processed_df, d_cutoff=0.3, r_cutoff=0.5)
+    filtered_summary_df = filter_am_summary(summary_df, processed_df)
+    return process_input_for_lolliplot(filtered_summary_df)
 
 @st.cache_data
 def plot_lolliplots(df, muts_per_plot=50):

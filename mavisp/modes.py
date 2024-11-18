@@ -33,7 +33,6 @@ class MAVISpMode:
         with open(metadata_path) as fh:
             return yaml.safe_load(fh)
 
-
 class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
@@ -53,11 +52,12 @@ class MAVISpSimpleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
-                          EFoldMine ]
+                          EFoldMine,
+                          ExperimentalData ]
     module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
-    'demask', 'gemme', 'eve', 'alphamissense']
+    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
     'gitbook_entry', 'allosigma_distance_cutoff']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
@@ -126,18 +126,19 @@ class MAVISpEnsembleMode(MAVISpMode):
                           DeMaSk,
                           GEMME,
                           EVE,
-                          AlphaMissense ]
+                          AlphaMissense,
+                          ExperimentalData ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense']
+    'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta',  'sampling_functional_dynamics',
-    'interfaces_functional_dynamics', 'review_status', 'curators',
-    'gitbook_entry', 'ensemble_files_osf']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
@@ -147,6 +148,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'ensemble_files_osf' : 'OSF repository for ensemble data',
                         'sampling_functional_dynamics' : "Sampling methods for functional dynamics",
                         'interfaces_functional_dynamics' : "Regions of interest for functional dynamics",
+                        'simulation_length' : 'Simulation length (ns)',
+                        'simulation_force_field' : 'Simulation force field',
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
                         'gitbook_entry' : 'GitBook report'}
@@ -176,7 +179,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
 
-        for k in ['ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta']:
+        for k in ['ensemble_sources', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'simulation_length',
+        'simulation_force_field']:
             try:
                 if isinstance(metadata[k], list):
                     out_metadata[k] = ", ".join([str(value) for value in metadata[k]])
@@ -186,7 +190,6 @@ class MAVISpEnsembleMode(MAVISpMode):
             except KeyError:
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
-
         try:
             if not len(set( len(metadata[m]) for m in ["ensemble_size_foldx", "ensemble_size_rosetta", "ensemble_sources"])) == 1:
                 mavisp_criticals.append(MAVISpCriticalError(f"the ensemble metadata must all have the same length"))

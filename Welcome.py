@@ -21,7 +21,7 @@ st.set_page_config(layout="wide",
     page_title="Hello",
     page_icon="👋")
 
-add_mavisp_logo("static/logo_small.png", image_width='80%')
+add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
