@@ -62,7 +62,12 @@ class MutateXStability(Method):
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
 
-        return df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit}, {data_type})"})
+        if data_type is None or data_type == '':
+            colname =  f"{self.type} ({self.version}, {self.unit})"
+        else:
+            colname =  f"{self.type} ({self.version}, {self.unit}, {data_type})"
+
+        return df.rename(columns={0 : colname})
 
     def parse(self, dir_path):
 
@@ -75,7 +80,7 @@ class MutateXStability(Method):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        averages_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.averages_filename), 'average')
+        averages_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.averages_filename), '')
 
         if self.stds_filename in mutatex_files:
             stds_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
@@ -288,7 +293,7 @@ class RosettaDDGPredictionStability(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-            avg_ddg_colname = f'{self.type} ({self.version}, {self.unit}, average)'
+            avg_ddg_colname = f'{self.type} ({self.version}, {self.unit})'
             mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
 
             std_ddg_colname = f'{self.type} ({self.version}, {self.unit}, st. dev.)'
@@ -299,7 +304,7 @@ class RosettaDDGPredictionStability(Method):
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', average)' in c ]]
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
             std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
 
         return avg_mutation_data, std_mutation_data, warnings
@@ -606,7 +611,7 @@ class RaSP(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-            avg_ddg_colname = f'{self.type} ({self.unit}, average)'
+            avg_ddg_colname = f'{self.type} ({self.unit}'
             mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
 
             std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
@@ -616,7 +621,7 @@ class RaSP(Method):
 
             mutation_data = mutation_data.sort_index()
 
-            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', average)' in c ]]
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
             std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
 
         return avg_mutation_data, std_mutation_data, warnings
