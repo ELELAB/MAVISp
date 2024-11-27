@@ -29,22 +29,13 @@ class MutateXStability(Method):
 
     unit = "kcal/mol"
     type = "Stability"
+    averages_filename = 'energies.csv'
+    stds_filename = 'energies_std.csv'
 
-    def parse(self, dir_path):
-
-        warnings = []
-
-        mutatex_files = os.listdir(dir_path)
-
-        if len(mutatex_files) != 1:
-            this_error = f"zero or multiple files found in {dir_path}; only one expected"
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(this_error)])
-
-        mutatex_file = mutatex_files[0]
+    def _parse_mutatex_energy_file(self, fname, data_type):
 
         try:
-            df = pd.read_csv(os.path.join(dir_path, mutatex_file))
+            df = pd.read_csv(fname)
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -70,9 +61,34 @@ class MutateXStability(Method):
 
         # drop now useless columns, rename
         df = df.drop(['residue', 'level_1'], axis=1)
-        df = df.rename(columns={0 : f"{self.type} ({self.version}, {self.unit})"})
 
-        return df, warnings
+        if data_type is None or data_type == '':
+            colname =  f"{self.type} ({self.version}, {self.unit})"
+        else:
+            colname =  f"{self.type} ({self.version}, {self.unit}, {data_type})"
+
+        return df.rename(columns={0 : colname})
+
+    def parse(self, dir_path):
+
+        warnings = []
+
+        mutatex_files = os.listdir(dir_path)
+
+        if self.averages_filename not in mutatex_files:
+            this_error = f"energies.csv file not found in {dir_path}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        averages_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.averages_filename), '')
+
+        if self.stds_filename in mutatex_files:
+            stds_df = self._parse_mutatex_energy_file(os.path.join(dir_path, self.stds_filename), 'st. dev.')
+        else:
+            warnings.append(MAVISpWarningError("standard deviation file not found for MutateX data"))
+            stds_df = None
+
+        return averages_df, stds_df, warnings
 
 class MutateXBinding(Method):
 
@@ -138,7 +154,6 @@ class MutateXBinding(Method):
                 message = "chain ID in FoldX energy file must be either A or B (heterodimer case) or AB (homodimer case)"
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(message)],
                                           warning=[])
-
 
             df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
@@ -227,7 +242,8 @@ class RosettaDDGPredictionStability(Method):
         if len(rosetta_files) == 1 and os.path.isfile(os.path.join(dir_path, rosetta_files[0])):
             rosetta_file = rosetta_files[0]
 
-            mutation_data = self._parse_aggregate_csv(os.path.join(dir_path, rosetta_file), warnings)
+            avg_mutation_data = self._parse_aggregate_csv(os.path.join(dir_path, rosetta_file), warnings)
+            std_mutation_data = None
 
         else:
             csv_files = []
@@ -277,14 +293,21 @@ class RosettaDDGPredictionStability(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-            ddg_colname = f'{self.type} ({self.version}, {self.unit})'
-            mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-            mutation_data = mutation_data[[ddg_colname]]
+            avg_ddg_colname = f'{self.type} ({self.version}, {self.unit})'
+            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
+
+            std_ddg_colname = f'{self.type} ({self.version}, {self.unit}, st. dev.)'
+            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
+
+            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
 
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-        return mutation_data, warnings
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
+            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+
+        return avg_mutation_data, std_mutation_data, warnings
 
 class RosettaDDGPredictionBinding(Method):
 
@@ -537,7 +560,8 @@ class RaSP(Method):
 
             rasp_file = rasp_files[0]
 
-            mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
+            avg_mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
+            std_mutation_data = None
 
         else:
             csv_files = []
@@ -587,10 +611,17 @@ class RaSP(Method):
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
             # merge the data from the different cl folders and keep average
-        ddg_colname = f'{self.type} ({self.unit})'
-        mutation_data[ddg_colname] = mutation_data.mean(axis=1)
-        mutation_data = mutation_data[[ddg_colname]]
+            avg_ddg_colname = f'{self.type} ({self.unit}'
+            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
 
-        mutation_data = mutation_data.sort_index()
+            std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
+            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
 
-        return mutation_data, warnings
+            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+
+            mutation_data = mutation_data.sort_index()
+
+            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
+            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+
+        return avg_mutation_data, std_mutation_data, warnings

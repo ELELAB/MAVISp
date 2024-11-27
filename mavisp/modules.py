@@ -173,7 +173,9 @@ class Stability(MultiMethodMavispModule):
         all_methods = []
         models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}'))
 
+        model_data_stds = None
         model_data_list = []
+        model_data_stds_list = []
     # check that:
         # all methods are supported
         # there are no duplicated methods (possible since they are in different model dirs)
@@ -194,31 +196,38 @@ class Stability(MultiMethodMavispModule):
             method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model))
 
             for method_dir in method_dirs:
-                model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
+                model_averages, model_stds, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
 
                 warnings += this_warnings
-                model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
-                model_data_list.append(model_data)
+                model_averages.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
+
+                model_data_list.append(model_averages)
                 model_data = pd.concat(model_data_list, axis=1)
 
-        keys = [ k for k in model_data.columns if k.startswith('Stability') ]
+                if model_stds is not None:
+                    model_stds.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit}, st. dev.)" ]
+
+                    model_data_stds_list.append(model_stds)
+                    model_data_stds = pd.concat(model_data_stds_list, axis=1)
+
+        keys = [ k for k in model_data.columns if k.startswith('Stability') and not 'st. dev.' in k ]
 
         if any(['FoldX' in k for k in keys]):
-            foldx_col = [k for k in keys if 'FoldX' in k]
+            foldx_col = [k for k in keys if 'FoldX' in k and 'st. dev.' not in k]
             assert foldx_col is not None
             foldx_header = foldx_col[0]
         else:
             foldx_header = None
 
         if any(['Rosetta' in k for k in keys]):
-            rosetta_col = [k for k in keys if 'Rosetta' in k]
+            rosetta_col = [k for k in keys if 'Rosetta' in k and 'st. dev.' not in k]
             assert rosetta_col is not None
             rosetta_header = rosetta_col[0]
         else:
             rosetta_header = None
 
         if any(['RaSP' in k for k in keys]):
-            rasp_col = [k for k in keys if 'RaSP' in k]
+            rasp_col = [k for k in keys if 'RaSP' in k and 'st. dev.' not in k]
             assert rasp_col is not None
             rasp_header = rasp_col[0]
         else:
@@ -236,6 +245,8 @@ class Stability(MultiMethodMavispModule):
             warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
         self.data = self.data.join(model_data)
+        if model_data_stds is not None:
+            self.data = self.data.join(model_data_stds)
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -300,13 +311,20 @@ class SimpleStability(Stability):
                 method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
 
                 for method_dir in method_dirs:
-                    model_data, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+
+                    model_data, model_stds, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
                     warnings += this_warnings
+
                     model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]
                     model_data_list.append(model_data)
-                    model_data = pd.concat(model_data_list, axis=1)
 
-            keys = [ k for k in model_data.columns if k.startswith('Stability') ]
+                    if model_stds is not None:
+                        model_stds.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit}, st. dev.)" ]
+                        model_data_list.append(model_stds)
+
+            model_data = pd.concat(model_data_list, axis=1)
+
+            keys = [ k for k in model_data.columns if k.startswith('Stability') and not 'st. dev.' in k]
 
             if any(['FoldX' in k for k in keys]):
                 foldx_col = [k for k in keys if 'FoldX' in k]
