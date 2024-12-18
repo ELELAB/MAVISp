@@ -512,16 +512,16 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
 
         rsa = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sas_filename), warnings)
 
+        module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+
         self.data['res_num'] = self.data.index.str[1:-1]
 
         self.data = self.data.join(rsa, on='res_num')
 
-        keys = [ k for k in self.data.columns if k.startswith('Local Int. With DNA') ]
+        common_interactors = set.intersection(*[ set(m.interactors) for k, m in self.methods.items() ])
 
-        if len(keys) != 1:
-            warnings.append(MAVISpWarningError("Exactly one data column expected to calculate classification"))
-
-        self.data['Local Int. classification With DNA'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1)
+        for ci in common_interactors:
+            self.data[f'Local Int. With DNA classification ({ci})'] = self.data.apply(self._generate_local_interactions_DNA_classification, axis=1, ci=ci)
 
         self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
@@ -532,28 +532,21 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
             e.warning.extend(warnings)
             raise e
 
-    def _generate_local_interactions_DNA_classification(self, row):
+    def _generate_local_interactions_DNA_classification(self, row, ci, stab_co=1.0):
 
-        keys = [ k for k in row.keys() if k.startswith('Local Int. With DNA') ]
+        colnames = [ f"{m.type} ({ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
-        if len(keys) != 1:
-            return pd.NA
-
-        stab_co =  1.0
-
-        header = keys[0]
-
-        if pd.isna(row[header]):
+        if np.any( [ pd.isna(row[h]) for h in colnames ] ):
             if row['sas_sc_rel'] >= 20:
                 return 'Uncertain'
             return pd.NA
-
-        if row[header] > stab_co:
+        if np.all( [ row[h] > stab_co for h in colnames ] ):
             return 'Destabilizing'
-        elif row[header] < (- stab_co):
+        if np.all( [ row[h] < (-stab_co) for h in colnames ] ):
             return 'Stabilizing'
-        else:
+        if np.all( [ (- stab_co) <= row[h] <= stab_co for h in colnames ] ):
             return 'Neutral'
+        return 'Uncertain'
 
 class TaccLocalInteractionsDNA(LocalInteractionsDNA):
 
