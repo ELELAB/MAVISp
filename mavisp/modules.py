@@ -405,8 +405,7 @@ class LocalInteractions(MultiMethodMavispModule):
         except MAVISpMultipleError as e:
             if len(e.critical) > 0:
                 raise
-        else:
-            e = None
+            warnings += e.warning
 
         module_dir_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
 
@@ -425,12 +424,9 @@ class LocalInteractions(MultiMethodMavispModule):
 
         self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
-        if e is None and len(warnings) > 0:
+        if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
-        elif len(warnings) > 0:
-            e.warning.extend(warnings)
-            raise e
 
     def _generate_local_interactions_classification(self, row, ci, stab_co=1.0):
 
@@ -507,8 +503,7 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
         except MAVISpMultipleError as e:
             if len(e.critical) > 0:
                 raise
-        else:
-            e = None
+            warnings += e.warning
 
         rsa = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sas_filename), warnings)
 
@@ -525,12 +520,9 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
 
         self.data = self.data.drop(columns=['res_num', 'sas_sc_rel'])
 
-        if e is None and len(warnings) > 0:
+        if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
-        elif len(warnings) > 0:
-            e.warning.extend(warnings)
-            raise e
 
     def _generate_local_interactions_DNA_classification(self, row, ci, stab_co=1.0):
 
