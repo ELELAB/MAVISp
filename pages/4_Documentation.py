@@ -145,7 +145,7 @@ st.write("""This module calculates the change of free energy of binding upon mut
 between our protein of interest and one target protein (heterodimer) or the same protein (homodimer),
 starting from a protein complex structure. These are calculated either using FoldX and Rosetta;
 a consensus approach is used to build up a final classification. Currently, results
-for the Local interactions module are only availablt for a small fraction of the
+for the Local interactions module are only available for a small fraction of the
 dataset.
 
 The module generates multiple columns, and several of them might be present
@@ -191,6 +191,13 @@ data = [ ( 'Destabilizing', 'The mutation is destabilizes the binding between th
          ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 20%'),
          ( 'N.A'          , 'free energy values are not available and SAS < 20%',) ]
 st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+
+st.write("""Notice that we typically calculate changes of free energy exclusively for
+residues located at the binding interface, meaning that most residues will likely not feature an
+associated free energy value. If such residues are solvent-exposed, they will still
+be classified as Uncertain, even though they are not located on the
+binding interface for the specific interactor of interest, according to the previously
+outlined classification rules.""")
 
 st.subheader("Local interactions with DNA")
 
