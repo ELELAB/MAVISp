@@ -117,7 +117,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
 def process_df_for_lolliplot(df):
     _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
     text, summary_df = generate_summary(processed_df, d_cutoff=0.3, r_cutoff=0.5)
-    filtered_summary_df = filter_am_summary(summary_df, processed_df)
+    filtered_summary_df = filter_am_summary(summary_df, processed_df, True)
     return process_input_for_lolliplot(filtered_summary_df)
 
 @st.cache_data
