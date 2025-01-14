@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Karolina Krzesińska
-# <beltrameludo@gmail.com> <simonescrima@gmail.com> <kzokr@dtu.dk>
+# Copyright (C) 2023 Ludovica Beltrame <beltrameludo@gmail.com>,
+# Simone Scrima <simonescrima@gmail.com>, Karolina Krzesińska <kzokr@dtu.dk>,
+# Matteo Tiberti
 # Danish Cancer Society & Technical University of Denmark
 
 # This program is free software: you can redistribute it and/or modify
@@ -156,10 +157,11 @@ def color_yticklabels(labels):
     # an effect on stability, function or other
     stability = ['Stability classification',
                  'PTM effect in stability',
-                 'Functional sites (cofactor)',
-                 'Functional sites (active site)',
                  'EFoldMine - part of early folding region']
+    
     function = ['Local Int.',
+                'Functional sites (cofactor)',
+                'Functional sites (active site)',
                 'PTM',
                 'AlloSigma2']
 
@@ -283,7 +285,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
     f = lambda x: '(Rosetta, FoldX)' in x or \
                     '(RaSP, FoldX)' in x or \
                     'Local Int. classification' in x or \
-                    x == 'Local Int. With DNA' or \
+                    'Local Int. With DNA classification' in x or \
                     'Functional sites (cofactor)' in x or \
                     'Functional sites (active site)' in x or \
                     'AlloSigma2 predicted consequence - active sites' in x or \
@@ -337,17 +339,22 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
             np.where(df['DeMaSk'] != 'Damaging', 'Neutral', df['DeMaSk predicted consequence']))
 
     # Drop score columns
-    df.drop(columns = ['REVEL score','DeMaSk delta fitness', 'GEMME Score'],
+    if 'GEMME Score' in df.columns:
+        df.drop(columns = ['REVEL score','DeMaSk delta fitness', 'GEMME Score'],
             inplace = True)
-
+    else:
+        df.drop(columns = ['REVEL score','DeMaSk delta fitness'],
+            inplace = True)
+   
     # Sort columns based on broad effect categories
     functional_cols = [col for col in df.columns if 'functional' in col.lower() and 'experimental data classification' not in col.lower()]
     stability_cols = [col for col in df.columns if 'stability' in col.lower() and 'experimental data classification' not in col.lower()]
-    other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower()]
+    efold_col = [col for col in df.columns if 'efoldmine' in col.lower()]
+    other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower() and 'efoldmine' not in col.lower()]
     experimental_cols = list(set([col for col in df.columns if 'Experimental data classification' in col]))
-
+    
     # Combine lists in order
-    df = df[functional_cols + stability_cols + other_cols + experimental_cols]
+    df = df[stability_cols + efold_col + functional_cols + other_cols + experimental_cols]
 
     # Define a dictionary of effect: code_number
     # Damaging : 1, 5, 6
@@ -399,7 +406,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
 
     # Append the last columns to the final list
     df = df[columns_to_keep + last_columns]
-
+    
     return df, full_df
 
 def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
@@ -533,7 +540,6 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                         label=legend_dict[k],
                         markeredgecolor='k') for k in legend_dict.keys()]
 
-
         first_legend = ax.legend(handles = legend_list,
                 loc='upper right',
                 bbox_to_anchor=(1, 1.2),
@@ -559,7 +565,6 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                                 markerfacecolor=k,
                                 label=xtick_legend_dict[k],
                                 markeredgecolor='k') for k in xtick_legend_dict.keys()]
-
 
             second_legend = ax2.legend(handles=xtick_legend_list,
             loc='upper right',
@@ -605,11 +610,10 @@ def generate_summary(data,d_cutoff,r_cutoff):
     data = data.apply(lambda col: col.map(lambda x: str(x) if isinstance(x, bool) else x))
     data = data.apply(lambda x: x.str.lower() if x.dtype == object else x)
 
-
     # Colnames ptm and allosigma
 
     filter_col_stability = [col for col in data if '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
-    filter_col_local = [col for col in data if ('Local Int. classification') in col]
+    filter_col_local = [col for col in data if 'Local Int. classification' in col or 'Local Int. With DNA classification' in col]
     ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
     ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
     ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
@@ -653,7 +657,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         except KeyError:
             log.warning(f'None of the STABILITY modules were found in MAVISp csv')
 
-
     ### Local interactions ###
     interactors = r'\((.*?)\)' # interactor are delimited by ()
     if filter_col_local:
@@ -673,21 +676,21 @@ def generate_summary(data,d_cutoff,r_cutoff):
                 mutlist = out_list(loc_un_list)
 
                 if ensemble:
+                    if 'DNA' in col:
+                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
+                        continue
                     if inter:
                         out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA. {ensemble[0]}. {mutlist}'
                 else:
+                    if 'DNA' in col:
+                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {mutlist}'
+                        continue
                     if inter:
                         out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter}. {mutlist}'
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA. {mutlist}'
-
             except KeyError:
                 log.warning(f'{col} not found in MAVISp csv.')
     else:
         out += '- No classification for LOCAL_INTERACTION available yet.\n'
-
 
     ### PTM_stability ###
     for col in ptm_stab_clmn:
@@ -751,7 +754,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         except KeyError:
             log.warning(f'- {ptm_funct_clmn} not found in MAVISp csv.')
 
-
     ### Assess presence of PTM module ####
     # Start counter
     count_ptm_na = 0
@@ -764,7 +766,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         matches = re.findall(pattern, ptm)
         if matches:
             d[matches[0]] = 0
-
 
     for col in ptm_module:
         ensemble = re.findall(pattern, col)
@@ -933,7 +934,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     if len(filter_col_local) > 0:
         for col in filter_col_local:
             ensemble = re.findall(pattern, col)
-            inter = re.findall(interactors, col) # search for interactors
+            inter = re.findall(interactors, col)
 
             # Calculate number of damaging mutations
             loc_d = str(len(data[data[col].isin(d_s)]))
@@ -945,15 +946,17 @@ def generate_summary(data,d_cutoff,r_cutoff):
             # Print list of mutations only if the are less than 10
             mutlist = out_list(loc_d_list)
             if ensemble:
+                if 'DNA' in col:
+                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
+                    continue
                 if inter:
                     out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA. {ensemble[0]}. {mutlist}'
             else:
+                if 'DNA' in col:
+                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {mutlist}'
+                    continue
                 if inter:
                     out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter}. {mutlist}'
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA. {mutlist}'
     else:
         all_local = []
         out += '- No classification for LOCAL_INTERACTION available yet.\n'
@@ -1524,8 +1527,7 @@ def map_clinvar_categories(dataframe, clinvar_dict):
     return dataframe
 
 
-
-def filter_am_summary(am_summary, df):
+def filter_am_summary(am_summary, df, amx_flag):
     """Filter the AlphafoldMissense summary dataframe
 
     This function filters the input dataframe to keep only columns of interest
@@ -1537,16 +1539,17 @@ def filter_am_summary(am_summary, df):
         dataframe for alphamissense summary
     df : dataframe
         full data frame
-
+    amx_flag: bool
+        denotes whether to filter df on G/D thresholds
     Returns
     -------
     dataframe : dataframe
         filtered dataframe for alphamissense summary
     """
 
-
     f = lambda x: 'Stability classification' in x or \
               'Local Int. classification' in x or \
+              'Local Int. With DNA classification' in x or \
               'AlloSigma2 predicted consequence' in x or \
               'AlloSigma2-PSN classification' in x or \
               'PTM effect' in x or \
@@ -1561,6 +1564,13 @@ def filter_am_summary(am_summary, df):
 
     # Filter output according to previously applied args
     filtered_am = filtered_am[filtered_am.index.isin(df.index)]
+
+    if amx_flag:
+        # Filter for LOF/GOF in at least one Gemme/Demask 
+        filtered_index = df[
+        (df['DeMaSk predicted consequence'].isin([7, 8]) if 'DeMaSk predicted consequence' in df.columns else False) |
+        (df['GEMME predicted consequence'].isin([7, 8]) if 'GEMME predicted consequence' in df.columns else False)].index
+        filtered_am = filtered_am[filtered_am.index.isin(filtered_index)]
 
     # Add new column with identified broad effects
     filtered_am = effect_summary(filtered_am)
@@ -1691,6 +1701,25 @@ def main():
                         action = 'store_true',
                         help = colC_helpstr)
 
+    pltS_helpstr =  f"Plotting of mutations based on source " \
+                    f"choose from: saturation, cosmic, cbioportal. " \
+                    f"For combinations, provide space separated options " \
+                    f"(e.g. saturation cosmic). Default = all."
+    parser.add_argument("-pltS", "--plot_Source",
+                        nargs = "+",
+                        choices = ["saturation",
+                                   "cosmic",
+                                   "cbioportal"],
+                        help = pltS_helpstr)
+
+    AMx_helpstr =   f"Include AM pathogenic mutations that " \
+                    f"also satisfy at least one of either GEMME " \
+                    f"or DeMaSk thresholds for " \
+                    f"LOF/GOF, default or specificied using respective " \
+                    f"flags. "
+    parser.add_argument("-amx", "--AMx",
+                        action = 'store_true',
+                        help = AMx_helpstr)
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
@@ -1779,6 +1808,29 @@ def main():
     # If the flag is selected drop DeMaSk fitness for plotting
     if args.plot_Demask:
         df = df.drop(columns=['DeMaSk'])
+    
+    # Initialize indexes for additive filtering
+    source_idx = pd.Index([])
+    clinvar_idx = pd.Index([])
+    
+    if args.plot_Source:
+        try:
+            # Accommodate multiple user options
+            pattern = '|'.join(args.plot_Source)
+            
+            # Filter df based on desired mutation source
+            source_idx = dataframe[dataframe['Mutation sources'].str.contains(pattern, case=False, na=False)].index
+            
+            # Raise error if filtering leaves df empty
+            if source_idx.empty:
+                log.warning(f"No mutations found matching the mutation source: {args.plot_Source}. Exiting...")
+                sys.exit(1)
+            else:
+                log.info(f"Found {len(source_idx)} mutations matching the source filter: {args.plot_Source}")
+
+        except Exception as e:
+            log.error(f"Error occurred: {e}. Exiting...")
+            sys.exit(1)
 
     # Assert the user didn't provide both -pltC and -colC options
     if args.plot_Clinvar and args.color_Clinvar:
@@ -1790,7 +1842,7 @@ def main():
 
     # Assert the required column is present
     if args.plot_Clinvar or args.color_Clinvar:
-
+        
         if 'ClinVar Interpretation' not in dataframe.columns:
             log.error("ClinVar Interpretation column is missing from the input data.")
             sys.exit(1)
@@ -1811,7 +1863,7 @@ def main():
 
     # Keep only user-defined mutations according to ClinVar annotation
     if args.plot_Clinvar:
-
+        
         try:
             # Define a mapping of user-input to categories
             filter_terms = {
@@ -1822,12 +1874,9 @@ def main():
                 'uncertain': ['uncertain'],
                 'conflicting': ['conflicting']}
 
-            # Initialize an empty list to collect indexes
-            filtered_indexes = pd.Index([])
-
             # Filter dataframe according to flag option
             if 'all' in args.plot_Clinvar:
-                filtered_indexes = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].notna()].index
+                clinvar_idx = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].notna()].index
             else:
                 # Accommodate multiple user options
                 for clinvar_option in args.plot_Clinvar:
@@ -1837,29 +1886,35 @@ def main():
                         pattern = '|'.join(category_values)
                         #  Get indexes of mutations matching current ClinVar category
                         indexes_to_add = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].str.contains(pattern, case=False, na=False)].index
-                        filtered_indexes = filtered_indexes.union(indexes_to_add)
+                        clinvar_idx = clinvar_idx.union(indexes_to_add)
                     else:
                         log.warning(f"Unrecognized ClinVar filter option: {clinvar_option}")
                         sys.exit(1)
-
+            
             # Raise error if filtering leaves df empty
-            if len(filtered_indexes) == 0:
+            if len(clinvar_idx) == 0:
                 log.warning(f"No mutations found matching the ClinVar filter {args.plot_Clinvar}. Exiting...")
                 sys.exit(1)
             else:
                 # Log the number of mutations remaining after filtering
-                log.info(f"Found {len(filtered_indexes)} mutations matching the ClinVar filter {args.plot_Clinvar}")
-
-            # Keep only mutations according to user-input
-            df = df[df.index.isin(filtered_indexes)]
-
-            if df.empty:
-                log.warning("No mutations remain after ClinVar filtering. Exiting...")
-                sys.exit(1)
+                log.info(f"Found {len(clinvar_idx)} mutations matching the ClinVar filter {args.plot_Clinvar}")
 
         except Exception as e:
             log.error(f"Error occurred: {e}. Exiting...")
             sys.exit(1)
+    
+    # Additively filter if -pltS -pltC
+    if args.plot_Source or args.plot_Clinvar:
+        #Save individual pngs
+        save_png = True
+        combined_indexes = source_idx.union(clinvar_idx)
+        df = df[df.index.isin(combined_indexes)]
+        
+        log.info(f"Found {len(df)} mutations matching filters.")
+        # Raise error if filtering leaves df empty
+        if df.empty:
+                log.warning("No mutations remain after filtering. Exiting...")
+                sys.exit(1)
 
     ############################### SUMMARY ###############################
 
@@ -1871,7 +1926,7 @@ def main():
         out.write(summary)
 
     ################################# PLOT #################################
-
+    '''
     filter_col = [col for col in df if col.startswith("Local Int.")]
     try:
         func_sites = df[['Functional sites (cofactor)', 'Functional sites (active site)']]
@@ -1882,7 +1937,8 @@ def main():
         df = df[new_order]
     except:
         pass
-
+    '''
+    
     # Plot dot plot
     figures = plot(df = df,
                    full_df = clinvar_mapped_df,
@@ -1890,20 +1946,19 @@ def main():
                    height = args.figsize[1],
                    xlim = args.x_lim,
                    clinvar_flag = bool(args.plot_Clinvar),
-                   clinvar_col = args.color_Clinvar)
+                   clinvar_col = bool(args.color_Clinvar))
 
     with PdfPages(f"{args.output}.pdf") as pdf:
-        for figure in figures:
+        for i, figure in enumerate(figures):
             figure.savefig(pdf, format='pdf', dpi=300)
 
-        if save_png:
-            figure.savefig(f'{output}_{p}.png', dpi=300)
-
+            if save_png:
+                figure.savefig(f'{args.output}_{i}.png', dpi=300)
 
 
 ################################# AM CSV #################################
 
-    filtered_am = filter_am_summary(am_summary, df)
+    filtered_am = filter_am_summary(am_summary, df, args.AMx)
 
     filtered_am.to_csv('alphamissense_out.csv', index=True)
 
