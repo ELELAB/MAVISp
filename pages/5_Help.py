@@ -116,12 +116,12 @@ st.subheader("Plotting summary of MAVISp classification using a reduced set of c
 
 st.write("""The MAVISp website allows to download an even more succint representation
 of the classification performed by MAVISp. This is carried out in the Damaging mutations tab.
-This section plots those mutations that have been classified as damaging for AlphaMissense as
-well as for one or more of the main MAVISp modules. Consequences are grouped in the following
-broad categories: stability, PTM, long range effects, local interactions. The user is asked
-to select a number of mutations as done for the previous tab. It should be noticed that not
-all the mutations available in the dataset will be available in this panel, as not all mutations
-will satisfy the aforamentioned criteria.
+This section plots those mutations that have been classified as pathogenic for AlphaMissense and for
+at least one between DeMaSk or GEMME, as well as for one or more of the main MAVISp modules.
+Consequences are grouped in the following broad categories: stability, PTM, long range effects,
+local interactions. The user is asked to select a number of mutations as done for the previous
+tab. It should be noticed that not all the mutations available in the dataset will be available
+in this panel, as not all mutations will satisfy the aforamentioned criteria.
 
 The final representation is a lollipop plot, in which mutations are found on the X axis and
 one or more vertical bars are present in corresponde of the mutation, displaying which of the
