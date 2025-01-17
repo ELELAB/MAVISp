@@ -102,22 +102,62 @@ def load_main_table(data_dir, mode):
     return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
 
 @st.cache_data
+def load_clinvar_dict(tsv_file):
+    clinvar_dict = pd.read_csv(tsv_file,
+                                sep='\t',
+                                header=None,
+                                names=['clinvar', 'internal_category'])
+    return clinvar_dict.set_index('clinvar')['internal_category'].to_dict()
+
+@st.cache_data
 def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
     df = df.copy()
-    processed_df, processed_df2 = process_input_for_dotplot(df, d_cutoff=demask_co, r_cutoff=revel_co, g_cutoff=gemme_co)
+
+    clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
+
+    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                            d_cutoff=demask_co,
+                                                            r_cutoff=revel_co,
+                                                            g_cutoff=gemme_co,
+                                                            residues=None,
+                                                            mutations=None,
+                                                            clinvar_dict=clinvar_dict,
+                                                            plot_Revel=True,
+                                                            plot_Demask=True,
+                                                            plot_Source=None,
+                                                            plot_Clinvar=None,
+                                                            color_Clinvar=True)
 
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, processed_df2, fig_width, fig_height, n_muts, False, None)
-    return my_plots
+    my_plots = do_dotplots(processed_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
 
+    return my_plots
 
 @st.cache_data
 def process_df_for_lolliplot(df):
-    _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
-    text, summary_df = generate_summary(processed_df, d_cutoff=0.3, r_cutoff=0.5)
-    filtered_summary_df = filter_am_summary(summary_df, processed_df)
+    df = df.copy()
+
+    clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
+
+    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                            r_cutoff=0.5,
+                                                            d_cutoff=0.25,
+                                                            g_cutoff=3.0,
+                                                            residues=None,
+                                                            mutations=None,
+                                                            clinvar_dict=clinvar_dict,
+                                                            plot_Revel=False,
+                                                            plot_Demask=True,
+                                                            plot_Source=None,
+                                                            plot_Clinvar=None,
+                                                            color_Clinvar=True)
+
+    text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
+
+    filtered_summary_df = filter_am_summary(summary_df, processed_df, True)
+
     return process_input_for_lolliplot(filtered_summary_df)
 
 @st.cache_data

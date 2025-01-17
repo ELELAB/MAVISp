@@ -152,7 +152,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             do_revel = st.checkbox('Show available REVEL classification', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
-            gemme_co = st.number_input("Cutoff for GEMME", value=0.5)
+            gemme_co = st.number_input("Cutoff for GEMME", value=3.0)
         with col2:
             do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
@@ -201,9 +201,17 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         this_dataset_table = process_df_for_lolliplot(this_dataset_table)
 
         st.write(f"""Select one or more mutations below, up to 50, to be included
-        in the plot. These are only those mutations that are classified as pathogenic
-        for AlphaMissense and have an explanation for MAVISp. They are
-        {this_dataset_table.shape[0]} in this daataset.""")
+        in the plot. These are only those mutations that are at the same time
+        i) classified as pathogenic for AlphaMissense, ii) classified as loss
+        of function or gain of function for either GEMME or DeMaSk and
+        iii) damaging for the respective module in MAVISp. They are
+        {this_dataset_table.shape[0]} in this dataset.""")
+
+        disable_lolliplot = False
+        if this_dataset_table.shape[0] == 0:
+            st.write("""There are no suitable mutations in this dataset, therefore
+            this section has been disabled""")
+            disable_lolliplot = True
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
                                        options=this_dataset_table.index,
@@ -213,7 +221,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
                                        key='sj17h39')
 
         if st.button('Generate plot',
-                     disabled=len(selected_muts) == 0,
+                     disabled=len(selected_muts) == 0 or disable_lolliplot,
                      key='qwe123'):
 
             this_dataset_table = this_dataset_table.loc[selected_muts]
@@ -241,124 +249,134 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
                             'Long Range' : 'blueCarbon',
                             'Multiple'   : 'purpleCarbon'}
 
+        this_dataset_table = this_dataset.copy()
+        this_dataset_table = this_dataset_table.set_index('Mutation')
+        this_dataset_table = process_df_for_lolliplot(this_dataset_table)
+
         st.write("""This tab displays the AlphaFold model for the selected protein,
         if available. The checkbox below will activate colouring of mutations that
-        are at the same time i) Damaging for AlphaMissense and ii) Damaging for the
-        respective module in MAVISp. You can have multiple checkboxes active at the same
-        time; residues with mutations that have multiple effects for MAVISp will
-        be coloured in purple.
-        We offer two types of analysis: one that colors only those residues
+        are at the same time i) classified as pathogenic for AlphaMissense, ii) classified as loss
+        of function or gain of function for either GEMME or DeMaSk and
+        iii) damaging for the respective module in MAVISp. You
+        can have multiple checkboxes active at the same time; residues with mutations
+        that have multiple effects for MAVISp will be coloured in purple.""")
+
+        st.write("""We offer two types of analysis: one that colors only those residues
         for which the number of damaging mutations is higher than a user-selected
         threshold. This can be useful to spot mutational hotspots. In the second,
         the user can choose to color selected residues of interest which will be
         displayed on the structure.""")
 
-        this_dataset_table = this_dataset.copy()
-        this_dataset_table = this_dataset_table.set_index('Mutation')
-        this_dataset_table = process_df_for_lolliplot(this_dataset_table)
+        disable_structure = False
+        if this_dataset_table.shape[0] == 0:
+            st.write("""There are no suitable mutations in this dataset, therefore
+            this tab has been disabled""")
+            disable_structure = True
 
-        # download model and stop if it can't be found
-        try:
-            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
-            response.raise_for_status()
-        except ConnectionError:
-            st.write("Failed connecting to the AlphaFold Protein Structure Database")
-            st.stop()
-        except HTTPError:
-            st.write("Could not fetch protein structure model from the AlphaFold Protein Structure Database")
-            st.stop()
-        else:
-            model = response.text
+        if not disable_structure:
 
-        # set up viewer
-        viewer = py3Dmol.view(width=900, height=600)
-        viewer.addModel(model, 'pdb')
-        viewer.setStyle({ "cartoon": { "color" : "lightgray", "style" : "parabola" } })
+            # download model and stop if it can't be found
+            try:
+                response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
+                response.raise_for_status()
+            except ConnectionError:
+                st.write("Failed connecting to the AlphaFold Protein Structure Database")
+                st.stop()
+            except HTTPError:
+                st.write("Could not fetch protein structure model from the AlphaFold Protein Structure Database")
+                st.stop()
+            else:
+                model = response.text
 
-        # decide which classification terms to consider
-        st.write("Classification terms to be considered (choose one or more):")
+            # set up viewer
+            viewer = py3Dmol.view(width=900, height=600)
+            viewer.addModel(model, 'pdb')
+            viewer.setStyle({ "cartoon": { "color" : "lightgray", "style" : "parabola" } })
 
-        col_structure1, col_structure2 = st.columns(2)
+            # decide which classification terms to consider
+            st.write("Classification terms to be considered (choose one or more):")
 
-        with col_structure1:
-            structure_stability = st.checkbox('Stability')
-            structure_li        = st.checkbox('Local Int.')            
-        with col_structure2:
-            structure_ptm       = st.checkbox('PTM')
-            structure_lr        = st.checkbox('Long range')
+            col_structure1, col_structure2 = st.columns(2)
 
-        interesting_cols = []
-        for col, checkbox in [('Stability',  structure_stability),
-                              ('Local Int.', structure_li),
-                              ('PTM',        structure_ptm),
-                              ('Long Range', structure_lr)]:
-            if checkbox:
-                interesting_cols.append(col)
+            with col_structure1:
+                structure_stability = st.checkbox('Stability')
+                structure_li        = st.checkbox('Local Int.')
+            with col_structure2:
+                structure_ptm       = st.checkbox('PTM')
+                structure_lr        = st.checkbox('Long range')
 
-        # pre-process the dataframe
-        this_dataset_table = this_dataset_table[interesting_cols]
-        this_dataset_table = this_dataset_table.loc[this_dataset_table[interesting_cols].sum(axis=1) > 0]
+            interesting_cols = []
+            for col, checkbox in [('Stability',  structure_stability),
+                                  ('Local Int.', structure_li),
+                                  ('PTM',        structure_ptm),
+                                  ('Long Range', structure_lr)]:
+                if checkbox:
+                    interesting_cols.append(col)
 
-        this_dataset_table['residue'] = this_dataset_table.index.str[1:-1]
-        tmp_df1 = this_dataset_table.reset_index().groupby('residue').agg({'Mutation':lambda x: " ".join(x.tolist())})
-        tmp_df2 = this_dataset_table.groupby('residue').agg(sum)
-        this_dataset_table = tmp_df1.join(tmp_df2)
+            # pre-process the dataframe
+            this_dataset_table = this_dataset_table[interesting_cols]
+            this_dataset_table = this_dataset_table.loc[this_dataset_table[interesting_cols].sum(axis=1) > 0]
 
-        # select analysis type and act accordingly
-        analysis_type = st.radio("Type of analysis", options=['Hotspots', 'Custom sites'])
+            this_dataset_table['residue'] = this_dataset_table.index.str[1:-1]
+            tmp_df1 = this_dataset_table.reset_index().groupby('residue').agg({'Mutation':lambda x: " ".join(x.tolist())})
+            tmp_df2 = this_dataset_table.groupby('residue').agg(sum)
+            this_dataset_table = tmp_df1.join(tmp_df2)
 
-        if analysis_type == 'Hotspots':
-            min_muts = st.slider(label="Minimum number of damaging mutations",
-                                 min_value=1, max_value=19, step=1,
-                                 value=5)
-            this_dataset_table = this_dataset_table.loc[this_dataset_table['Mutation'].str.split(' ').apply(len) >= min_muts]
-        elif analysis_type == 'Custom sites':
-            selected_muts = st.multiselect(label="Sites of interest",
-                                        options=this_dataset_table.index,
-                                        default=None,
-                                        max_selections=50,
-                                        placeholder="Type or select one site or more")
-            this_dataset_table = this_dataset_table.loc[selected_muts]
+            # select analysis type and act accordingly
+            analysis_type = st.radio("Type of analysis", options=['Hotspots', 'Custom sites'])
 
-        labels = st.radio("Show residue labels:", options=['none', 'for mutations', 'for sites'])
-        labels_in_front_checkbox = st.checkbox("Labels are always in front of the structure")
+            if analysis_type == 'Hotspots':
+                min_muts = st.slider(label="Minimum number of damaging mutations",
+                                     min_value=1, max_value=19, step=1,
+                                     value=5)
+                this_dataset_table = this_dataset_table.loc[this_dataset_table['Mutation'].str.split(' ').apply(len) >= min_muts]
+            elif analysis_type == 'Custom sites':
+                selected_muts = st.multiselect(label="Sites of interest",
+                                            options=this_dataset_table.index,
+                                            default=None,
+                                            max_selections=50,
+                                            placeholder="Type or select one site or more")
+                this_dataset_table = this_dataset_table.loc[selected_muts]
 
-        if labels_in_front_checkbox:
-            front_labels = 'true'
-        else:
-            front_labels = 'false'
+            labels = st.radio("Show residue labels:", options=['none', 'for mutations', 'for sites'])
+            labels_in_front_checkbox = st.checkbox("Labels are always in front of the structure")
 
-        # stop unless at least one classification has been selected
-        if len(interesting_cols) == 0:
-            st.stop()
+            if labels_in_front_checkbox:
+                front_labels = 'true'
+            else:
+                front_labels = 'false'
 
-        st.markdown('''
-        Color legend:
-        
-        🔴 Stability
-        🟠 Local interactions
-        🟢 PTM
-        🔵 Long Range
-        🟣 Mutations with multiple classifications
-        ''')
+            # stop unless at least one classification has been selected
+            if len(interesting_cols) == 0:
+                st.stop()
 
-        # prepare colors
-        this_dataset_table['color'] = ''
-        for col in interesting_cols:
-            this_dataset_table.loc[this_dataset_table[col] > 0, 'color'] = structure_colors[col]
+            st.markdown('''
+            Color legend:
 
-        this_dataset_table.loc[(this_dataset_table[interesting_cols] > 0).sum(axis=1) > 1, 'color'] = structure_colors['Multiple']
-        for color in this_dataset_table['color'].unique():
-            residues = this_dataset_table.loc[this_dataset_table['color'] == color].index.tolist()
-            viewer.addStyle({'resi': residues}, {'cartoon': {'colorscheme': color}})
+            🔴 Stability
+            🟠 Local interactions
+            🟢 PTM
+            🔵 Long Range
+            🟣 Mutations with multiple classifications
+            ''')
 
-        if labels == 'for mutations':
-            for idx, row in this_dataset_table.iterrows():
-                viewer.addLabel(row['Mutation'], {'fontColor':'black', 'backgroundColor':'lightgray'}, {'resi':idx})
+            # prepare colors
+            this_dataset_table['color'] = ''
+            for col in interesting_cols:
+                this_dataset_table.loc[this_dataset_table[col] > 0, 'color'] = structure_colors[col]
 
-        elif labels == 'for sites':
-            for idx, row in this_dataset_table.iterrows():
-                viewer.addLabel(idx, {'fontColor':'black', 'backgroundColor':'lightgray', 'inFront':front_labels}, {'resi':idx})
+            this_dataset_table.loc[(this_dataset_table[interesting_cols] > 0).sum(axis=1) > 1, 'color'] = structure_colors['Multiple']
+            for color in this_dataset_table['color'].unique():
+                residues = this_dataset_table.loc[this_dataset_table['color'] == color].index.tolist()
+                viewer.addStyle({'resi': residues}, {'cartoon': {'colorscheme': color}})
 
-        viewer.zoomTo()
-        showmol(viewer, width=900, height=600)
+            if labels == 'for mutations':
+                for idx, row in this_dataset_table.iterrows():
+                    viewer.addLabel(row['Mutation'], {'fontColor':'black', 'backgroundColor':'lightgray'}, {'resi':idx})
+
+            elif labels == 'for sites':
+                for idx, row in this_dataset_table.iterrows():
+                    viewer.addLabel(idx, {'fontColor':'black', 'backgroundColor':'lightgray', 'inFront':front_labels}, {'resi':idx})
+
+            viewer.zoomTo()
+            showmol(viewer, width=900, height=600)
