@@ -200,7 +200,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         st.write(f"""Select one or more mutations below, up to 50, to be included
         in the plot. These are only those mutations that are at the same time 
         i) classified as pathogenic for AlphaMissense, ii) classified as loss
-        of function or gain of fucntion for either GEMME or DeMaSk and 
+        of function or gain of function for either GEMME or DeMaSk and 
         iii) damaging for the respective module in MAVISp. They are
         {this_dataset_table.shape[0]} in this dataset.""")
 
@@ -245,9 +245,9 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         are at the same time i) Damaging for AlphaMissense, ii) LoF/GoF for either
         GEMME or DeMaSk and iii) Damaging for the respective module in MAVISp. You
         can have multiple checkboxes active at the same time; residues with mutations
-        that have multiple effects for MAVISp will be coloured in purple.
+        that have multiple effects for MAVISp will be coloured in purple.""")
 
-        We offer two types of analysis: one that colors only those residues
+        st.write("""We offer two types of analysis: one that colors only those residues
         for which the number of damaging mutations is higher than a user-selected
         threshold. This can be useful to spot mutational hotspots. In the second,
         the user can choose to color selected residues of interest which will be
