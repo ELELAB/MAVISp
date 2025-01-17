@@ -245,8 +245,9 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
         st.write("""This tab displays the AlphaFold model for the selected protein,
         if available. The checkbox below will activate colouring of mutations that
-        are at the same time i) Damaging for AlphaMissense, ii) LoF/GoF for either
-        GEMME or DeMaSk and iii) Damaging for the respective module in MAVISp. You
+        are at the same time i) classified as pathogenic for AlphaMissense, ii) classified as loss
+        of function or gain of function for either GEMME or DeMaSk and
+        iii) damaging for the respective module in MAVISp. You
         can have multiple checkboxes active at the same time; residues with mutations
         that have multiple effects for MAVISp will be coloured in purple.""")
 
