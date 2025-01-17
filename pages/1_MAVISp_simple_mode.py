@@ -198,9 +198,11 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         this_dataset_table = process_df_for_lolliplot(this_dataset_table)
 
         st.write(f"""Select one or more mutations below, up to 50, to be included
-        in the plot. These are only those mutations that are classified as pathogenic
-        for AlphaMissense and have an explanation for MAVISp. They are
-        {this_dataset_table.shape[0]} in this daataset.""")
+        in the plot. These are only those mutations that are at the same time 
+        i) classified as pathogenic for AlphaMissense, ii) classified as loss
+        of function or gain of fucntion for either GEMME or DeMaSk and 
+        iii) damaging for the respective module in MAVISp. They are
+        {this_dataset_table.shape[0]} in this dataset.""")
 
         selected_muts = st.multiselect(label="Mutations to be displayed",
                                        options=this_dataset_table.index,

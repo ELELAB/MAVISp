@@ -121,7 +121,7 @@ st.subheader("Plotting summary of MAVISp classification using a reduced set of c
 
 st.write("""The MAVISp website allows to download an even more succint representation
 of the classification performed by MAVISp. This is carried out in the Damaging mutations tab.
-This visualization only considers mutations that are at the same time i) damaging for AlphaMissense,
+This visualization only considers mutations that are at the same time i) classified as pathogenic for AlphaMissense,
 ii) Predicted to cause loss of function or gain of function for either GEMME or DeMaSk, iii) are
 found to be damaging in at least one MAVISp module. Consequences are grouped in the following
 broad categories: stability, PTM, long range effects, local interactions. The user is asked
