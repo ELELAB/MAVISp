@@ -128,11 +128,12 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
-                          ExperimentalData ]
+                          ExperimentalData,
+                          Pfam ]
     module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense', 'experimental_data']
+    'gemme', 'eve', 'alphamissense', 'experimental_data', 'pfam']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',

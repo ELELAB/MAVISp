@@ -2079,14 +2079,14 @@ class Pfam(MavispModule):
         try:
             pfam = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pfam_file),
                                sep=';', 
-                               dtype={'start': int, 'end': int, 'accession': str})
+                               dtype={'start': int, 'end': int, 'pfam_domain': str, 'accession': str})
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        if not set(['start', 'end', 'accession']).issubset(set(pfam.columns)):
-            this_error = f"The input file doesn't have the columns expected for a PFAM output file"
+        if not set(['start', 'end', 'pfam_domain', 'accession']).issubset(set(pfam.columns)):
+            this_error = f"The input file doesn't have the columns expected for a Pfam output file"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
@@ -2097,10 +2097,11 @@ class Pfam(MavispModule):
         pfam_annotations = {}
         for mutation, resn in mutation_residues.items():
             matching_domains = pfam[(pfam['start'] <= resn) & (pfam['end'] >= resn)]
-            pfam_annotations[mutation] = ",".join(matching_domains['accession']) if not matching_domains.empty else None
+            pfam_annotations[mutation] = ", ".join(
+                f"{row['pfam_domain']} ({row['accession']})" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
 
         # Add new column to data
-        self.data = pd.DataFrame.from_dict(pfam_annotations, orient='index', columns=['PFAM_domain_annotations'])
+        self.data = pd.DataFrame.from_dict(pfam_annotations, orient='index', columns=['Pfam domain classification'])
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
