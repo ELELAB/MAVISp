@@ -53,11 +53,12 @@ class MAVISpSimpleMode(MAVISpMode):
                           EVE,
                           AlphaMissense,
                           EFoldMine,
-                          ExperimentalData ]
+                          ExperimentalData,
+                          Pfam ]
     module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
-    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
+    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data', 'pfam']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
     'gitbook_entry', 'allosigma_distance_cutoff']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
