@@ -37,6 +37,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
+                          Pfam,
                           PTMs,
                           DenovoPhospho,
                           LongRange,
@@ -53,12 +54,11 @@ class MAVISpSimpleMode(MAVISpMode):
                           EVE,
                           AlphaMissense,
                           EFoldMine,
-                          ExperimentalData,
-                          Pfam ]
-    module_order = ['cancermuts', 'stability', 'efoldmine', 'local_interactions',
+                          ExperimentalData ]
+    module_order = ['cancermuts', 'pfam', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
-    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data', 'pfam']
+    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
     'gitbook_entry', 'allosigma_distance_cutoff']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
@@ -112,6 +112,7 @@ class MAVISpSimpleMode(MAVISpMode):
 class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
+                          Pfam,
                           EnsemblePTMs,
                           EnsembleAllosigmaPSNLongRange,
                           EnsembleStability,
@@ -128,12 +129,11 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
-                          ExperimentalData,
-                          Pfam ]
-    module_order = ['cancermuts', 'stability', 'local_interactions', 'local_interactions_DNA',
+                          ExperimentalData ]
+    module_order = ['cancermuts', 'pfam', 'stability', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense', 'experimental_data', 'pfam']
+    'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
