@@ -2057,3 +2057,52 @@ class ExperimentalData(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class Pfam(MavispModule):
+
+    module_dir = "pfam"
+    name = "pfam"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        pfam_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(pfam_file) != 1:
+            this_error = f"multiple or no files found in {pfam_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        pfam_file = pfam_file[0]
+
+        log.info(f"parsing pfam file {pfam_file}")
+
+        try:
+            pfam = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pfam_file),
+                               sep=';', 
+                               dtype={'start': int, 'end': int, 'pfam_domain': str, 'accession': str})
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['start', 'end', 'pfam_domain', 'accession']).issubset(set(pfam.columns)):
+            this_error = f"The input file doesn't have the columns expected for a Pfam output file"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Dictionary of muts + res_numbers
+        mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
+
+        # Map res_numbers to PFAM domains
+        pfam_annotations = {}
+        for mutation, resn in mutation_residues.items():
+            matching_domains = pfam[(pfam['start'] <= resn) & (pfam['end'] >= resn)]
+            pfam_annotations[mutation] = ", ".join(
+                f"{row['pfam_domain']} ({row['accession']})" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
+
+        # Add new column to data
+        self.data = pd.DataFrame.from_dict(pfam_annotations, orient='index', columns=['Pfam domain classification'])
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])

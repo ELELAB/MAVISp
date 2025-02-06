@@ -510,3 +510,13 @@ where "evidence" is the type of evidence that column expresses. This column cont
 whatever classification makes sense for the type of evidence. One or more columns
 with a similar format can be specified for the same protein.""")
 
+st.subheader('Pfam module')
+
+st.write("""This module uses results retrieved from Pfam, reporting the identified
+         domains for the given protein and the respective residue ranges for each domain.
+         This module produces the following columns:""")
+
+data = [ ( "Pfam domain classification",
+           "Pfam domains associated with the given residue in the protein",
+           "single string reporting the Pfam domain description and accession code") ]
+st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
