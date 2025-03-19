@@ -59,36 +59,47 @@ class MAVISpSimpleMode(MAVISpMode):
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
-    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
-    'gitbook_entry', 'allosigma_distance_cutoff']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
-    'gitbook_entry', 'allosigma_distance_cutoff' ]
-    index_col_labels = {'system' : "Protein",
-                        'uniprot_ac' : 'Uniprot AC',
-                        'refseq_id' : "RefSeq ID",
-                        'review_status' : 'Review status',
-                        'curators' : 'Curators',
-                        'gitbook_entry' : 'GitBook report',
-                        'allosigma_distance_cutoff' : 'Distance cut-off used for AlloSigma2'}
+    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
+                          'allosigma_distance_cutoff', 'structure_source', 'structure_description',
+                          'linker_design', 'pdb_id']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
+                  'allosigma_distance_cutoff', 'structure_source', 'structure_description',
+                  'linker_design', 'pdb_id']
+    index_col_labels = {'system': "Protein",
+                        'uniprot_ac': 'Uniprot AC',
+                        'refseq_id': "RefSeq ID",
+                        'review_status': 'Review status',
+                        'curators': 'Curators',
+                        'gitbook_entry': 'GitBook report',
+                        'allosigma_distance_cutoff': 'Distance cut-off used for AlloSigma2',
+                        'structure_source': 'Structure source',
+                        'structure_description': 'Description of structure source',
+                        'linker_design': 'Linker design included',
+                        'pdb_id': 'PDB ID (if applicable)'}
+    structure_sources = {
+        "AFDB": "AlphaFold database (trimmed)",
+        "AF3": "AlphaFold3 webserver",
+        "AF2": "AlphaFold2 standalone",
+        "PDB": "Experimental PDB structure (trimmed or used)",
+        "Mod": "Homology model (PDB template, reconstruction)"}
 
 
     def parse_metadata(self, data_dir, system):
-
-        out_metadata = {k : None for k in self.supported_metadata}
+        out_metadata = {k: None for k in self.supported_metadata}
         mavisp_criticals = []
-
+    
         metadata = self._parse_metadata_file(data_dir, system, self.name)
-
+    
         try:
-            curators= ', '.join(
-                [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+            curators = ', '.join(
+                [f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys()]
             )
         except KeyError:
             log.debug("There is no curators field in metadata file")
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
         out_metadata['curators'] = curators
-
+    
         for k in ['uniprot_ac', 'refseq_id', 'review_status']:
             try:
                 out_metadata[k] = str(metadata[k])
@@ -96,17 +107,38 @@ class MAVISpSimpleMode(MAVISpMode):
                 log.debug(f"There is no {k} field in metadata file")
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
-
-        if 'allosigma_distance_cutoff' in metadata.keys():
-            out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
-        else:
-            out_metadata['allosigma_distance_cutoff'] = ''
-
-        if 'gitbook_entry' in metadata.keys():
-            out_metadata['gitbook_entry'] = metadata['gitbook_entry']
-        else:
-            out_metadata['gitbook_entry'] = ''
-
+    
+        out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata.get('allosigma_distance_cutoff', [])))
+        out_metadata['gitbook_entry'] = metadata.get('gitbook_entry', '')
+    
+        try:
+            structure_source = metadata.get("structure_source", None)
+            if structure_source not in self.structure_sources:
+                mavisp_criticals.append(
+                    MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
+                                        f"Expected one of {list(STRUCTURE_SOURCES.keys())}")
+                )
+            out_metadata["structure_source"] = structure_source
+            out_metadata["structure_description"] = self.structure_sources.get(structure_source, None)
+    
+            linker_design = metadata.get("linker_design", False)
+            if not isinstance(linker_design, bool):
+                mavisp_criticals.append(
+                    MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be TRUE or FALSE.")
+                )
+            out_metadata["linker_design"] = linker_design
+    
+            pdb_id = metadata.get("pdb_id", None)
+            if structure_source in ["PDB", "Mod"] and not pdb_id:
+                mavisp_criticals.append(
+                    MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field.")
+                )
+            out_metadata["pdb_id"] = pdb_id if structure_source in ["PDB", "Mod"] else None
+    
+        except KeyError as e:
+            log.debug(f"Missing expected field in metadata: {e}")
+            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+    
         return out_metadata, mavisp_criticals
 
 class MAVISpEnsembleMode(MAVISpMode):
