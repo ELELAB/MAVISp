@@ -4,7 +4,7 @@
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
+# it under the terms of the GNU General Public License as published by  
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
@@ -87,7 +87,7 @@ class MAVISpSimpleMode(MAVISpMode):
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
         mavisp_criticals = []
-    
+
         metadata = self._parse_metadata_file(data_dir, system, self.name)
     
         try:
@@ -108,8 +108,15 @@ class MAVISpSimpleMode(MAVISpMode):
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
     
-        out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata.get('allosigma_distance_cutoff', [])))
-        out_metadata['gitbook_entry'] = metadata.get('gitbook_entry', '')
+        if 'allosigma_distance_cutoff' in metadata.keys():
+            out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
+        else:
+            out_metadata['allosigma_distance_cutoff'] = ''
+
+        if 'gitbook_entry' in metadata.keys():
+            out_metadata['gitbook_entry'] = metadata['gitbook_entry']
+        else:
+            out_metadata['gitbook_entry'] = ''
     
         try:
             structure_source = metadata.get("structure_source", None)
