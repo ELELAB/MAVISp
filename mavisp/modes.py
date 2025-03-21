@@ -4,7 +4,7 @@
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 # This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by  
+# it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
@@ -77,10 +77,10 @@ class MAVISpSimpleMode(MAVISpMode):
                         'linker_design': 'Linker design included',
                         'pdb_id': 'PDB ID (if applicable)'}
     structure_sources = {
-        "AFDB": "AlphaFold database (trimmed)",
+        "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
         "AF2": "AlphaFold2 standalone",
-        "PDB": "Experimental PDB structure (trimmed or used)",
+        "PDB": "Experimental PDB structure",
         "Mod": "Homology model (PDB template, reconstruction)"}
 
 
@@ -89,7 +89,7 @@ class MAVISpSimpleMode(MAVISpMode):
         mavisp_criticals = []
 
         metadata = self._parse_metadata_file(data_dir, system, self.name)
-    
+
         try:
             curators = ', '.join(
                 [f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys()]
@@ -119,28 +119,37 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = ''
     
         try:
-            structure_source = metadata.get("structure_source", None)
+            structure_source = metadata["structure_source"]
             if structure_source not in self.structure_sources:
                 mavisp_criticals.append(
-                    MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
-                                        f"Expected one of {list(STRUCTURE_SOURCES.keys())}")
+                    MAVISpCriticalError(
+                        f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"
+                    )
                 )
             out_metadata["structure_source"] = structure_source
             out_metadata["structure_description"] = self.structure_sources.get(structure_source, None)
     
-            linker_design = metadata.get("linker_design", False)
+            linker_design = metadata["linker_design"]
             if not isinstance(linker_design, bool):
                 mavisp_criticals.append(
-                    MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be TRUE or FALSE.")
+                    MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
                 )
             out_metadata["linker_design"] = linker_design
     
-            pdb_id = metadata.get("pdb_id", None)
-            if structure_source in ["PDB", "Mod"] and not pdb_id:
-                mavisp_criticals.append(
-                    MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field.")
-                )
-            out_metadata["pdb_id"] = pdb_id if structure_source in ["PDB", "Mod"] else None
+            try:
+                pdb_id = metadata["pdb_id"]
+                if structure_source in ["PDB", "Mod"] and not pdb_id:
+                    mavisp_criticals.append(
+                        MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field.")
+                    )
+                out_metadata["pdb_id"] = pdb_id if structure_source in ["PDB", "Mod"] else None
+            except KeyError:
+                if structure_source in ["PDB", "Mod"]:
+                    mavisp_criticals.append(
+                        MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found.")
+                    )
+                out_metadata["pdb_id"] = None
     
         except KeyError as e:
             log.debug(f"Missing expected field in metadata: {e}")
