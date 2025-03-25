@@ -133,12 +133,16 @@ class MAVISpSimpleMode(MAVISpMode):
                         f"Invalid structure_source '{structure_source}' in metadata file. "
                         f"Expected one of: {', '.join(self.structure_sources.keys())}"))
     
+        try:
             linker_design = metadata["linker_design"]
-            if not isinstance(linker_design, bool):
-                mavisp_criticals.append(
-                    MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
-                )
-            out_metadata["linker_design"] = linker_design
+        except KeyError as e:
+            log.debug(f"Missing expected field in metadata: {e}")
+            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+        else:
+            if isinstance(linker_design, bool):
+                out_metadata["linker_design"] = linker_design
+            else:
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
     
             try:
                 pdb_id = metadata["pdb_id"]
