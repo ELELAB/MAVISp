@@ -99,7 +99,7 @@ class MAVISpSimpleMode(MAVISpMode):
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
         out_metadata['curators'] = curators
-    
+        
         for k in ['uniprot_ac', 'refseq_id', 'review_status']:
             try:
                 out_metadata[k] = str(metadata[k])
@@ -107,7 +107,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 log.debug(f"There is no {k} field in metadata file")
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
-    
+                
         if 'allosigma_distance_cutoff' in metadata.keys():
             out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
         else:
@@ -117,18 +117,21 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
             out_metadata['gitbook_entry'] = ''
-    
+            
         try:
             structure_source = metadata["structure_source"]
-            if structure_source not in self.structure_sources:
+        except KeyError as e:
+            log.debug(f"Missing expected field in metadata: {e}")
+            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+        else:    
+            if structure_source in self.structure_sources:
+                out_metadata["structure_source"] = structure_source
+                out_metadata["structure_description"] = self.structure_sources[structure_source]
+            else:
                 mavisp_criticals.append(
                     MAVISpCriticalError(
                         f"Invalid structure_source '{structure_source}' in metadata file. "
-                        f"Expected one of: {', '.join(self.structure_sources.keys())}"
-                    )
-                )
-            out_metadata["structure_source"] = structure_source
-            out_metadata["structure_description"] = self.structure_sources.get(structure_source, None)
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
     
             linker_design = metadata["linker_design"]
             if not isinstance(linker_design, bool):
@@ -150,10 +153,6 @@ class MAVISpSimpleMode(MAVISpMode):
                         MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found.")
                     )
                 out_metadata["pdb_id"] = None
-    
-        except KeyError as e:
-            log.debug(f"Missing expected field in metadata: {e}")
-            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
     
         return out_metadata, mavisp_criticals
 
