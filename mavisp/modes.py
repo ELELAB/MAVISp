@@ -99,7 +99,7 @@ class MAVISpSimpleMode(MAVISpMode):
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
         out_metadata['curators'] = curators
-        
+
         for k in ['uniprot_ac', 'refseq_id', 'review_status']:
             try:
                 out_metadata[k] = str(metadata[k])
@@ -107,7 +107,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 log.debug(f"There is no {k} field in metadata file")
                 out_metadata[k] = None
                 mavisp_criticals.append(MAVISpCriticalError(f"{k} was not found in the metadata file"))
-                
+
         if 'allosigma_distance_cutoff' in metadata.keys():
             out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
         else:
@@ -117,7 +117,7 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
             out_metadata['gitbook_entry'] = ''
-            
+
         try:
             structure_source = metadata["structure_source"]
         except KeyError as e:
@@ -129,10 +129,8 @@ class MAVISpSimpleMode(MAVISpMode):
                 out_metadata["structure_description"] = self.structure_sources[structure_source]
             else:
                 mavisp_criticals.append(
-                    MAVISpCriticalError(
-                        f"Invalid structure_source '{structure_source}' in metadata file. "
+                    MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
                         f"Expected one of: {', '.join(self.structure_sources.keys())}"))
-    
         try:
             linker_design = metadata["linker_design"]
         except KeyError as e:
@@ -143,7 +141,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 out_metadata["linker_design"] = linker_design
             else:
                 mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
-    
+
         if structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
@@ -158,7 +156,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 pdb_id = None
 
             out_metadata["pdb_id"] = pdb_id
-    
+
         return out_metadata, mavisp_criticals
 
 class MAVISpEnsembleMode(MAVISpMode):
@@ -272,3 +270,4 @@ class MAVISpEnsembleMode(MAVISpMode):
             out_metadata[k] = metadata[k]
 
         return out_metadata, mavisp_criticals
+
