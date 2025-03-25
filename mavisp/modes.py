@@ -144,19 +144,20 @@ class MAVISpSimpleMode(MAVISpMode):
             else:
                 mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
     
+        if structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
-                if structure_source in ["PDB", "Mod"] and not pdb_id:
-                    mavisp_criticals.append(
-                        MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field.")
-                    )
-                out_metadata["pdb_id"] = pdb_id if structure_source in ["PDB", "Mod"] else None
             except KeyError:
-                if structure_source in ["PDB", "Mod"]:
-                    mavisp_criticals.append(
-                        MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found.")
-                    )
-                out_metadata["pdb_id"] = None
+                log.debug(f"'pdb_id' key missing for structure_source '{structure_source}'")
+                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found."))
+                pdb_id = None
+
+            if not pdb_id or len(str(pdb_id).strip()) == 0:
+                log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
+                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
+                pdb_id = None
+
+            out_metadata["pdb_id"] = pdb_id
     
         return out_metadata, mavisp_criticals
 
