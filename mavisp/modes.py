@@ -131,6 +131,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 mavisp_criticals.append(
                     MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
                         f"Expected one of: {', '.join(self.structure_sources.keys())}"))
+
         try:
             linker_design = metadata["linker_design"]
         except KeyError as e:
