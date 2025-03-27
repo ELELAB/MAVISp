@@ -151,7 +151,7 @@ class MAVISpSimpleMode(MAVISpMode):
                 mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found."))
                 pdb_id = None
 
-            if not pdb_id or len(str(pdb_id).strip()) == 0:
+            if not pdb_id or len(str(pdb_id).strip()) == 0  or str(pdb_id).strip().lower() == 'none':
                 log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
                 mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
                 pdb_id = None
