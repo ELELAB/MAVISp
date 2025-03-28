@@ -1,2 +1,0 @@
-Protein,Uniprot AC,RefSeq ID,Ensemble sources,Ensemble sizes (FoldX),Ensemble sizes (Rosetta),Sampling methods for functional dynamics,Regions of interest for functional dynamics,Simulation length (ns),Simulation force field,Review status,Curators,GitBook report,OSF repository for ensemble data
-ARID3A,Q99856,NP_005215,"cabsflex, md","20, 50","3, 3",,,1000,CHARMM22*,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark), Karolina Krzesińska (DTU, Denmark, DCI, Denmark)",https://elelab.gitbook.io/mavisp/proteins/arid3a,
