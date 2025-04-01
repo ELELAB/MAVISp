@@ -75,7 +75,7 @@ class MAVISpSimpleMode(MAVISpMode):
                         'structure_source': 'Structure source',
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
-                        'pdb_id': 'PDB ID (if applicable)'}
+                        'pdb_id': 'PDB ID'}
     structure_sources = {
         "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
@@ -207,7 +207,11 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'simulation_force_field' : 'Simulation force field',
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
-                        'gitbook_entry' : 'GitBook report'}
+                        'gitbook_entry' : 'GitBook report',
+                        'structure_source': 'Structure source',
+                        'structure_description': 'Description of structure source',
+                        'linker_design': 'Linker design included',
+                        'pdb_id': 'PDB ID'}
     structure_sources = {
         "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
