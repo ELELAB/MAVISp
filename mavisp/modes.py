@@ -121,41 +121,36 @@ class MAVISpSimpleMode(MAVISpMode):
         try:
             structure_source = metadata["structure_source"]
         except KeyError as e:
-            log.debug(f"Missing expected field in metadata: {e}")
-            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+            log.debug(f"Missing optional field in metadata: {e}")
         else:
             if structure_source in self.structure_sources:
                 out_metadata["structure_source"] = structure_source
                 out_metadata["structure_description"] = self.structure_sources[structure_source]
             else:
-                mavisp_criticals.append(
-                    MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
-                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
+                log.debug(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}")
 
         try:
             linker_design = metadata["linker_design"]
         except KeyError as e:
-            log.debug(f"Missing expected field in metadata: {e}")
-            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+            log.debug(f"Missing optional field in metadata: {e}")
         else:
             if isinstance(linker_design, bool):
                 out_metadata["linker_design"] = linker_design
             else:
-                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
+                log.debug(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
 
-        if structure_source in ["PDB", "Mod"]:
+        if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
             except KeyError:
                 log.debug(f"'pdb_id' key missing for structure_source '{structure_source}'")
-                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found."))
                 pdb_id = None
-
-            if not pdb_id or len(str(pdb_id).strip()) == 0  or str(pdb_id).strip().lower() == 'none':
-                log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
-                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
-                pdb_id = None
-
+            else:
+                if not pdb_id or str(pdb_id).strip().lower() == 'none':
+                    log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
+                    pdb_id = None
+            
             out_metadata["pdb_id"] = pdb_id
 
         return out_metadata, mavisp_criticals
@@ -188,11 +183,11 @@ class MAVISpEnsembleMode(MAVISpMode):
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
-    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source', 
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
     'structure_description', 'linker_design', 'pdb_id']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
-    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source', 
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
     'structure_description', 'linker_design', 'pdb_id']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
@@ -285,42 +280,37 @@ class MAVISpEnsembleMode(MAVISpMode):
         try:
             structure_source = metadata["structure_source"]
         except KeyError as e:
-            log.debug(f"Missing expected field in metadata: {e}")
-            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+            log.debug(f"Missing optional field in metadata: {e}")
         else:
             if structure_source in self.structure_sources:
                 out_metadata["structure_source"] = structure_source
                 out_metadata["structure_description"] = self.structure_sources[structure_source]
             else:
-                mavisp_criticals.append(
-                    MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
-                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
+                log.debug(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}")
 
         try:
             linker_design = metadata["linker_design"]
         except KeyError as e:
-            log.debug(f"Missing expected field in metadata: {e}")
-            mavisp_criticals.append(MAVISpCriticalError(f"Missing key in metadata: {e}"))
+            log.debug(f"Missing optional field in metadata: {e}")
         else:
             if isinstance(linker_design, bool):
                 out_metadata["linker_design"] = linker_design
             else:
-                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
+                log.debug(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
 
-        if structure_source in ["PDB", "Mod"]:
+        if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
             except KeyError:
                 log.debug(f"'pdb_id' key missing for structure_source '{structure_source}'")
-                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a 'pdb_id' field, but it was not found."))
                 pdb_id = None
-
-            if not pdb_id or len(str(pdb_id).strip()) == 0  or str(pdb_id).strip().lower() == 'none':
-                log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
-                mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
-                pdb_id = None
-
-            out_metadata["pdb_id"] = pdb_id
+            else:
+                if not pdb_id or str(pdb_id).strip().lower() == 'none':
+                    log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
+                    pdb_id = None
             
+            out_metadata["pdb_id"] = pdb_id
+
         return out_metadata, mavisp_criticals
 
