@@ -127,8 +127,8 @@ class MAVISpSimpleMode(MAVISpMode):
                 out_metadata["structure_source"] = structure_source
                 out_metadata["structure_description"] = self.structure_sources[structure_source]
             else:
-                log.debug(f"Invalid structure_source '{structure_source}' in metadata file. "
-                        f"Expected one of: {', '.join(self.structure_sources.keys())}")
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
 
         try:
             linker_design = metadata["linker_design"]
@@ -138,7 +138,7 @@ class MAVISpSimpleMode(MAVISpMode):
             if isinstance(linker_design, bool):
                 out_metadata["linker_design"] = linker_design
             else:
-                log.debug(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
 
         if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
             try:
@@ -148,9 +148,9 @@ class MAVISpSimpleMode(MAVISpMode):
                 pdb_id = None
             else:
                 if not pdb_id or str(pdb_id).strip().lower() == 'none':
-                    log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
+                    mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
                     pdb_id = None
-            
+
             out_metadata["pdb_id"] = pdb_id
 
         return out_metadata, mavisp_criticals
@@ -286,8 +286,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                 out_metadata["structure_source"] = structure_source
                 out_metadata["structure_description"] = self.structure_sources[structure_source]
             else:
-                log.debug(f"Invalid structure_source '{structure_source}' in metadata file. "
-                        f"Expected one of: {', '.join(self.structure_sources.keys())}")
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
 
         try:
             linker_design = metadata["linker_design"]
@@ -297,7 +297,7 @@ class MAVISpEnsembleMode(MAVISpMode):
             if isinstance(linker_design, bool):
                 out_metadata["linker_design"] = linker_design
             else:
-                log.debug(f"Invalid value for linker_design: {linker_design}. Must be True or False.")
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
 
         if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
             try:
@@ -307,10 +307,10 @@ class MAVISpEnsembleMode(MAVISpMode):
                 pdb_id = None
             else:
                 if not pdb_id or str(pdb_id).strip().lower() == 'none':
-                    log.debug(f"'pdb_id' field is empty for structure_source '{structure_source}'")
+                    mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
                     pdb_id = None
-            
-            out_metadata["pdb_id"] = pdb_id
 
+            out_metadata["pdb_id"] = pdb_id
+            
         return out_metadata, mavisp_criticals
 
