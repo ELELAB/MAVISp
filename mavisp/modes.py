@@ -87,7 +87,7 @@ class MAVISpSimpleMode(MAVISpMode):
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
         mavisp_criticals = []
-
+        structure_source = None
         metadata = self._parse_metadata_file(data_dir, system, self.name)
 
         try:
@@ -117,7 +117,7 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
             out_metadata['gitbook_entry'] = ''
-
+        
         try:
             structure_source = metadata["structure_source"]
         except KeyError as e:
@@ -140,7 +140,7 @@ class MAVISpSimpleMode(MAVISpMode):
             else:
                 mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
 
-        if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
+        if structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
             except KeyError:
@@ -218,7 +218,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
         out_metadata = {k : None for k in self.supported_metadata}
         mavisp_criticals = []
-
+        structure_source = None
         metadata = self._parse_metadata_file(data_dir, system, self.name)
 
         try:
@@ -299,7 +299,7 @@ class MAVISpEnsembleMode(MAVISpMode):
             else:
                 mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
 
-        if 'structure_source' in locals() and structure_source in ["PDB", "Mod"]:
+        if structure_source in ["PDB", "Mod"]:
             try:
                 pdb_id = metadata["pdb_id"]
             except KeyError:
@@ -311,6 +311,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                     pdb_id = None
 
             out_metadata["pdb_id"] = pdb_id
-            
+
         return out_metadata, mavisp_criticals
+
 
