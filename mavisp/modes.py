@@ -117,7 +117,7 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
             out_metadata['gitbook_entry'] = ''
-        
+
         try:
             structure_source = metadata["structure_source"]
         except KeyError as e:
