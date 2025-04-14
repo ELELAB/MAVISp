@@ -59,29 +59,40 @@ class MAVISpSimpleMode(MAVISpMode):
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
-    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators',
-    'gitbook_entry', 'allosigma_distance_cutoff']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators',
-    'gitbook_entry', 'allosigma_distance_cutoff' ]
-    index_col_labels = {'system' : "Protein",
-                        'uniprot_ac' : 'Uniprot AC',
-                        'refseq_id' : "RefSeq ID",
-                        'review_status' : 'Review status',
-                        'curators' : 'Curators',
-                        'gitbook_entry' : 'GitBook report',
-                        'allosigma_distance_cutoff' : 'Distance cut-off used for AlloSigma2'}
+    supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
+                          'allosigma_distance_cutoff', 'structure_source', 'structure_description',
+                          'linker_design', 'pdb_id']
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
+                  'allosigma_distance_cutoff', 'structure_source', 'structure_description',
+                  'linker_design', 'pdb_id']
+    index_col_labels = {'system': "Protein",
+                        'uniprot_ac': 'Uniprot AC',
+                        'refseq_id': "RefSeq ID",
+                        'review_status': 'Review status',
+                        'curators': 'Curators',
+                        'gitbook_entry': 'GitBook report',
+                        'allosigma_distance_cutoff': 'Distance cut-off used for AlloSigma2',
+                        'structure_source': 'Structure source',
+                        'structure_description': 'Description of structure source',
+                        'linker_design': 'Linker design included',
+                        'pdb_id': 'PDB ID'}
+    structure_sources = {
+        "AFDB": "AlphaFold database",
+        "AF3": "AlphaFold3 webserver",
+        "AF2": "AlphaFold2 standalone",
+        "PDB": "Experimental PDB structure",
+        "Mod": "Homology model (PDB template, reconstruction)"}
 
 
     def parse_metadata(self, data_dir, system):
-
-        out_metadata = {k : None for k in self.supported_metadata}
+        out_metadata = {k: None for k in self.supported_metadata}
         mavisp_criticals = []
-
+        structure_source = None
         metadata = self._parse_metadata_file(data_dir, system, self.name)
 
         try:
-            curators= ', '.join(
-                [ f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys() ]
+            curators = ', '.join(
+                [f"{curator} ({', '.join(metadata['curators'][curator]['affiliation'])})" for curator in metadata['curators'].keys()]
             )
         except KeyError:
             log.debug("There is no curators field in metadata file")
@@ -106,6 +117,41 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
             out_metadata['gitbook_entry'] = ''
+
+        try:
+            structure_source = metadata["structure_source"]
+        except KeyError as e:
+            log.debug(f"Missing optional field in metadata: {e}")
+        else:
+            if structure_source in self.structure_sources:
+                out_metadata["structure_source"] = structure_source
+                out_metadata["structure_description"] = self.structure_sources[structure_source]
+            else:
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
+
+        try:
+            linker_design = metadata["linker_design"]
+        except KeyError as e:
+            log.debug(f"Missing optional field in metadata: {e}")
+        else:
+            if isinstance(linker_design, bool):
+                out_metadata["linker_design"] = linker_design
+            else:
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
+
+        if structure_source in ["PDB", "Mod"]:
+            try:
+                pdb_id = metadata["pdb_id"]
+            except KeyError:
+                log.debug(f"'pdb_id' key missing for structure_source '{structure_source}'")
+                pdb_id = None
+            else:
+                if not pdb_id or str(pdb_id).strip().lower() == 'none':
+                    mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
+                    pdb_id = None
+
+            out_metadata["pdb_id"] = pdb_id
 
         return out_metadata, mavisp_criticals
 
@@ -137,10 +183,12 @@ class MAVISpEnsembleMode(MAVISpMode):
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
-    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
+    'structure_description', 'linker_design', 'pdb_id']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
-    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf']
+    'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
+    'structure_description', 'linker_design', 'pdb_id']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
@@ -154,13 +202,23 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'simulation_force_field' : 'Simulation force field',
                         'review_status' : 'Review status',
                         'curators' : 'Curators',
-                        'gitbook_entry' : 'GitBook report'}
+                        'gitbook_entry' : 'GitBook report',
+                        'structure_source': 'Structure source',
+                        'structure_description': 'Description of structure source',
+                        'linker_design': 'Linker design included',
+                        'pdb_id': 'PDB ID'}
+    structure_sources = {
+        "AFDB": "AlphaFold database",
+        "AF3": "AlphaFold3 webserver",
+        "AF2": "AlphaFold2 standalone",
+        "PDB": "Experimental PDB structure",
+        "Mod": "Homology model (PDB template, reconstruction)"}
 
     def parse_metadata(self, data_dir, system):
 
         out_metadata = {k : None for k in self.supported_metadata}
         mavisp_criticals = []
-
+        structure_source = None
         metadata = self._parse_metadata_file(data_dir, system, self.name)
 
         try:
@@ -219,4 +277,41 @@ class MAVISpEnsembleMode(MAVISpMode):
                 metadata[k] = ''
             out_metadata[k] = metadata[k]
 
+        try:
+            structure_source = metadata["structure_source"]
+        except KeyError as e:
+            log.debug(f"Missing optional field in metadata: {e}")
+        else:
+            if structure_source in self.structure_sources:
+                out_metadata["structure_source"] = structure_source
+                out_metadata["structure_description"] = self.structure_sources[structure_source]
+            else:
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid structure_source '{structure_source}' in metadata file. "
+                        f"Expected one of: {', '.join(self.structure_sources.keys())}"))
+
+        try:
+            linker_design = metadata["linker_design"]
+        except KeyError as e:
+            log.debug(f"Missing optional field in metadata: {e}")
+        else:
+            if isinstance(linker_design, bool):
+                out_metadata["linker_design"] = linker_design
+            else:
+                mavisp_criticals.append(MAVISpCriticalError(f"Invalid value for linker_design: {linker_design}. Must be True or False."))
+
+        if structure_source in ["PDB", "Mod"]:
+            try:
+                pdb_id = metadata["pdb_id"]
+            except KeyError:
+                log.debug(f"'pdb_id' key missing for structure_source '{structure_source}'")
+                pdb_id = None
+            else:
+                if not pdb_id or str(pdb_id).strip().lower() == 'none':
+                    mavisp_criticals.append(MAVISpCriticalError(f"structure_source '{structure_source}' requires a non-empty 'pdb_id' field."))
+                    pdb_id = None
+
+            out_metadata["pdb_id"] = pdb_id
+
         return out_metadata, mavisp_criticals
+
+

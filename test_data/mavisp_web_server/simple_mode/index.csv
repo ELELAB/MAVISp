@@ -1,2 +1,2 @@
-Protein,Uniprot AC,RefSeq ID,Review status,Curators,GitBook report,Distance cut-off used for AlloSigma2
-ARID3A,Q99856,NP_005215,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark), Karolina Krzesinska (DTU, Denmark, DCI, Denmark)",https://elelab.gitbook.io/mavisp/proteins/arid3a,15
+Protein,Uniprot AC,RefSeq ID,Review status,Curators,GitBook report,Distance cut-off used for AlloSigma2,Structure source,Description of structure source,Linker design included,PDB ID
+ARID3A,Q99856,NP_005215,3,"Elena Papaleo (DCI, Denmark, DTU, Denmark), Karolina Krzesinska (DTU, Denmark, DCI, Denmark)",https://elelab.gitbook.io/mavisp/proteins/arid3a,15,AF2,AlphaFold2 standalone,False,

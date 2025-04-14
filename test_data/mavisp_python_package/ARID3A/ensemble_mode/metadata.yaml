@@ -10,6 +10,9 @@ curators:
 uniprot_ac: Q99856
 refseq_id: NP_005215 
 review_status: 3
+structure_source: AF2
+linker_design: False
+pdb_id: None
 gitbook_entry: https://elelab.gitbook.io/mavisp/proteins/arid3a
 ensemble_sources : [ cabsflex, md ]
 ensemble_size_foldx : [ 20, 50 ]
