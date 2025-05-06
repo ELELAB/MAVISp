@@ -29,7 +29,7 @@ add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
-st.header('Acknowledgements and data usage')
+st.title('Acknowledgements and data usage')
 
 st.subheader("Citing us")
 
