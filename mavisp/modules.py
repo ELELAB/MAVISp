@@ -2123,7 +2123,7 @@ class TED(MavispModule):
 
         ted_file = ted_file[0]
 
-        log.info(f"parsing pfam file {ted_file}")
+        log.info(f"parsing ted file {ted_file}")
 
         try:
             ted = pd.read_csv(os.path.join(self.data_dir, self.module_dir, ted_file),
@@ -2154,7 +2154,7 @@ class TED(MavispModule):
         ted_annotations = {}
         for mutation, resn in mutation_residues.items():
             matching_domains = ted[(ted['start'] <= resn) & (ted['end'] >= resn)]
-            ted_annotations[mutation] = ", ".join(
+            ted_annotations[mutation] = "| ".join(
                 f"{row['CATH_label']}" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
 
         # Add new column to data
@@ -2163,3 +2163,4 @@ class TED(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+        
