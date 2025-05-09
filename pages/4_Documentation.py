@@ -531,3 +531,4 @@ data = [ ( "TED-CATH domain classification",
            "TED domains and their associated CATH-assigned labels for the given residue in the protein",
            "single string reporting the CATH-label code") ]
 st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
