@@ -1,5 +1,5 @@
 # MAVISp - News page
-# Copyright (C) 2024 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2025 Matteo Tiberti, Danish Cancer Society
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
