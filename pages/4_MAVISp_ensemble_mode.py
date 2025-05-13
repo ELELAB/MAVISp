@@ -1,13 +1,13 @@
 # MAVISp - Streamlit application
-# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+# Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
@@ -28,10 +28,10 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from io import BytesIO
 
-mode = 'simple_mode'
+mode = 'ensemble_mode'
 
 st.set_page_config(layout="wide",
-    page_title="MAVISp simple mode",
+    page_title="MAVISp ensemble mode",
     page_icon="📊")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
@@ -40,7 +40,7 @@ add_affiliation_logo()
 
 database_dir = get_database_dir()
 
-st.header('MAVISp simple mode')
+st.title("MAVISp ensemble mode")
 
 st.write('''Please choose a dataset in the table below by clicking on the
 checkbox on the left. The corresponding MAVISp results table will be displayed underneath.
@@ -52,7 +52,7 @@ st.write('''Please see the Acknowledgement and data usage page for information o
 try:
     show_table = load_main_table(database_dir, mode)
 except FileNotFoundError:
-    st.write('No entries are currently available for simple mode.')
+    st.write('No entries are currently available for ensemble mode.')
     st.stop()
 
 gb_datasets_grid = GridOptionsBuilder.from_dataframe(show_table)
@@ -68,17 +68,18 @@ else:
 
 gb_datasets_grid.configure_selection(selection_mode='single',
                                      use_checkbox=True)
+gb_datasets_grid.configure_column('OSF repository for ensemble data', cellRenderer=cell_renderers['OSF repository for ensemble data'])
 gb_datasets_grid.configure_column('GitBook report', cellRenderer=cell_renderers['GitBook report'])
 
 datasets_grid = AgGrid(show_table, enable_enterprise_modules=False,
                       gridOptions=gb_datasets_grid.build(),
                       update_mode=GridUpdateMode.SELECTION_CHANGED,
                       fit_columns_on_grid_load = True,
-                      reload_data = False,
-                      height=200,
+                      reload_data=False,
                       allow_unsafe_jscode=True,
+                      height=200,
                       key="id_row",
-                      custom_css={"#gridToolBar" : {
+                      custom_css={"#gridToolBar": {
                                       "padding-bottom": "0px !important",
                                       }
                                   })
@@ -91,8 +92,9 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
     st.write(f"Currently viewing: {protein}")
 
     this_dataset = load_dataset(database_dir, protein, mode)
-
     dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Damaging mutations on structure"])
+
+    ptm_columns = [c for c in this_dataset.columns if c.startswith('PTMs')]
 
     with dataset:
 
@@ -123,17 +125,19 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
         this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
         this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
         this_gb.configure_column('UniProtAC', hide=True)
-        for col in ['Mutation sources', 'PTMs']:
+        if 'Mutation sources' in this_dataset_table.columns:
+            this_gb.configure_column('Mutation sources', cellRenderer=cell_renderers['Mutation sources'])
+        for col in ptm_columns:
             if col in this_dataset_table.columns:
-                this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+                this_gb.configure_column(col, cellRenderer=cell_renderers['PTMs'])
 
-        mutations_grid = AgGrid(this_dataset_table, enable_enterprise_modules=False,
+        mutations_grid = AgGrid(this_dataset, enable_enterprise_modules=False,
                                 gridOptions=this_gb.build(),
                                 reload_data=False,
                                 allow_unsafe_jscode=True,
                                 height=400,
                                 custom_css={"#gridToolBar": {
-                                                "padding-bottom": "0px !important",
+                                            "padding-bottom": "0px !important",
                                                 }
                                             })
 
@@ -148,12 +152,12 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             do_revel = st.checkbox('Show available REVEL classification', )
             revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
             demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
-            gemme_co = st.number_input("Curoff for GEMME", value=3.0)
+            gemme_co = st.number_input("Cutoff for GEMME", value=3.0)
         with col2:
             do_demask = st.checkbox('Show available DeMaSk classification', value=True)
             n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
             fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
-            fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
+            fig_height = st.number_input("Plot height (inches)", value=6, min_value=0)
 
         st.write("""Select up to 50 mutations to be shown in the dot plot below. They should be expressed in plain `[reference amino acid][residue number][mutant amino acid]` format, for example `A49G`.""")
 
@@ -215,6 +219,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
                                        placeholder="Type or select one mutation or more",
                                        max_selections=50,
                                        key='sj17h39')
+
         if st.button('Generate plot',
                      disabled=len(selected_muts) == 0 or disable_lolliplot,
                      key='qwe123'):
@@ -231,8 +236,7 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
                 st.download_button(label="Download as PDF",
                                 data=pdf_stream,
                                 mime="application/pdf",
-                                file_name=f'{protein}-{mode}_lolliplots.pdf',
-                                key='1231')
+                                file_name=f'{protein}-{mode}_lolliplots.pdf')
 
             for fig in plots:
                 st.pyplot(fig, use_container_width=False)
@@ -269,8 +273,9 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
             this tab has been disabled""")
             disable_structure = True
 
-        # download model and stop if it can't be found
         if not disable_structure:
+
+            # download model and stop if it can't be found
             try:
                 response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
                 response.raise_for_status()
@@ -375,5 +380,3 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
             viewer.zoomTo()
             showmol(viewer, width=900, height=600)
-
-
