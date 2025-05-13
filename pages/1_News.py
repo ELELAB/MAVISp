@@ -29,7 +29,7 @@ st.title("News and updates")
 
 st.header("In evidence")
 
-st.subheader("06/05/2025 - MAVISp BioCurator Training Workshop 2025 announced")
+st.subheader("15/05/2025 - MAVISp BioCurator Training Workshop 2025 announced")
 st.badge("Training Event", icon="📖", color="green")
 st.text("""We are organizing the first MAVISp BioCurator Training Workshop, to be held in early September 2025, fully online. For more information, see the Events page""")
 st.divider()
