@@ -42,6 +42,7 @@ st.markdown("""
   - Basic competence with Linux and its terminal
   - Basic knowledge of structural and computational biology
   - Reading: MAVISp preprint and MAVISp GitLab site
+- We are able to accommodate up to 15 participants, on a first-come first-served basis
 - Registration [here](https://docs.google.com/forms/d/e/1FAIpQLScQmPatyYt43JwA6wyQ2V4Pyh7nLVo0uWa9kAAk3kyZawvSlg/viewform?usp=dialog)
 
 We are organizing the first **MAVISp BioCurator Training Workshop**! 
