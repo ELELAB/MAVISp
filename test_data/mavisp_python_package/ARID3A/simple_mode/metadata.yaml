@@ -10,6 +10,7 @@ curators:
 uniprot_ac: Q99856
 refseq_id: NP_005215 
 allosigma_distance_cutoff: [ 15 ]
+allosigma_distance_mode: [ CA-CA ]
 structure_source: AF2
 linker_design: False
 pdb_id: None
