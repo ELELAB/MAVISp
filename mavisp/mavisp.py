@@ -73,6 +73,7 @@ def main():
     parser.add_argument("-w", "--stop-on-warnings",
                         dest="stop_on_warnings",
                         default=False,
+                        action="store_true",
                         help="do not write output if any warning is found (default: false)")
     parser.add_argument("-m", "--mode",
                         dest="modes",
@@ -140,6 +141,10 @@ def main():
                             modes=args.modes)
 
     mfs.ingest()
+
+    all_modes_error_count = 0
+    all_modes_critical_count = 0
+    all_modes_warning_count = 0
 
     for mode_name in mfs.supported_modes.keys():
         summary = mfs.get_datasets_table_summary(mode_name)
@@ -213,17 +218,21 @@ def main():
 
             details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
 
+        all_modes_error_count += error_count
+        all_modes_critical_count += critical_count
+        all_modes_warning_count += warning_count
+
         print(details_text)
 
     if args.dry_run:
         log.info("Exiting without writing any file, as dry-run mode is active")
         exit()
 
-    if error_count > 0 or critical_count > 0:
+    if all_modes_error_count > 0 or all_modes_critical_count > 0:
         log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
         exit(1)
 
-    if args.stop_on_warnings and warning_count > 0:
+    if args.stop_on_warnings and all_modes_warning_count > 0:
         log.error("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
     try:
