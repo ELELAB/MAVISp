@@ -246,17 +246,18 @@ def main():
     all_indexes = []
 
     for mode_name, mode in mfs.supported_modes.items():
-        out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
 
-        if len(out_table) == 0:
+        if len(mfs.dataset_tables[mode_name]) == 0:
             continue
 
-        mode_path = out_path / Path(mode_name)
-        mode_path.mkdir(exist_ok=True)
+        out_table = mfs.dataset_tables[mode_name].copy(deep=True)
 
         out_index_table = out_table.copy(deep=True)
         out_index_table['mode'] = mode_name
         all_indexes.append(out_index_table)
+
+        mode_path = out_path / Path(mode_name)
+        mode_path.mkdir(exist_ok=True)
 
         out_table = out_table[mode.index_cols]
         out_table = out_table.rename(columns=mode.index_col_labels)
@@ -271,9 +272,6 @@ def main():
             this_refseq_id = out_table[out_table['Protein'] == r['system']]
             assert(this_refseq_id.shape[0]) == 1
             this_refseq_id = this_refseq_id.iloc[0]['RefSeq ID']
-
-            if len(r['criticals']) > 0:
-                continue
 
             this_df = r['mutations']
             this_df = this_df.rename(columns={'mutation' : 'Mutation',
