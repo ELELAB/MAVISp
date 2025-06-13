@@ -73,7 +73,6 @@ def main():
     parser.add_argument("-w", "--stop-on-warnings",
                         dest="stop_on_warnings",
                         default=False,
-                        action="store_true",
                         help="do not write output if any warning is found (default: false)")
     parser.add_argument("-m", "--mode",
                         dest="modes",
