@@ -28,23 +28,22 @@ from time import gmtime
 header = """
                         .__
   _____  _____   ___  __|__|  ____________
- /     \ \__  \  \  \/ /|  | /  ___/\____ \
+ /     \ \__  \  \  \/ /|  | /  ___/\____ \\
 |  Y Y  \ / __ \_ \   / |  | \___ \ |  |_> >
 |__|_|  /(____  /  \_/  |__|/____  >|   __/
       \/      \/                 \/ |__|
 
 
-============================================
-
 If you use MAVISp for your research, please cite:
 
-    Matteo Arnaudi, Ludovica Beltrame, Kristine
-    Degn, Mattia Utichi, Alberto Pettenella,
-    Simone Scrima, Peter Wad Sackett, Matteo
-    Lambrughi, Matteo Tiberti, Elena Papaleo.
-    MAVISp: Multi-layered Assessment of VarIants
-    by Structure for proteins. bioRxiv 2022.10.22.513328;
-    doi: https://doi.org/10.1101/2022.10.22.513328
+    Matteo Arnaudi, Mattia Utichi, Kristine Degn, Ludovica Beltrame et al.
+    MAVISp: A Modular Structure-Based Framework for Protein Variant Effects
+    bioRxiv, https://doi.org/10.1101/2022.10.22.513328
+
+for more information about MAVISp see:
+    https://www.github.com/ELELAB/MAVISp
+    https://services.healthtech.dtu.dk/services/MAVISp-1.0/
+
 
 ============================================
 
@@ -129,6 +128,8 @@ def main():
 
     if args.modes == 'all':
         args.modes = None
+
+    print(header)
 
     mfs = MAVISpFileSystem( data_dir=in_path,
                             exclude_proteins=excluded_proteins,
