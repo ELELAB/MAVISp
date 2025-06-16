@@ -129,6 +129,8 @@ def main():
     if args.modes == 'all':
         args.modes = None
 
+    print(header)
+
     mfs = MAVISpFileSystem( data_dir=in_path,
                             exclude_proteins=excluded_proteins,
                             include_proteins=included_proteins,
