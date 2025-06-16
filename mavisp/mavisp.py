@@ -141,6 +141,10 @@ def main():
 
     mfs.ingest()
 
+    all_modes_error_count = 0
+    all_modes_critical_count = 0
+    all_modes_warning_count = 0
+
     for mode_name in mfs.supported_modes.keys():
         summary = mfs.get_datasets_table_summary(mode_name)
 
@@ -213,17 +217,21 @@ def main():
 
             details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
 
+        all_modes_error_count += error_count
+        all_modes_critical_count += critical_count
+        all_modes_warning_count += warning_count
+
         print(details_text)
 
     if args.dry_run:
         log.info("Exiting without writing any file, as dry-run mode is active")
         exit()
 
-    if error_count > 0 or critical_count > 0:
+    if all_modes_error_count > 0 or all_modes_critical_count > 0:
         log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
         exit(1)
 
-    if args.stop_on_warnings and warning_count > 0:
+    if args.stop_on_warnings and all_modes_warning_count > 0:
         log.error("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
     try:
@@ -238,17 +246,18 @@ def main():
     all_indexes = []
 
     for mode_name, mode in mfs.supported_modes.items():
-        out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
 
-        if len(out_table) == 0:
+        if len(mfs.dataset_tables[mode_name]) == 0:
             continue
 
-        mode_path = out_path / Path(mode_name)
-        mode_path.mkdir(exist_ok=True)
+        out_table = mfs.dataset_tables[mode_name].copy(deep=True)
 
         out_index_table = out_table.copy(deep=True)
         out_index_table['mode'] = mode_name
         all_indexes.append(out_index_table)
+
+        mode_path = out_path / Path(mode_name)
+        mode_path.mkdir(exist_ok=True)
 
         out_table = out_table[mode.index_cols]
         out_table = out_table.rename(columns=mode.index_col_labels)
@@ -263,9 +272,6 @@ def main():
             this_refseq_id = out_table[out_table['Protein'] == r['system']]
             assert(this_refseq_id.shape[0]) == 1
             this_refseq_id = this_refseq_id.iloc[0]['RefSeq ID']
-
-            if len(r['criticals']) > 0:
-                continue
 
             this_df = r['mutations']
             this_df = this_df.rename(columns={'mutation' : 'Mutation',
