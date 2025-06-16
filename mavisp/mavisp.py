@@ -70,10 +70,6 @@ def main():
                         dest="database_dir",
                         default="./database",
                         help="output directory where the csv database is written (default: ./database")
-    parser.add_argument("-w", "--stop-on-warnings",
-                        dest="stop_on_warnings",
-                        default=False,
-                        help="do not write output if any warning is found (default: false)")
     parser.add_argument("-m", "--mode",
                         dest="modes",
                         choices=['all', 'simple_mode', 'ensemble_mode'],
@@ -143,7 +139,6 @@ def main():
 
     all_modes_error_count = 0
     all_modes_critical_count = 0
-    all_modes_warning_count = 0
 
     for mode_name in mfs.supported_modes.keys():
         summary = mfs.get_datasets_table_summary(mode_name)
@@ -219,7 +214,6 @@ def main():
 
         all_modes_error_count += error_count
         all_modes_critical_count += critical_count
-        all_modes_warning_count += warning_count
 
         print(details_text)
 
@@ -230,9 +224,6 @@ def main():
     if all_modes_error_count > 0 or all_modes_critical_count > 0:
         log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
         exit(1)
-
-    if args.stop_on_warnings and all_modes_warning_count > 0:
-        log.error("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
     try:
         out_path.mkdir(exist_ok=True)
