@@ -1835,7 +1835,7 @@ class FunctionalSites(MavispModule):
                                       critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
-# results_summary_cofactors e results_summary_sub_cat
+
     module_dir = "long_range"
     name = "long_range"
     method_dir = "allosigma2_psn"
@@ -1947,7 +1947,7 @@ class AllosigmaPSNLongRange(MavispModule):
             psn = psn.set_index('mutations')
 
             out_data = out_data.join(psn)
-            
+
 
         self.data = out_data
 
