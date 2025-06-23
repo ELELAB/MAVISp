@@ -1835,11 +1835,16 @@ class FunctionalSites(MavispModule):
                                       critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
-
+# results_summary_cofactors e results_summary_sub_cat
     module_dir = "long_range"
     name = "long_range"
     method_dir = "allosigma2_psn"
-    exp_files = ['allosigma_mut.txt', 'results_summary.txt']
+
+    exp_files = ['allosigma_mut.txt']
+
+    datasets = {'results_sub_cat.txt'  : 'AlloSigma2-PSN classification - active sites',
+                'results_cofactor.txt' : 'AlloSigma2-PSN classification - cofactor sites',
+                'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
         res_num = row['res_num']
@@ -1880,49 +1885,71 @@ class AllosigmaPSNLongRange(MavispModule):
         base_path = os.path.join(self.data_dir, self.module_dir, self.method_dir)
         psn_files = os.listdir(base_path)
 
-        if not set(psn_files).issubset(set(self.exp_files)):
-            this_error = (f"the input files for AlloSigma2-PSN must be named {', '.join(self.exp_files)}, "
+        if not set(self.exp_files).issubset(set(psn_files)):
+            this_error = (f"the input files for AlloSigma2-PSN must include {', '.join(self.exp_files)}, "
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        # Parsing input files + required columns
-        df_simple_data = self._read_file(
+        found_data_files = list(set(psn_files).intersection(self.datasets.keys()))
+
+        if len(found_data_files) < 1:
+            this_error = (f"the input files for AlloSigma2-PSN must include one or more of {', '.join(self.datasets.keys())}, "
+            f"found {', '.join(psn_files)}")
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        out_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        # Parsing constant input file - immutable
+        simple_mode_data = self._read_file(
             file_path=os.path.join(base_path, self.exp_files[0]),
             columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
             warnings=warnings)
-        df_ensemble_data = self._read_file(
-            file_path=os.path.join(base_path, self.exp_files[1]),
-            columns=['Variant_Site', 'Total_Paths'],
-            warnings=warnings)
 
-        # Build mutations column + order columns
-        df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
-            df_simple_data['position'].astype(str) +
-            df_simple_data['mutated_residue'])
-        df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
+        for data_file in found_data_files:
 
-        #Define working copy of data
-        psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+            # Create copy of simple mode data for processing
+            df_simple_data = simple_mode_data.copy(deep=True)
 
-        # Add residue number column
-        psn['res_num'] = psn.index.str[1:-1].astype(str)
+            # parse ensemble mode data
+            df_ensemble_data = self._read_file(
+                file_path=os.path.join(base_path, data_file),
+                columns=['Variant_Site', 'Total_Paths'],
+                warnings=warnings)
 
-        # Merge allosigma data with psn
-        psn = psn.merge(df_simple_data, on='mutations', how='left')
+            # Build mutations column + order columns
+            df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+                df_simple_data['position'].astype(str) +
+                df_simple_data['mutated_residue'])
+            df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
 
-        try:
-            # Perform classification
-            psn['AlloSigma2-PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
-            raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-        # Drop unnecessary columns
-        psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+            # Define working copy of data
+            psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
-        # Add new Allosigma-PSN column to data
-        self.data = psn.set_index('mutations')
+            # Add residue number column
+            psn['res_num'] = psn.index.str[1:-1].astype(str)
+
+            # Merge allosigma data with psn
+            psn = psn.merge(df_simple_data, on='mutations', how='left')
+
+            try:
+                # Perform classification
+                psn[self.datasets[data_file]] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
+                raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+            # Drop unnecessary columns
+            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+
+            # Set index
+            psn = psn.set_index('mutations')
+
+            out_data = out_data.join(psn)
+            
+
+        self.data = out_data
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
