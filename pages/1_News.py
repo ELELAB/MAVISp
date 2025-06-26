@@ -40,3 +40,8 @@ st.text("""We have extended the deadline for joining the MAVISp BioCurator Train
 st.divider()
 
 st.header("Others")
+
+st.subheader("26/05/2025 - New implementation of the LONG_RANGE module")
+st.badge("Training Event", icon="📖", color="green")
+st.text("""Following a benchmarking effort we recently did to understand how to improve the prediction performance of the LONG_RANGE module, we have devised a new and improved LONG_RANGE workflow to be followed for new MAVISp entries. At the time being, the MAVISp database contains both entries done using this new protocol as well as entries made using the previous one. Which of them was used for any entry can be discerned in the main proteins table of the MAVISp website, as the new workflow uses simple interatomics contacts for filtering, while the older one used inter-carbon alpha distances. For more details about the protocol see our (GitHub)[https://github.com/ELELAB/MAVISp_allosigma2_workflow/issues], and you'll be able to read all the relevant details in our soon to be published paper.""")
+st.divider()
