@@ -34,4 +34,9 @@ st.badge("Training Event", icon="📖", color="green")
 st.text("""We are organizing the first MAVISp BioCurator Training Workshop, to be held in early September 2025, fully online. For more information, see the Events page""")
 st.divider()
 
+st.subheader("26/05/2025 - MAVISp BioCurator Training Workshop 2025 - deadline extended")
+st.badge("Training Event", icon="📖", color="green")
+st.text("""We have extended the deadline for joining the MAVISp BioCurator Training Workshop 2025 to July 4th. For more information, see the Events page""")
+st.divider()
+
 st.header("Others")
