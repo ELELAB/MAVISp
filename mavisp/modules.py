@@ -1847,14 +1847,18 @@ class AllosigmaPSNLongRange(MavispModule):
                 'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
-        muts = row['mutations']
         allosigma_mode = row['allosigma-mode']
 
         # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
 
-        variant_sites = ensemble_data[ensemble_data['Variants'].str.contains(rf'\b{muts}\b', regex=True)]        
+        if 'Variants' in ensemble_data.columns:
+            muts = row['mutations']
+            variant_sites = ensemble_data[ensemble_data['Variants'].str.contains(rf'\b{muts}\b', regex=True)]
+        else:
+            res_num = row['res_num']
+            variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
 
         # Mutation not predicted w/ Allosigma effects
         if variant_sites.empty:
@@ -1913,11 +1917,18 @@ class AllosigmaPSNLongRange(MavispModule):
             # Create copy of simple mode data for processing
             df_simple_data = simple_mode_data.copy(deep=True)
 
-            # parse ensemble mode data
-            df_ensemble_data = self._read_file(
-                file_path=os.path.join(base_path, data_file),
-                columns=['Variant_Site', 'Variants', 'Total_Paths'],
-                warnings=warnings)
+            # Parse ensemble mode data
+            try:
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Variants', 'Total_Paths'],
+                    warnings=warnings)
+            except Exception as e:
+                # Retry with reduced columns (interim)
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Total_Paths'],
+                    warnings=warnings)
 
             # Build mutations column + order columns
             df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
@@ -1927,6 +1938,9 @@ class AllosigmaPSNLongRange(MavispModule):
 
             # Define working copy of data
             psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+            # Add residue number column
+            psn['res_num'] = psn.index.str[1:-1].astype(str)
 
             # Merge allosigma data with psn
             psn = psn.merge(df_simple_data, on='mutations', how='left')
@@ -1939,7 +1953,7 @@ class AllosigmaPSNLongRange(MavispModule):
                 raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
             # Drop unnecessary column
-            psn = psn.drop(columns=['allosigma-mode'])
+            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
 
             # Set index
             psn = psn.set_index('mutations')
