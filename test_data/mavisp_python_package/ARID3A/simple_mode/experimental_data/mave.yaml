@@ -1,0 +1,18 @@
+score_set: ARID3A_VAMP-seq_lowthrougput_stability_validation
+class_of_assay: stability
+assay: VAMP-seq_low_throughput
+columns: 
+    abundance_class:
+        data_file: ARID3A_VAMP-seq_lowthrougput_stability_validation.csv
+        mutation_column: Sample
+        mutation_format: mavisp
+        header: Stability
+        thresholds:
+            damaging: Damaging
+            uncertain: Uncertain
+            neutral: Neutral
+        threshold_type: values
+        offset: 0
+reference: Nan
+peer-reviewed: False
+license: CC0

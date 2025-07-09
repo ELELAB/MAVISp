@@ -1847,15 +1847,16 @@ class AllosigmaPSNLongRange(MavispModule):
                 'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
-        res_num = row['res_num']
+        muts = row['mutations']
         allosigma_mode = row['allosigma-mode']
-        variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
 
         # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
 
-        # No predicted Allosigma effects
+        variant_sites = ensemble_data[ensemble_data['Variants'].str.contains(rf'\b{muts}\b', regex=True)]        
+
+        # Mutation not predicted w/ Allosigma effects
         if variant_sites.empty:
             return 'neutral'
 
@@ -1915,7 +1916,7 @@ class AllosigmaPSNLongRange(MavispModule):
             # parse ensemble mode data
             df_ensemble_data = self._read_file(
                 file_path=os.path.join(base_path, data_file),
-                columns=['Variant_Site', 'Total_Paths'],
+                columns=['Variant_Site', 'Variants', 'Total_Paths'],
                 warnings=warnings)
 
             # Build mutations column + order columns
@@ -1927,9 +1928,6 @@ class AllosigmaPSNLongRange(MavispModule):
             # Define working copy of data
             psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
-            # Add residue number column
-            psn['res_num'] = psn.index.str[1:-1].astype(str)
-
             # Merge allosigma data with psn
             psn = psn.merge(df_simple_data, on='mutations', how='left')
 
@@ -1940,14 +1938,13 @@ class AllosigmaPSNLongRange(MavispModule):
                 this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
                 raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
-            # Drop unnecessary columns
-            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+            # Drop unnecessary column
+            psn = psn.drop(columns=['allosigma-mode'])
 
             # Set index
             psn = psn.set_index('mutations')
 
             out_data = out_data.join(psn)
-
 
         self.data = out_data
 
