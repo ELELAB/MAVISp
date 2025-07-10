@@ -34,6 +34,7 @@ class MavispModule(object):
 
         self.data_dir = data_dir
         self.data = None
+        self.metadata = None
 
         if module_dir is not None:
             self.module_dir = module_dir
@@ -64,6 +65,10 @@ class MavispModule(object):
 
     def get_dataset_view(self):
         return self.data
+
+    def get_metadata_view(self):
+        return self.metadata
+
 
 class MavispMultiEnsembleModule(MavispModule):
     def __init_subclass__(cls, module_class, **kwargs):
@@ -2021,6 +2026,8 @@ class ExperimentalData(MavispModule):
 
         all_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
+        module_metadata = []
+
         for yaml_file in yaml_files:
             try:
                 with open(os.path.join(module_path, yaml_file)) as fh:
@@ -2030,6 +2037,15 @@ class ExperimentalData(MavispModule):
                 raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
+            dd_metadata = defaultdict(lambda: str(), metadata)
+            assay_metadata = {'Assay type' : dd_metadata['assay'],
+                              'Class of assay' : dd_metadata['class_of_assay'],
+                              'Reference' : dd_metadata['reference'],
+                              'Score set ID' : dd_metadata['score_set'],
+                              'Is reference peer-reviewed' : dd_metadata['peer-reviewed'],
+                              'License type' : dd_metadata['license'],
+                              'Columns in MAVISp' : []}
+
             for col in metadata['columns'].keys():
 
                 col_metadata = metadata['columns'][col]
@@ -2038,8 +2054,6 @@ class ExperimentalData(MavispModule):
                     this_error = f"Error in {yaml_file}, {col}: threshold_type can either be values or ranges"
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
-
-
                 try:
                     data = pd.read_csv(os.path.join(module_path, col_metadata['data_file']))
                 except Exception as e:
@@ -2074,10 +2088,21 @@ class ExperimentalData(MavispModule):
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
-                data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
-                                            f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
+                colname = f"Experimental data ({metadata['assay']}, {col_metadata['header']})"
+                classification_colname = f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"
+                data = data.rename(columns={col : colname,
+                                            f"{col} classification" : classification_colname})
+
+                assay_metadata['Columns in MAVISp'].append({})
+                assay_metadata['Columns in MAVISp'][-1]['Data column'] = colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification column'] = colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification strategy'] = col_metadata['thresholds']
 
                 all_data = all_data.join(data)
+
+            module_metadata.append(assay_metadata)
+
+        self.metadata = module_metadata
 
         self.data = all_data
 
