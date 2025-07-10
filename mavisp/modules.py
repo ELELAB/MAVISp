@@ -69,7 +69,6 @@ class MavispModule(object):
     def get_metadata_view(self):
         return self.metadata
 
-
 class MavispMultiEnsembleModule(MavispModule):
     def __init_subclass__(cls, module_class, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -2130,7 +2129,7 @@ class Pfam(MavispModule):
 
         try:
             pfam = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pfam_file),
-                               sep=';', 
+                               sep=';',
                                dtype={'start': int, 'end': int, 'pfam_domain': str, 'accession': str})
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
