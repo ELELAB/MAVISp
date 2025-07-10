@@ -282,7 +282,7 @@ def main():
                 if mod is None:
                     continue
                 this_df = this_df.join(mod.get_dataset_view())
-                module_metadata[mod.name] = mod.metadata
+                module_metadata[mod.name] = mod.get_metadata_view()
 
             # move Reference column to last
             this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
