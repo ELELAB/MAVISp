@@ -1923,7 +1923,7 @@ class AllosigmaPSNLongRange(MavispModule):
                     file_path=os.path.join(base_path, data_file),
                     columns=['Variant_Site', 'Variants', 'Total_Paths'],
                     warnings=warnings)
-            except Exception as e:
+            except MAVISpMultipleError as e:
                 # Retry with reduced columns (interim)
                 df_ensemble_data = self._read_file(
                     file_path=os.path.join(base_path, data_file),
