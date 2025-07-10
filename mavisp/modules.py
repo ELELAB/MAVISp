@@ -2095,7 +2095,7 @@ class ExperimentalData(MavispModule):
 
                 assay_metadata['Columns in MAVISp'].append({})
                 assay_metadata['Columns in MAVISp'][-1]['Data column'] = colname
-                assay_metadata['Columns in MAVISp'][-1]['Classification column'] = colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification column'] = classification_colname
                 assay_metadata['Columns in MAVISp'][-1]['Classification strategy'] = col_metadata['thresholds']
 
                 all_data = all_data.join(data)
