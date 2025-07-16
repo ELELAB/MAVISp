@@ -142,3 +142,11 @@ type of MAVISp classification should be considered. It supports two analysis mod
 one in which only the mutation sites that have at least a specified number of mutations
 that are classified as damaging are displayed; and another in which the user
 can freely select a set of mutation sites to be shown on the protein structure.""")
+
+st.subheader("Visualizing metadata of datasets used in MAVISp")
+
+st.write("""The Datasets and Metadata page allows to visualize metadata available on specific
+datasets used in MAVISp. Users can visualize metadata by selecting the desired MAVISp mode, gene
+name and MAVISp module. Currently, only metadata for the `EXPERIMENTAL_DATA` module is available,
+and we plan to add more in the future. For `EXPERIMENTAL_DATA`, metadata also includes references to relevant datasets
+we are including as experimental data.""")
