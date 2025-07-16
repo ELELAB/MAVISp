@@ -232,9 +232,41 @@ st.subheader("Structure of a typical MAVISp dataset")
 st.write("""The dataset for a protein is organized as a table, where each row is a protein mutation, and each
 column contains data that has been generated for that specific mutation or for the wild-type
 residue in that position, depending on the context. The dataset also contains classification
-columns that summarize the final classification outcome for a specific module.
+columns that summarize the final classification outcome for a specific module. Most columns
+are defined by the modules that are available for any given entry (see below), while some of them
+are in common to every entry:""")
 
-Furthermore, as already introduced, MAVISp operates on either a single protein structure (simple mode) or an
+data = [
+    {
+        'Column': 'Mutation',
+        'Description': 'Protein-level amino acid substitution for this row, expressed as [reference residue type][residue number][mutant residue type]. '
+        'The numbering refers to the numbering of the protein sequence corresponding to the RefSeq identifier for this entry.',
+        'Possible values': 'Strings in the aforamentioned format'
+    },
+    {
+        'Column': 'HGVSp',
+        'Description': 'Protein-level amino acid substitution for this row, expressed in the HGVSp format',
+        'Possible values': 'Strings in the HGVSp format'
+    },
+    {
+        'Column': 'HGVSg',
+        'Description': 'Genome-level substitution(s) corresponding to the protein mutation. This is typically available'
+        'for a selected subset of mutations that were available from our data sources',
+        'Possible values': 'Strings in the HGVSg format'
+    },
+    {
+        'Column': 'References',
+        'Description': 'Reference to publication in which this mutation was investigated by us. If the mutation has not'
+        'been subject to an in-depth investigation and it's just part of the MAVISp database, only a reference to the main'
+        'MAVISp paper will be present. This column doesn't include references to datasets that were used as a data source'
+        'for MAVISp; for those, please check the metadata of specific genes and modules in the Datasets and metadata page.',
+        'Possible values': 'Strings in the HGVSg format'
+    }
+]
+
+st.table(pd.DataFrame(data))
+
+st.write("""Furthermore, as previously introduced, MAVISp operates on either a single protein structure (simple mode) or an
 ensemble of structures (ensemble mode). In ensemble mode, we occasionally include more than
 one ensemble (for instance, from molecular dynamics simulations or NMR experiments) in the
 dataset; for this reason, some of the columns will have a `[tag]` that defines which ensemble
