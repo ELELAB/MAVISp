@@ -51,7 +51,181 @@ methodologies - see the acknowledgements section or the MAVISp paper to know mor
 It should be noted that MAVISp also includes modules that perform preparatory steps
 to perform analyses for other modules, for instance identifying and obtaining
 protein structures. We will not refer to them in this documentation as they are
-typically not user-facing.""")
+typically not user-facing.
+         
+As detailed in the paper, MAVISp includes data for two separate modes, which effectively
+work as independent databases: simple and ensemble mode. MAVISp modules are defined on a
+per-mode base, meaning that the definition of each module might be different for in the
+two modes.""")
+
+st.subheader("Structure of a MAVISp mode table")
+
+st.write("""The MAVISp mode tables are summary table which include all the proteins that have been
+curated for certain release of MAVISp and a given mode. The table for simple mode includes the following columns:""")
+
+data = [
+    {
+        'Column': 'Protein',
+        'Description': 'HUGO Symbol of the corresponding gene. Occasionally, these might be modified to express that the protein has been studied in a particular state',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Uniprot AC',
+        'Description': 'UniProt Accession Code of the protein',
+        'Possible values': 'UniProt AC, e.g., "P04637"'
+    },
+    {
+        'Column': 'RefSeq ID',
+        'Description': 'NCBI RefSeq identifier for the protein sequence, without version number',
+        'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
+    },
+    {
+        'Column': 'Review status',
+        'Description': 'Review status of the entry. See https://elelab.gitbook.io/mavisp/documentation/mavisp-review-status for more information',
+        'Possible values': '0 to 4'
+    },
+    {
+        'Column': 'Curators',
+        'Description': 'Name(s) or identifier(s) of the curators responsible for the data',
+        'Possible values': 'Free text or list of names and their affiliations'
+    },
+    {
+        'Column': 'GitBook report',
+        'Description': 'Link to a GitBook page with detailed report on the protein',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Distance cut-off used for AlloSigma2',
+        'Description': 'Distance threshold used in AlloSigma2 for filtering out mutation and response sites that are too close by',
+        'Possible values': 'number, in Å'
+    },
+    {
+        'Column': 'Contact calculation mode for AlloSigma2 filtering',
+        'Description': 'Mode used to identify contacts between mutation and response sites',
+        'Possible values': 'either "CA-CA" (Distance between Cαs) or "atomic_contacts" (minimum distance between residues)'
+    },
+    {
+        'Column': 'Structure source',
+        'Description': 'Source of the structural model (experimental or computational).',
+        'Possible values': 'can be one of AFDB (AlphaFold Protein Structure Database), '
+        'AF3 (AlphaFold3 webserver), AF2 (AlphaFold2 standalone), PDB (Protein Data Bank), '
+        'Mod (Model refined or built using homology modelling)'
+    },
+    {
+        'Column': 'Description of structure source',
+        'Description': 'Description of the previous column',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Linker design included',
+        'Description': 'Indicates whether a long loop has been replaced by homology modelling in the structure',
+        'Possible values': 'True or False'
+    },
+    {
+        'Column': 'PDB ID',
+        'Description': 'PDB identifier of the structure used (when applicable)',
+        'Possible values': 'e.g., "1TUP"'
+    }
+]
+
+st.table(pd.DataFrame(data))
+
+st.write("""The table for ensemble mode includes the following columns:""")
+
+data = [
+    {
+        'Column': 'Protein',
+        'Description': 'HUGO Symbol of the corresponding gene. Occasionally, these might be modified to express that the protein has been studied in a particular state',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Uniprot AC',
+        'Description': 'UniProt Accession Code of the protein',
+        'Possible values': 'UniProt AC, e.g., "P04637"'
+    },
+    {
+        'Column': 'RefSeq ID',
+        'Description': 'NCBI RefSeq identifier for the protein sequence, without version number',
+        'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
+    },
+    {
+        'Column': 'Ensemble sources',
+        'Description': 'The type of data source for the ensembles, one per ensemble',
+        'Possible values': 'Free text; e.g., "md"'
+    },
+    {
+        'Column': 'Ensemble sizes (FoldX)',
+        'Description': 'Number of models used for MutateX in the stability module, one per ensemble',
+        'Possible values': 'Integer number, e.g., 25'
+    },
+    {
+        'Column': 'Ensemble sizes (Rosetta)',
+        'Description': 'Number of models used for RosettaDDGPrediction in the stability module, one per ensemble',
+        'Possible values': 'Integer number, e.g., 3'
+    },
+    {
+        'Column': 'OSF repository for ensemble data',
+        'Description': 'Link to the OSF repository hosting ensemble files',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Sampling methods for functional dynamics',
+        'Description': 'Computational methods or algorithms used to perform the sampling used in the functional dynamics module',
+        'Possible values': 'Free text, e.g. "md"'
+    },
+    {
+        'Column': 'Regions of interest for functional dynamics',
+        'Description': 'Regions or interfaces within the protein system analyzed for functional dynamics',
+        'Possible values': 'Free text, e.g., "interface A-B", "DNA-binding domain", "allosteric loop"'
+    },
+    {
+        'Column': 'Simulation length (ns)',
+        'Description': 'Length of molecular dynamics simulation or sampling, in nanoseconds, one per ensemble',
+        'Possible values': 'Positive number, e.g., 100, 500'
+    },
+    {
+        'Column': 'Simulation force field',
+        'Description': 'Force field used in molecular dynamics simulations, one per ensemble',
+        'Possible values': 'e.g., "CHARMM36m", "AMBER99SB", "OPLS-AA"'
+    },
+    {
+        'Column': 'Review status',
+        'Description': 'Review status of the entry. See https://elelab.gitbook.io/mavisp/documentation/mavisp-review-status for more information',
+        'Possible values': '0 to 4'
+    },
+    {
+        'Column': 'Curators',
+        'Description': 'Name(s) or identifier(s) of the curators responsible for the data',
+        'Possible values': 'Free text or list of names and their affiliations'
+    },
+    {
+        'Column': 'GitBook report',
+        'Description': 'Link to a GitBook page with detailed report on the protein',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Structure source',
+        'Description': 'Source of the structural model (experimental or computational)',
+        'Possible values': 'can be one of AFDB (AlphaFold Protein Structure Database), AF3 (AlphaFold3 webserver), AF2 (AlphaFold2 standalone), PDB (Protein Data Bank), Mod (Model refined or built using homology modelling)'
+    },
+    {
+        'Column': 'Description of structure source',
+        'Description': 'Description of the previous column',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Linker design included',
+        'Description': 'Indicates whether a long loop has been replaced by homology modelling in the structure',
+        'Possible values': 'True or False'
+    },
+    {
+        'Column': 'PDB ID',
+        'Description': 'PDB identifier of the structure used (when applicable)',
+        'Possible values': 'e.g., "1TUP"'
+    }
+]
+
+st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("Structure of a typical MAVISp dataset")
 
@@ -60,7 +234,7 @@ column contains data that has been generated for that specific mutation or for t
 residue in that position, depending on the context. The dataset also contains classification
 columns that summarize the final classification outcome for a specific module.
 
-Furthermore, MAVISp operates on either a single protein structure (simple mode) or an
+Furthermore, as already introduced, MAVISp operates on either a single protein structure (simple mode) or an
 ensemble of structures (ensemble mode). In ensemble mode, we occasionally include more than
 one ensemble (for instance, from molecular dynamics simulations or NMR experiments) in the
 dataset; for this reason, some of the columns will have a `[tag]` that defines which ensemble
