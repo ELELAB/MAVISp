@@ -19,6 +19,7 @@ from pathlib import Path
 import argparse
 from tabulate import tabulate
 import pandas as pd
+import yaml
 from mavisp.core import MAVISpFileSystem
 from mavisp.utils import mutation_to_HGVSp
 import logging as log
@@ -86,7 +87,7 @@ def main():
                         dest="dry_run",
                         default=False,
                         action="store_true",
-                        help="only perform check, do not write output files")
+                        help="perform processing as requested, but do not write output files")
     parser.add_argument("-f", "--force",
                         dest="force_write",
                         default=False,
@@ -257,7 +258,10 @@ def main():
         out_table.to_csv(mode_path / 'index.csv', index=False)
 
         dataset_tables_path = mode_path / 'dataset_tables'
+        metadata_path = mode_path / 'metadata'
+
         dataset_tables_path.mkdir(exist_ok=True)
+        metadata_path.mkdir(exist_ok=True)
 
         for _, r in mfs.dataset_tables[mode_name].iterrows():
 
@@ -271,11 +275,14 @@ def main():
             this_df['HGVSp'] = this_df.apply(lambda r: f"{this_refseq_id}:{mutation_to_HGVSp(r['Mutation'])}", axis=1)
             this_df = this_df.set_index('Mutation')
 
+            module_metadata = {}
+
             for mod_name in mode.module_order:
                 mod = r['modules'][mod_name]
                 if mod is None:
                     continue
                 this_df = this_df.join(mod.get_dataset_view())
+                module_metadata[mod.name] = mod.get_metadata_view()
 
             # move Reference column to last
             this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
@@ -285,6 +292,10 @@ def main():
 
             # save final dataframe
             this_df.to_csv(dataset_tables_path / f"{r['system']}-{mode.name}.csv")
+
+            # save metadata
+            with open(metadata_path / f"{r['system']}.yaml", 'w') as fh:
+                yaml.dump(module_metadata, fh, sort_keys=False)
 
     all_indexes = pd.concat(all_indexes, ignore_index=True)
 
