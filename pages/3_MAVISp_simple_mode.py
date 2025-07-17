@@ -102,7 +102,6 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
 
         this_dataset_table = this_dataset.copy()
         this_dataset_table = this_dataset_table.fillna(pd.NA)
-        this_dataset_table['UniProtAC'] = upac
 
         if data_type == 'Compact dataset':
             this_dataset_table = get_compact_dataset(this_dataset_table)
@@ -120,23 +119,15 @@ if datasets_grid["selected_rows"] is not None and len(datasets_grid["selected_ro
                                     mime="text/csv",
                                     key='download-csv')
 
-        this_gb = GridOptionsBuilder.from_dataframe(this_dataset_table)
-        this_gb.configure_grid_options(alwaysShowHorizontalScroll=True)
-        this_gb.configure_column('UniProtAC', hide=True)
-        for col in ['Mutation sources', 'PTMs']:
-            if col in this_dataset_table.columns:
-                this_gb.configure_column(col, cellRenderer=cell_renderers[col])
+        if 'PTMs' in this_dataset_table.columns:
+            ptm_link = f"http://www.phosphosite.org/uniprotAccAction?id={upac}"
+            this_dataset_table['PTMs'] = this_dataset_table['PTMs'].replace(to_replace='P', value=f'http://www.phosphosite.org/uniprotAccAction?id=P{upac}')
 
-        mutations_grid = AgGrid(this_dataset_table, enable_enterprise_modules=False,
-                                gridOptions=this_gb.build(),
-                                reload_data=False,
-                                allow_unsafe_jscode=True,
-                                height=400,
-                                custom_css={"#gridToolBar": {
-                                                "padding-bottom": "0px !important",
-                                                }
-                                            })
-
+        st.dataframe(this_dataset_table,
+                     hide_index=True,
+                     use_container_width=True,
+                     column_config = { 'Mutation sources' : st.column_config.ListColumn(),
+                                       'PTMs' : st.column_config.LinkColumn(display_text='P')})
     with dotplots:
 
         this_dataset_table = this_dataset.copy()
