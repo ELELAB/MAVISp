@@ -170,91 +170,11 @@ def get_compact_dataset(this_dataset_table):
     selected_cols = [c for c in this_dataset_table.columns if "classification" in c ]
     return this_dataset_table[default_cols + selected_cols + ['References']]
 
-# JavaScript column renderers, to dynamically add web links
+def replace_boolean_col(df, col, dictionary={True : 'Yes', False : 'No'}):
 
-cell_renderers = {}
+    df[col] = df[col].astype(str)
 
-cell_renderers['GitBook report'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">report</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}
-''')
-
-cell_renderers['OSF repository for ensemble data'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">OSF</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}
-''')
-
-cell_renderers['Mutation sources'] = JsCode('''
-class SourceCellRenderer {
-  init(params) {
-    this.eGui = document.createElement('span');
-    // Split the string into an array using comma as separator
-    var array = params.value.split(',');
-
-    // Loop through array and create a link for each item
-    for (var i = 0; i < array.length; i++) {
-        var item = array[i].trim();
-        var link = "";
-
-        // Check the item and assign the corresponding link
-        if (item === "COSMIC") {
-            link = "https://cancer.sanger.ac.uk/cosmic";
-        } else if (item === "cBioPortal") {
-            link = "https://www.cbioportal.org";
-        } else if (item === "clinvar") {
-            item = "ClinVar";
-            link = "https://www.ncbi.nlm.nih.gov/clinvar/";
-        }
-
-        // If a link is assigned, create the anchor tag
-        if (link !== "") {
-            array[i] = `<a target="_parent" href=${link}>${item}</a>`;
-        } else {
-            array[i] = item;
-        }
-    }
-
-    this.eGui.innerHTML = array.join(', ');
-
-  }
-  getGui() {
-    return this.eGui;
-  }
-}''')
-
-cell_renderers['PTMs'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="http://www.phosphosite.org/uniprotAccAction?id=${params.data.UniProtAC}">${params.value}</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}''')
+    for k,v in dictionary.items():
+        k, v = str(k), str(v)
+        df[col] = df[col].replace(to_replace=k, value=v)
+    return df
