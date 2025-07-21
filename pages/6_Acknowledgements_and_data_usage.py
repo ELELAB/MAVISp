@@ -118,13 +118,24 @@ or annotation of protein-level features, or structure:
   post-translational modifications. Data from PhosphoSitePlus in MAVISp, (i.e.
   the PTMs column in our database files) is released according to the
   [PhosphoSitePlus' terms and conditions](https://www.phosphosite.org/staticDownloads),
-  and it is not available for commercial use.''')
+  and it is not available for commercial use.
+  - [**NetPhos**](https://services.healthtech.dtu.dk/services/NetPhos-3.1/) for the prediction
+  of phosphorylation sites and if this prediction changes in mutant variants
+  - [**NACCESS**](https://www.bioinf.manchester.ac.uk/naccess/) for the calculation of
+  solvent-accessible areas in protein structures
+  - [**eFoldMine**](https://bio2byte.be/b2btools/efoldmine/) for the identification
+  of early folding regions
+  - **Pfam**, currently hosted at [InterPro](https://www.ebi.ac.uk/interpro/) for the
+  identification of structural domains''')
+
 
 st.subheader('Prediction of the effect of mutations')
 
 st.markdown('''MAVISp uses the following software for the prediction of the effect of mutations:
 
   - [**AlloSigma**](http://allosigma.bii.a-star.edu.sg/home/), a webserver for the prediction of allosteric effects.
+  - [**PyInteraph**](https://www.github.com/ELELAV/pyinteraph2), a sfotware for the definition and analysis of
+    protein structure networks
   - [**FoldX**](http://foldxsuite.crg.eu/), a software suite for the prediction of changes of protein stability upon mutation. FoldX was licensed to us according to the Academic license terms.
   - [**Rosetta**](https://www.rosettacommons.org/), a software suite for the prediction of protein structure and stability. We have used the Rosetta suite licensed to us according to the Academic license terms, meaning that data produced with Rosetta is released in MAVISp for non-profit research
     purposes only, in accordance to such license terms.
@@ -145,3 +156,14 @@ st.markdown('''MAVISp uses the following protein-protein interaction databases:
   interactions.
   - [**HPC-Atlas**](http://www.yulpan.top/HPC-Atlas/), a database of protein
   complexes.''')
+
+st.subheader('Experimental data')
+
+st.markdown("""MAVISp includes experimental data from different publicly available sources:
+
+  - [**MAVEdb**](https://www.mavedb.org), a repository of datasets from Multiplexed Assays
+of Variant Effect (MAVEs). For details on the specific datasets that have been used
+their references, please see the Datasets and Metadata page for each specific case
+  - [**ProteinGym**](https://proteingym.org), a collection of benchmark experimental
+data for the effect of protein mutations""")
+
