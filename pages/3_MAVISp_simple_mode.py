@@ -44,10 +44,14 @@ st.title('MAVISp simple mode')
 
 st.write('''Please choose a dataset in the table below by clicking on the
 checkbox on the left. The corresponding MAVISp results table will be displayed underneath.
-Alternatively, check out the Classification tab for a graphical representation
+Alternatively, check out the remaining tabs for a graphical representation
 of the final classification performed by MAVISp.''')
 
-st.write('''Please see the Acknowledgement and data usage page for information on our data sources, licensing term, and data reuse permissions''')
+st.write('''Please see the Acknowledgement and data usage page for information on our data sources,
+licensing term, and data reuse permissions''')
+
+st.write('''If you need to download the MAVISp dataset in bulk and/or check the full
+dataset for any of our proteins, please refer to our [OSF repository](https://osf.io/ufpzm/)''')
 
 try:
     show_table = load_main_table(database_dir, mode)
