@@ -16,7 +16,6 @@ dependencies = [
     "numpy",
     "streamlit",
     "ipython_genutils",
-    "streamlit-aggrid",
     "stmol",
     "py3Dmol",
     "pyyaml",
