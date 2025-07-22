@@ -39,7 +39,6 @@ Running the MAVISp web app requires a working Python 3.9+ installation with the 
 Python packages:
 
 - streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
 - matplotlib 3.7.4
 
@@ -49,7 +48,6 @@ It has been last test on Linux (Ubuntu 18.04), and on macOS (13.5.2),
 with Python 3.9.6 and the following package versions:
 
 - streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
 - pandas 2.1.3
 - matplotlib 3.7.4
 
@@ -80,7 +78,7 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2
 ```
 
 ### Installing requirements using a conda Python environment
@@ -101,7 +99,7 @@ conda activate MAVISp_env
 3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
+pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2
 ```
 
 Installation time is typically up to a few minutes.
@@ -273,7 +271,6 @@ with the following versions:
 - numpy 1.26.2
 - PyYAML 6.0.1 
 - streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
 - requests 2.31.0
 - termcolor 2.3.0
 
