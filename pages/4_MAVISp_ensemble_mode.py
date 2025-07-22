@@ -58,7 +58,19 @@ except FileNotFoundError:
 
 show_table = replace_boolean_col(show_table, 'Linker design included')
 
-protein_table = st.dataframe(show_table,
+filter_text = st.text_input("Filter by UniProt AC, gene name or protein RefSeq ID. Press Enter to apply the filter")
+
+if filter_text:
+    mask = (
+        show_table['Protein'].str.contains(filter_text, case=False, na=False) |
+        show_table['Uniprot AC'].str.contains(filter_text, case=False, na=False) |
+        show_table['RefSeq ID'].str.contains(filter_text, case=False, na=False)
+    )
+    filtered_show_table = show_table[mask]
+else:
+    filtered_show_table = show_table
+
+protein_table = st.dataframe(filtered_show_table,
                                  hide_index=True,
                                  use_container_width=True,
                                  on_select='rerun',
@@ -91,50 +103,87 @@ with dataset:
 
     if data_type == 'Compact dataset':
         this_dataset_table = get_compact_dataset(this_dataset_table)
-        st.download_button(label="Download dataset",
-                            data=this_dataset_table.to_csv(),
-                            file_name=f'{protein}-{mode}-compact.csv',
-                            mime="text/csv",
-                            key='download-csv-compact')
-
-    else:
-        with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
-            st.download_button(label="Download dataset",
-                                data=data,
-                                file_name=f'{protein}-{mode}.csv',
-                                mime="text/csv",
-                                key='download-csv')
 
     display_dataset_table = this_dataset_table.copy()
 
-    binary_cols = ['EFoldMine - part of early folding region']
-    binary_cols += [c for c in display_dataset_table.columns if c.startswith('is site part of phospho-SLiM') or c.startswith('Mutation predicted to add new phosphorylation site')]
-    print(binary_cols)
+    binary_cols = ['EFoldMine - part of early folding region',
+                   'is site part of phospho-SLiM',
+                   'Mutation predicted to add new phosphorylation site']
+
     for bcol in binary_cols:
         if bcol in display_dataset_table.columns:
-            print(f'replacing {bcol}\n\n\n')
-            print(display_dataset_table[bcol])
-            display_dataset_table = replace_boolean_col(display_dataset_table, bcol)
-            print(display_dataset_table[bcol])
+            replace_boolean_col(display_dataset_table, bcol)
 
+    if 'PTMs' in display_dataset_table.columns:
+        ptm_link = f"http://www.phosphosite.org/uniprotAccAction?id={upac}"
+        display_dataset_table['PTMs'] = display_dataset_table['PTMs'].replace(to_replace='P', value=f'http://www.phosphosite.org/uniprotAccAction?id=P{upac}')
 
-    column_config = {'Mutation sources' : st.column_config.ListColumn()}
+    available_data_sources = list(set(",".join(display_dataset_table['Mutation sources'].tolist()).split(",")))
 
-    ptm_columns = [c for c in display_dataset_table.columns if c.startswith('PTMs')]
-    ptm_link = f"http://www.phosphosite.org/uniprotAccAction?id={upac}"
-    for ptm_col in ptm_columns:
-        display_dataset_table[ptm_col] = display_dataset_table[ptm_col].replace(to_replace='P', value=f'http://www.phosphosite.org/uniprotAccAction?id=P{upac}')
-        column_config[ptm_col] = st.column_config.LinkColumn(display_text='P')
-    
-    st.dataframe(display_dataset_table,
+    selected_sources = st.multiselect(label="Data sources to be considered",
+                                        options=available_data_sources,
+                                    default=available_data_sources,
+                                    placeholder="Type or select a data source or more")
+
+    mask = display_dataset_table['Mutation sources'].apply(lambda x: any(term in x for term in selected_sources))
+
+    filtered_display_dataset_table = display_dataset_table[mask]
+
+    mutation_format = st.radio("Mutation column to filter on", options=['Mutation', 'HGVSp', 'HGVSg'])
+
+    filtering_input_type = st.radio("Input method for mutations to filter on", options=['Select from list', 'Free text format'])
+
+    if filtering_input_type == 'Select from list':
+
+        selected_mutations = st.multiselect(label="Mutations to be considered (all if empty)",
+                                            options=filtered_display_dataset_table[mutation_format].dropna().unique().tolist(),
+                                            default=None,
+                                            placeholder="Type or select a mutation")
+        
+    else:
+        placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
+        placeholder_text += f"{'\n'.join(filtered_display_dataset_table[mutation_format].dropna().unique().tolist()[0:3])}\n..."
+
+        selected_mutations_input = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
+                     height=100,
+                     placeholder=placeholder_text)
+        
+        if selected_mutations_input is None or selected_mutations_input == "":
+            selected_mutations = None
+        else:
+            selected_mutations_input = selected_mutations_input.split('\n')
+            selected_mutations_input = list(filter(lambda x: x, selected_mutations_input))
+            if len(selected_mutations_input) == len(filtered_display_dataset_table[filtered_display_dataset_table[mutation_format].isin(selected_mutations_input)]):
+                selected_mutations = selected_mutations_input
+            else:
+                st.error("One or more mutations not present in the specified column, please double check their format")
+                selected_mutations = None
+
+    if selected_mutations:
+        filtered_display_dataset_table = filtered_display_dataset_table[filtered_display_dataset_table[mutation_format].isin(selected_mutations)]
+
+    st.dataframe(filtered_display_dataset_table,
                     hide_index=True,
                     use_container_width=True,
-                    column_config = column_config)
+                    column_config = { 'Mutation sources' : st.column_config.ListColumn(),
+                                      'PTMs' : st.column_config.LinkColumn(display_text='P')})
+
+    st.download_button(label="Download current dataset view",
+                             data=filtered_display_dataset_table.to_csv(),
+                             file_name=f'{protein}-{mode}-view.csv',
+                             mime="text/csv",
+                             key='download-csv-compact')
+
+    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+        st.download_button(label="Download original full dataset",
+                                 data=data,
+                                 file_name=f'{protein}-{mode}.csv',
+                                 mime="text/csv",
+                                 key='download-csv')
 
 with dotplots:
 
     this_dataset_table = this_dataset.copy()
-    this_dataset_table = this_dataset_table.set_index('Mutation')
 
     col1, col2 = st.columns(2)
 
@@ -142,26 +191,52 @@ with dotplots:
         do_revel = st.checkbox('Show available REVEL classification', )
         revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
         demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
-        gemme_co = st.number_input("Cutoff for GEMME", value=3.0)
+        gemme_co = st.number_input("Curoff for GEMME", value=3.0)
     with col2:
         do_demask = st.checkbox('Show available DeMaSk classification', value=True)
         n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
         fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
-        fig_height = st.number_input("Plot height (inches)", value=6, min_value=0)
+        fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
 
-    st.write("""Select up to 50 mutations to be shown in the dot plot below. They should be expressed in plain `[reference amino acid][residue number][mutant amino acid]` format, for example `A49G`.""")
+    st.write("""Select up to 50 mutations to be shown in the dot plot below.""")
 
-    selected_muts = st.multiselect(label="Mutations to be displayed",
-                                    options=this_dataset_table.index,
-                                    default=None,
-                                    max_selections=50,
-                                    placeholder="Type or select one mutation or more")
+    mutation_format_dotplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_dotplots")
+
+    filtering_input_type_dotplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_dotplot")
+
+    if filtering_input_type_dotplot == 'Select from list':
+        selected_mutations_dotplot = st.multiselect(label="Mutations to be considered (all if empty)",
+                                                    options=this_dataset_table[mutation_format_dotplot].dropna().unique().tolist(),
+                                                    default=None,
+                                                    placeholder="Type or select a mutation",
+                                                    key="mut_select_dotplot")
+        
+    else:
+        placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
+        placeholder_text += f"{'\n'.join(this_dataset_table[mutation_format_dotplot].dropna().unique().tolist()[0:3])}\n..."
+
+        selected_mutations_input_dotplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
+                     height=100,
+                     placeholder=placeholder_text,
+                     key="text_area_dotplot")
+        
+        if selected_mutations_input_dotplot is None or selected_mutations_input_dotplot == "":
+            selected_mutations_dotplot = None
+        else:
+            selected_mutations_input_dotplot = selected_mutations_input_dotplot.split('\n')
+            selected_mutations_input_dotplot = list(filter(lambda x: x, selected_mutations_input_dotplot))
+            if len(selected_mutations_input_dotplot) == len(this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_input_dotplot)]):
+                selected_mutations_dotplot = selected_mutations_input_dotplot
+            else:
+                st.error("One or more mutations not present in the specified column, please double check their format")
+                selected_mutations_dotplot = None
 
     if st.button('Generate plot',
-                    disabled=len(selected_muts) == 0):
-        this_dataset_table = this_dataset_table.loc[selected_muts]
+                 disabled=not bool(selected_mutations_dotplot)):
+        
+        this_dataset_table_dotplot = this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_dotplot)].set_index('Mutation')
 
-        plots = plot_dotplot(this_dataset_table,
+        plots = plot_dotplot(this_dataset_table_dotplot,
                             demask_co=demask_co,
                             revel_co=revel_co,
                             gemme_co=gemme_co,
@@ -186,37 +261,62 @@ with dotplots:
 
 with lolliplots:
 
-    this_dataset_table = this_dataset.copy()
-    this_dataset_table = this_dataset_table.set_index('Mutation')
-    this_dataset_table = process_df_for_lolliplot(this_dataset_table)
+    this_dataset_table_lolliplot = this_dataset.copy()
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.set_index('Mutation')
+    this_dataset_table_lolliplot = process_df_for_lolliplot(this_dataset_table_lolliplot)
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.join(this_dataset.set_index('Mutation')[['HGVSp', 'HGVSg']])
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.reset_index()
+
+    if this_dataset_table_lolliplot.shape[0] == 0:
+        st.write("""There are no suitable mutations in this dataset, therefore
+        this section has been disabled""")
+        st.stop()
 
     st.write(f"""Select one or more mutations below, up to 50, to be included
     in the plot. These are only those mutations that are at the same time
     i) classified as pathogenic for AlphaMissense, ii) classified as loss
     of function or gain of function for either GEMME or DeMaSk and
     iii) damaging for the respective module in MAVISp. They are
-    {this_dataset_table.shape[0]} in this dataset.""")
+    {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
 
-    disable_lolliplot = False
-    if this_dataset_table.shape[0] == 0:
-        st.write("""There are no suitable mutations in this dataset, therefore
-        this section has been disabled""")
-        disable_lolliplot = True
+    mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
 
-    selected_muts = st.multiselect(label="Mutations to be displayed",
-                                    options=this_dataset_table.index,
-                                    default=None,
-                                    placeholder="Type or select one mutation or more",
-                                    max_selections=50,
-                                    key='sj17h39')
+    filtering_input_type_lolliplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_lolliplots")
+
+    if filtering_input_type_lolliplot == 'Select from list':
+        selected_mutations_lolliplot = st.multiselect(label="Mutations to be considered (all if empty)",
+                                                    options=this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist(),
+                                                    default=None,
+                                                    placeholder="Type or select a mutation",
+                                                    key="mut_select_lolliplots")
+        
+    else:
+        placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
+        placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
+
+        selected_mutations_input_lolliplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
+                     height=100,
+                     placeholder=placeholder_text,
+                     key="text_area_lolliplot")
+        
+        if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
+            selected_mutations_lolliplot = None
+        else:
+            selected_mutations_input_lolliplot = selected_mutations_input_lolliplot.split('\n')
+            selected_mutations_input_lolliplot = list(filter(lambda x: x, selected_mutations_input_lolliplot))
+            if len(selected_mutations_input_lolliplot) == len(this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_input_lolliplot)]):
+                selected_mutations_lolliplot = selected_mutations_input_lolliplot
+            else:
+                st.error("One or more mutations not present in the specified column, please double check their format")
+                selected_mutations_lolliplot = None
 
     if st.button('Generate plot',
-                    disabled=len(selected_muts) == 0 or disable_lolliplot,
+                    disabled=not bool(selected_mutations_lolliplot),
                     key='qwe123'):
 
-        this_dataset_table = this_dataset_table.loc[selected_muts]
+        this_dataset_table_lolliplot = this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_lolliplot)].set_index('Mutation')
 
-        plots = plot_lolliplots(this_dataset_table)
+        plots = plot_lolliplots(this_dataset_table_lolliplot)
 
         with BytesIO() as pdf_stream:
             with PdfPages(pdf_stream) as pdf:
@@ -226,7 +326,8 @@ with lolliplots:
             st.download_button(label="Download as PDF",
                             data=pdf_stream,
                             mime="application/pdf",
-                            file_name=f'{protein}-{mode}_lolliplots.pdf')
+                            file_name=f'{protein}-{mode}_lolliplots.pdf',
+                            key='1231')
 
         for fig in plots:
             st.pyplot(fig, use_container_width=False)
@@ -263,9 +364,8 @@ with structure:
         this tab has been disabled""")
         disable_structure = True
 
+    # download model and stop if it can't be found
     if not disable_structure:
-
-        # download model and stop if it can't be found
         try:
             response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
             response.raise_for_status()

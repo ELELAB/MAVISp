@@ -37,18 +37,6 @@ add_affiliation_logo()
 
 database_dir = get_database_dir()
 
-# disable download button for dataframes
-# st.markdown(
-#     """
-#     <style>
-#     [data-testid="stElementToolbar"] {
-#         display: none;
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
 st.title('MAVISp simple mode')
 
 st.write('''Please choose a dataset in the table below by clicking on the
@@ -87,8 +75,7 @@ protein_table = st.dataframe(filtered_show_table,
                                  use_container_width=True,
                                  on_select='rerun',
                                  selection_mode='single-row',
-                                 column_config = { 'OSF repository for ensemble data' : st.column_config.LinkColumn(display_text='OSF'),
-                                                   'GitBook report' : st.column_config.LinkColumn(display_text='report')})
+                                 column_config = {'GitBook report' : st.column_config.LinkColumn(display_text='report')})
 
 if len(protein_table.selection['rows']) == 0:
     st.stop()
@@ -117,8 +104,6 @@ with dataset:
         this_dataset_table = get_compact_dataset(this_dataset_table)
 
     display_dataset_table = this_dataset_table.copy()
-
-    print(display_dataset_table.columns)
 
     binary_cols = ['EFoldMine - part of early folding region',
                    'is site part of phospho-SLiM',
@@ -162,7 +147,6 @@ with dataset:
                      height=100,
                      placeholder=placeholder_text)
         
-        print("SMI", selected_mutations_input)
         if selected_mutations_input is None or selected_mutations_input == "":
             selected_mutations = None
         else:
@@ -292,7 +276,7 @@ with lolliplots:
     i) classified as pathogenic for AlphaMissense, ii) classified as loss
     of function or gain of function for either GEMME or DeMaSk and
     iii) damaging for the respective module in MAVISp. They are
-    {this_dataset_table.shape[0]} in this dataset.""")
+    {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
 
     mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
 
@@ -300,14 +284,14 @@ with lolliplots:
 
     if filtering_input_type_lolliplot == 'Select from list':
         selected_mutations_lolliplot = st.multiselect(label="Mutations to be considered (all if empty)",
-                                                    options=this_dataset_table[mutation_format_lolliplot].dropna().unique().tolist(),
+                                                    options=this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist(),
                                                     default=None,
                                                     placeholder="Type or select a mutation",
                                                     key="mut_select_lolliplots")
         
     else:
         placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
-        placeholder_text += f"{'\n'.join(this_dataset_table[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
+        placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
 
         selected_mutations_input_lolliplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
                      height=100,
@@ -328,8 +312,6 @@ with lolliplots:
     if st.button('Generate plot',
                     disabled=not bool(selected_mutations_lolliplot),
                     key='qwe123'):
-        print(this_dataset_table_lolliplot.columns)
-        print(this_dataset_table_lolliplot.index)
 
         this_dataset_table_lolliplot = this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_lolliplot)].set_index('Mutation')
 
