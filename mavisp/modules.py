@@ -1398,6 +1398,16 @@ class ClinVar(MavispModule):
 
         clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
 
+        if clinvar_found[['variant_id', 'interpretation']].isna().any().any():
+            this_error = f"variant_id or interpretation columns have missing values"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if any(pd.isna(clinvar_found['condition'])):
+            warnings.append(MAVISpWarningError(f"the condition column contains missing values"))
+
+        clinvar_found = clinvar_found.drop(columns=['condition'])
+
         try:
             clinvar_found['mutations'] = clinvar_found.apply(self._get_mutation_string, axis=1)
         except TypeError as e:
