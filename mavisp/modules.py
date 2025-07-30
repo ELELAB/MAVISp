@@ -1404,7 +1404,7 @@ class ClinVar(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         if any(pd.isna(clinvar_found['condition'])):
-            warnings.append(MAVISpWarningError(f"the condition column contains missing avlues"))
+            warnings.append(MAVISpWarningError(f"the condition column contains missing values"))
 
         clinvar_found = clinvar_found.drop(columns=['condition'])
 
