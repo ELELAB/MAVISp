@@ -22,7 +22,6 @@ dependencies = [
     "requests",
     "termcolor",
     "setuptools",
-    'importlib-metadata; python_version>"3.9"',
 ]
 dynamic = ["version"]
 
