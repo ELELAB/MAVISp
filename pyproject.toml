@@ -22,16 +22,13 @@ dependencies = [
     "requests",
     "termcolor",
     "setuptools",
-    'importlib-metadata; python_version>"3.6"',
+    'importlib-metadata; python_version>"3.9"',
 ]
 dynamic = ["version"]
 
 [tool.setuptools]
 packages = ["mavisp"]
 include-package-data = true
-
-[tool.setuptools.dynamic]
-version = {attr = "mavisp.VERSION"}
 
 [project.scripts]
 mavisp = "mavisp.mavisp:main"
