@@ -246,23 +246,23 @@ performs the conversion. Please see the help text of the script itself for furth
 ## Requirements
 
 The MAVISp Python package is designed to run on any operating system that supports
-Python. It has been tested on Ubuntu Linux 18.04 and macOS (13.5.2) 
+Python. It has been tested on Ubuntu Linux 22.04 and macOS (15.5) 
 
 In order to install the package and all its requirements automatically, you will need to have a
-working Python 3.9+ installation available. We recommend installing the package in its own
+working Python 3.10+ installation available. We recommend installing the package in its own
 virtual environment - please see previous instructions on how to create a virtual environment.
 
 The MAVISp Python package requires the following packages, and has been tested
 with the following versions:
 
-- pandas 2.1.3
+- pandas 2.3.1
 - tabulate 0.9.0
-- matplotlib 3.7.4
-- numpy 1.26.2
-- PyYAML 6.0.1 
-- streamlit 1.28.2
-- requests 2.31.0
-- termcolor 2.3.0
+- matplotlib 3.10.5
+- numpy 2.3.2
+- PyYAML 6.0.2 
+- streamlit 1.47.1
+- requests 2.32.4
+- termcolor 3.1.0
 
 ## Installation
 
