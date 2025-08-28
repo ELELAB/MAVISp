@@ -18,7 +18,7 @@ from streamlit_utils import *
 import streamlit as st
 
 st.set_page_config(layout="wide",
-    page_title="News",
+    page_title="MAVISp - News",
     page_icon="🗞️")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
