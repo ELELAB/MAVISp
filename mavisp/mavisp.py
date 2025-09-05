@@ -93,8 +93,18 @@ def main():
                         default=False,
                         action="store_true",
                         help="do not stop if output directory exists and overwrite files if necessary")
+    parser.add_argument("-v", "--verbose",
+                        dest="verbose",
+                        default=False,
+                        action="store_true",
+                        help="toggle verbose mode")
 
     args = parser.parse_args()
+
+    if args.verbose:
+        log.basicConfig(level=log.DEBUG)
+    else:
+        log.basicConfig(level=log.WARNING)
 
     if args.excluded_proteins is not None and args.included_proteins is not None:
         log.error("options -p and -e cannot be specified at the same time; exiting...")
@@ -265,6 +275,8 @@ def main():
 
         for _, r in mfs.dataset_tables[mode_name].iterrows():
 
+            rows_n = {}
+
             this_refseq_id = out_table[out_table['Protein'] == r['system']]
             assert(this_refseq_id.shape[0]) == 1
             this_refseq_id = this_refseq_id.iloc[0]['RefSeq ID']
@@ -282,6 +294,7 @@ def main():
                 if mod is None:
                     continue
                 this_df = this_df.join(mod.get_dataset_view())
+                rows_n[mod_name] = len(this_df)
                 module_metadata[mod.name] = mod.get_metadata_view()
 
             # move Reference column to last
@@ -292,6 +305,11 @@ def main():
 
             # save final dataframe
             this_df.to_csv(dataset_tables_path / f"{r['system']}-{mode.name}.csv")
+
+            if any(this_df.index.duplicated()):
+                log.warning(f"duplicated mutations found in {r['system']}, {mode.name}")
+                log.debug("number of rows after each module:")
+                log.debug(rows_n)
 
             # save metadata
             with open(metadata_path / f"{r['system']}.yaml", 'w') as fh:
