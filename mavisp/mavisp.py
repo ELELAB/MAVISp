@@ -99,8 +99,6 @@ def main():
                         action="store_true",
                         help="toggle verbose mode")
 
-
-
     args = parser.parse_args()
 
     if args.verbose:
