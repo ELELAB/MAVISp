@@ -19,8 +19,8 @@ from streamlit_utils import *
 import yaml
 
 st.set_page_config(layout="wide",
-    page_title="Datasets and metadata",
-    page_icon="📊")
+    page_title="MAVISp - Datasets and metadata",
+    page_icon="🔬")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
 add_affiliation_logo()

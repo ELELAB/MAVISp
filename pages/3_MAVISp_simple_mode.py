@@ -28,7 +28,7 @@ from io import BytesIO
 mode = 'simple_mode'
 
 st.set_page_config(layout="wide",
-    page_title="MAVISp simple mode",
+    page_title="MAVISp - Simple mode",
     page_icon="📊")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
