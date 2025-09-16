@@ -444,9 +444,16 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
         log.info(f'Using residues: {residues[0]}')
 
         # Raise warning if position not in dataframe
+        found_residues = False
         for r in residues[0]:
             if r not in df['pos'].to_list():
                 log.warning(f'{r} not found in table. Continuing...')
+            else:
+                found_residues = True
+
+        if not found_residues:
+            log.error('ERROR: none of the residues specified with --residues was foundin the input dataframe')
+            raise TypeError('ERROR: none of the residues specified with --residues was foundin the input dataframe')
 
         # Filter dataframe according to the user-defined residues
         df = df[df['pos'].isin(residues[0])]
@@ -459,9 +466,17 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     if mutations:
 
         # Raise warning if mutation not in dataframe
+        found_mutations = False
         for m in mutations[0]:
             if m not in df.index.to_list():
                 log.warning(f'{m} not found in table. Continuing...')
+            else:
+                found_mutations = True
+
+
+        if not found_mutations:
+            log.error('ERROR: none of the mutations specified with --mutations was found in the input dataframe')
+            raise TypeError('ERROR: none of the mutations specified with --mutations was found in the input dataframe')
 
         # Filter dataframe according to the user-defined mutations
         df = df[df.index.isin(mutations[0])]
@@ -496,7 +511,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
             log.warning(f"No mutations found matching the mutation source: {plot_Source}. Exiting...")
             raise TypeError(f"No mutations found matching the mutation source: {plot_Source}.")
 
-            log.info(f"Found {len(source_idx)} mutations matching the source filter: {plot_Source}")
+        log.info(f"Found {len(source_idx)} mutations matching the source filter: {plot_Source}")
 
     # Define an empty df if flags -pltC/-colC are not used
     clinvar_mapped_df = None
@@ -1618,7 +1633,7 @@ def effect_summary(df):
         # For each effect cattegory check if effect found
         # i.e. value is 1
         for category, pattern in effect_categories.items():
-            if row.filter(regex=pattern).max() == 1:
+            if pd.to_numeric(row.filter(regex=pattern), errors="coerce").max() == 1:
                 effects.append(category)
         effects_summary.at[idx] = ', '.join(effects)
 
@@ -1926,7 +1941,7 @@ def main():
             clinvar_dict = load_clinvar_dict(args.clinvar_dict)
         except FileNotFoundError as e:
             log.error(f"ClinVar dictionary file not found: {e}. Exiting...")
-            raise e
+            exit(1)
     else:
         clinvar_dict = None
 
@@ -1946,8 +1961,10 @@ def main():
                                                           color_Clinvar = args.color_Clinvar)
     except TypeError as e:
         print(f"ERROR: {str(e)}")
+        exit(1)
     except FileNotFoundError as e:
         print(f"ERROR: {str(e)}")
+        exit(1)
 
 
 
@@ -1992,7 +2009,6 @@ def main():
                 figure.savefig(f'{args.output}_{i}.png', dpi=300)
 
 ################################# AM CSV #################################
-
     filtered_am = filter_am_summary(am_summary, df, args.AMx)
 
     filtered_am.to_csv('alphamissense_out.csv', index=True)
