@@ -724,8 +724,6 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                     '#3A8752': 'Benign/Likely Benign',
                     '#A71B32': 'Pathogenic/Likely Pathogenic'}
 
-
-
             xtick_legend_list = [Line2D([0], [0],
                                 color='w',
                                 marker='o',
