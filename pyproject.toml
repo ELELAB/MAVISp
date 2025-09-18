@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mavisp"
 description = "The MAVISp web app"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = {text = "GPL 3"}
 dependencies = [
     "argcomplete",
