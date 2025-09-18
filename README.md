@@ -35,7 +35,7 @@ the Python package.
 
 ## Requirements
 
-Running the MAVISp web app requires a working Python 3.10+ installation with the following
+Running the MAVISp web app requires a working Python 3.12+ installation with the following
 Python packages:
 
 - streamlit 1.47.1
@@ -66,7 +66,7 @@ or [Anaconda](https://anaconda.org).
 virtual environment:
 
 ```
-virtualenv -p python3.10 MAVISp_env
+virtualenv -p python3.12 MAVISp_env
 ```
 
 2. then, activate it:
@@ -87,7 +87,7 @@ pip install pandas==2.3.1 matplotlib==3.10.5 streamlit==1.47.1
 to create a virtual environment:
 
 ```
-conda create -n MAVISp_env python=3.10.16
+conda create -n MAVISp_env python=3.12
 ```
 
 2. then you can activate it:
