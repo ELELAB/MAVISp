@@ -128,7 +128,7 @@ git clone https://github.com/ELELAB/MAVISp
 ```
 
 3. Download the database files from [our OSF repository](https://osf.io/ufpzm/).
-You need to download the database server available on OSF and uncompress it in
+You need to download the database folder available on OSF and uncompress it in
 the MAVISp folder.
 
 At the end of the process, you should have a `database` folder inside
