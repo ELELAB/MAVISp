@@ -718,6 +718,7 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
             ax2.get_yaxis().set_visible(False)
 
             xtick_legend_dict = {
+                    '#000000': 'Not available',
                     '#EBD479': 'Conflicting',
                     '#878E99': 'Uncertain ',
                     '#3A8752': 'Benign/Likely Benign',
@@ -731,10 +732,15 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                                 label=xtick_legend_dict[k],
                                 markeredgecolor='k') for k in xtick_legend_dict.keys()]
 
-            second_legend = ax2.legend(handles=xtick_legend_list,
-            loc='upper right',
-            bbox_to_anchor=(1, 1.11),
-            ncol=4,
+            fake = Line2D([], [], color="none")
+            labels = ["ClinVar classification:"] + list(xtick_legend_dict.values())
+            handles = [fake] + xtick_legend_list
+
+            second_legend = ax2.legend(handles=handles,
+            labels=labels,
+            loc='lower right',
+            bbox_to_anchor=(1, -0.4),
+            ncol=6,
             fancybox=True,
             shadow=True)
 

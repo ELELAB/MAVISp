@@ -194,8 +194,8 @@ with dotplots:
     with col2:
         do_demask = st.checkbox('Show available DeMaSk classification', value=True)
         n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
-        fig_width = st.number_input("Plot width (inches)", value=14, min_value=0)
-        fig_height = st.number_input("Plot height (inches)", value=4, min_value=0)
+        fig_width = st.number_input("Plot width (inches)", value=14, min_value=1)
+        fig_height = st.number_input("Plot height (inches)", value=6, min_value=1)
 
     st.write("""Select up to 50 mutations to be shown in the dot plot below.""")
 
