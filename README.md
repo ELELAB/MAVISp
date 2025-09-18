@@ -57,7 +57,7 @@ program (see below). We last tested the download with wget 1.21.3.
 ## Installing requirements
 
 These instructions apply to both Linux and macOS, using the terminal. You
-will need to have a recent (>=3.10) Python distribution installed on your system
+will need to have a recent (>=3.12) Python distribution installed on your system
 or [Anaconda](https://anaconda.org).
 
 ### Installing requirements using a virtualenv Python environment
@@ -249,7 +249,7 @@ The MAVISp Python package is designed to run on any operating system that suppor
 Python. It has been tested on Ubuntu Linux 22.04 and macOS (15.5) 
 
 In order to install the package and all its requirements automatically, you will need to have a
-working Python 3.10+ installation available. We recommend installing the package in its own
+working Python 3.12+ installation available. We recommend installing the package in its own
 virtual environment - please see previous instructions on how to create a virtual environment.
 
 The MAVISp Python package requires the following packages, and has been tested
