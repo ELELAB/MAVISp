@@ -2011,17 +2011,22 @@ class ExperimentalData(MavispModule):
                         masks.append(mask)
                         mask_descriptions.append(desc)
             else:
-                if len(thres) != 2 or not thres[0] < thres[1]:
-                    raise RuntimeError("When using threshold type ranges, classes need to be made of a list of two values (min, max)")
-                mask = (series >= thres[0]) & (series < thres[1])
-                masks.append(mask)
-                mask_descriptions.append(desc)
+                for t in thres:
+                    if type(t) != list or len(t) != 2:
+                        raise RuntimeError("when using threshold type ranges, classes need to be made of a list of lists, each containing two values (min, max)")
+                    if not t[0] < t[1]:
+                        raise RuntimeError("when using threshold type ranges, the first value (min) must be lower than the second value (max)")
 
+                    mask = (series >= t[0]) & (series < t[1])
+                    masks.append(mask)
+                    mask_descriptions.append(desc)
+
+        # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
-
-        # check if any threshold overlap
         if any(all_masks.sum(axis=1) > 1):
-            raise RuntimeError("One or more mutations belong to multiple classes; are your definitions overlapping?")
+            raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
+        if any(all_masks.sum(axis=1) < 1):
+            raise RuntimeError("some mutations could not be classified - does your classification cover the whole range?")
 
         # generate classification
         out_series = series.copy()
@@ -2101,6 +2106,9 @@ class ExperimentalData(MavispModule):
 
 
                 data = data[['mutations', col]].set_index('mutations')
+
+                data = data[~ pd.isna(data[col])]
+
                 try:
                     data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
                 except Exception as e:
