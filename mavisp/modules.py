@@ -2001,7 +2001,7 @@ class ExperimentalData(MavispModule):
         # create a mask for every threshold we have
         for desc, thres in thresholds.items():
             if threshold_type == 'values':
-                if isinstance(thres, numbers.Number):
+                if not isinstance(thres, list):
                     mask = series == thres
                     masks.append(mask)
                     mask_descriptions.append(desc)
@@ -2023,6 +2023,7 @@ class ExperimentalData(MavispModule):
 
         # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
+        print(all_masks)
         if any(all_masks.sum(axis=1) > 1):
             raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
         if any(all_masks.sum(axis=1) < 1):
