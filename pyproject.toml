@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mavisp"
 description = "The MAVISp web app"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.12"
 license = {text = "GPL 3"}
 dependencies = [
     "argcomplete",
@@ -16,23 +16,18 @@ dependencies = [
     "numpy",
     "streamlit",
     "ipython_genutils",
-    "streamlit-aggrid",
     "stmol",
     "py3Dmol",
     "pyyaml",
     "requests",
     "termcolor",
     "setuptools",
-    'importlib-metadata; python_version>"3.6"',
 ]
 dynamic = ["version"]
 
 [tool.setuptools]
 packages = ["mavisp"]
 include-package-data = true
-
-[tool.setuptools.dynamic]
-version = {attr = "mavisp.VERSION"}
 
 [project.scripts]
 mavisp = "mavisp.mavisp:main"

@@ -61,11 +61,11 @@ class MAVISpSimpleMode(MAVISpMode):
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
-                          'allosigma_distance_cutoff', 'structure_source', 'structure_description',
-                          'linker_design', 'pdb_id']
+                          'allosigma_distance_cutoff', 'allosigma_distance_mode', 
+                          'structure_source', 'structure_description', 'linker_design', 'pdb_id']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
-                  'allosigma_distance_cutoff', 'structure_source', 'structure_description',
-                  'linker_design', 'pdb_id']
+                  'allosigma_distance_cutoff', 'allosigma_distance_mode', 'structure_source',
+                  'structure_description', 'linker_design', 'pdb_id']
     index_col_labels = {'system': "Protein",
                         'uniprot_ac': 'Uniprot AC',
                         'refseq_id': "RefSeq ID",
@@ -73,10 +73,12 @@ class MAVISpSimpleMode(MAVISpMode):
                         'curators': 'Curators',
                         'gitbook_entry': 'GitBook report',
                         'allosigma_distance_cutoff': 'Distance cut-off used for AlloSigma2',
+                        'allosigma_distance_mode' : 'Contact calculation mode for AlloSigma2 filtering',
                         'structure_source': 'Structure source',
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
                         'pdb_id': 'PDB ID'}
+    
     structure_sources = {
         "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
@@ -84,6 +86,7 @@ class MAVISpSimpleMode(MAVISpMode):
         "PDB": "Experimental PDB structure",
         "Mod": "Homology model (PDB template, reconstruction)"}
 
+    allosigma_modes = { "CA-CA", "atomic_contacts"}
 
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
@@ -113,6 +116,21 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
         else:
             out_metadata['allosigma_distance_cutoff'] = ''
+
+        if 'allosigma_distance_mode' in metadata.keys():
+
+            if not 'allosigma_distance_cutoff' in metadata.keys():
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, allosigma_distance_cutoff must be used when allosigma_distance_mode is used"))
+            elif not len(metadata['allosigma_distance_cutoff']) == len(metadata['allosigma_distance_mode']):
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, allosigma_distance_mode must be have the same number of entries as allosigma_distance_cutoff"))
+
+            if not set(metadata['allosigma_distance_mode']).issubset(self.allosigma_modes):
+                mavisp_criticals.append(MAVISpCriticalError(f"only these modes are allowed for allosigma_distance_mode: {', '.join(list(self.allosigma_modes))}"))
+
+            out_metadata['allosigma_distance_mode'] = ', '.join(map(str, metadata['allosigma_distance_mode']))
+        else:
+            out_metadata['allosigma_distance_mode'] = ''
+
 
         if 'gitbook_entry' in metadata.keys():
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
@@ -177,8 +195,9 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
+                          EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'local_interactions', 'local_interactions_DNA',
+    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'experimental_data']

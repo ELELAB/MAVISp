@@ -35,23 +35,21 @@ the Python package.
 
 ## Requirements
 
-Running the MAVISp web app requires a working Python 3.9+ installation with the following
+Running the MAVISp web app requires a working Python 3.12+ installation with the following
 Python packages:
 
-- streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
-- pandas 2.1.3
-- matplotlib 3.7.4
+- streamlit 1.47.1
+- pandas 2.3.1
+- matplotlib 3.10.5
 
 In principle, it is compatible with all operating systems that support Python.
 
-It has been last test on Linux (Ubuntu 18.04), and on macOS (13.5.2),
-with Python 3.9.6 and the following package versions:
+It has been last test on Linux (Ubuntu 22.04), and on macOS (15.5),
+with Python 3.13.5 and the following package versions:
 
-- streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
-- pandas 2.1.3
-- matplotlib 3.7.4
+- streamlit 1.47.1
+- pandas 2.3.1
+- matplotlib 3.10.5
 
 In order to download the full MAVISp dataset from OSF, you will also need the `wget` 
 program (see below). We last tested the download with wget 1.21.3.
@@ -59,7 +57,7 @@ program (see below). We last tested the download with wget 1.21.3.
 ## Installing requirements
 
 These instructions apply to both Linux and macOS, using the terminal. You
-will need to have a recent (>=3.9) Python distribution installed on your system
+will need to have a recent (>=3.12) Python distribution installed on your system
 or [Anaconda](https://anaconda.org).
 
 ### Installing requirements using a virtualenv Python environment
@@ -68,7 +66,7 @@ or [Anaconda](https://anaconda.org).
 virtual environment:
 
 ```
-virtualenv -p python3.9 MAVISp_env
+virtualenv -p python3.12 MAVISp_env
 ```
 
 2. then, activate it:
@@ -80,7 +78,7 @@ source MAVISp_env/bin/activate
 3. you can install the requirements in the environment using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
+pip install pandas==2.3.1 matplotlib==3.10.5 streamlit==1.47.1
 ```
 
 ### Installing requirements using a conda Python environment
@@ -89,7 +87,7 @@ pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==
 to create a virtual environment:
 
 ```
-conda create -n MAVISp_env python
+conda create -n MAVISp_env python=3.12
 ```
 
 2. then you can activate it:
@@ -101,7 +99,7 @@ conda activate MAVISp_env
 3. you need to install the remaining requirements, using `pip`:
 
 ```
-pip install pandas==2.1.3 matplotlib==3.7.4 streamlit==1.28.2 streamlit-aggrid==0.3.4.post3
+pip install pandas==2.3.1 matplotlib==3.10.5 streamlit==1.47.1
 ```
 
 Installation time is typically up to a few minutes.
@@ -130,18 +128,8 @@ git clone https://github.com/ELELAB/MAVISp
 ```
 
 3. Download the database files from [our OSF repository](https://osf.io/ufpzm/).
-This requires the `wget` program or similar. If it's not available, you can
-manually download a zip file containing all the database files from [this link](https://files.de-1.osf.io/v1/resources/ufpzm/providers/osfstorage/65579865874c2e15e54e7d34/?zip=).
-
-```
-cd MAVISp
-rm -rf ./database
-mkdir database 
-cd database
-wget -O database.zip 'https://files.de-1.osf.io/v1/resources/ufpzm/providers/osfstorage/65579865874c2e15e54e7d34/?zip=' && unzip database.zip 
-rm database.zip
-cd ..
-```
+You need to download the database folder available on OSF and uncompress it in
+the MAVISp folder.
 
 At the end of the process, you should have a `database` folder inside
 the `MAVISp` folder including all the contents of the `database` folder on OSF.
@@ -258,24 +246,23 @@ performs the conversion. Please see the help text of the script itself for furth
 ## Requirements
 
 The MAVISp Python package is designed to run on any operating system that supports
-Python. It has been tested on Ubuntu Linux 18.04 and macOS (13.5.2) 
+Python. It has been tested on Ubuntu Linux 22.04 and macOS (15.5) 
 
 In order to install the package and all its requirements automatically, you will need to have a
-working Python 3.9+ installation available. We recommend installing the package in its own
+working Python 3.12+ installation available. We recommend installing the package in its own
 virtual environment - please see previous instructions on how to create a virtual environment.
 
 The MAVISp Python package requires the following packages, and has been tested
 with the following versions:
 
-- pandas 2.1.3
+- pandas 2.3.1
 - tabulate 0.9.0
-- matplotlib 3.7.4
-- numpy 1.26.2
-- PyYAML 6.0.1 
-- streamlit 1.28.2
-- streamlit-aggrid 0.3.4.post3
-- requests 2.31.0
-- termcolor 2.3.0
+- matplotlib 3.10.5
+- numpy 2.3.2
+- PyYAML 6.0.2 
+- streamlit 1.47.1
+- requests 2.32.4
+- termcolor 3.1.0
 
 ## Installation
 

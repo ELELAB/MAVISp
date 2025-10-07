@@ -34,6 +34,7 @@ class MavispModule(object):
 
         self.data_dir = data_dir
         self.data = None
+        self.metadata = None
 
         if module_dir is not None:
             self.module_dir = module_dir
@@ -64,6 +65,9 @@ class MavispModule(object):
 
     def get_dataset_view(self):
         return self.data
+
+    def get_metadata_view(self):
+        return self.metadata
 
 class MavispMultiEnsembleModule(MavispModule):
     def __init_subclass__(cls, module_class, **kwargs):
@@ -1394,6 +1398,16 @@ class ClinVar(MavispModule):
 
         clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
 
+        if clinvar_found[['variant_id', 'interpretation']].isna().any().any():
+            this_error = f"variant_id or interpretation columns have missing values"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if any(pd.isna(clinvar_found['condition'])):
+            warnings.append(MAVISpWarningError(f"the condition column contains missing values"))
+
+        clinvar_found = clinvar_found.drop(columns=['condition'])
+
         try:
             clinvar_found['mutations'] = clinvar_found.apply(self._get_mutation_string, axis=1)
         except TypeError as e:
@@ -1839,18 +1853,28 @@ class AllosigmaPSNLongRange(MavispModule):
     module_dir = "long_range"
     name = "long_range"
     method_dir = "allosigma2_psn"
-    exp_files = ['allosigma_mut.txt', 'results_summary.txt']
+
+    exp_files = ['allosigma_mut.txt']
+
+    datasets = {'results_sub_cat.txt'  : 'AlloSigma2-PSN classification - active sites',
+                'results_cofactor.txt' : 'AlloSigma2-PSN classification - cofactor sites',
+                'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
-        res_num = row['res_num']
         allosigma_mode = row['allosigma-mode']
-        variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
 
         # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
 
-        # No predicted Allosigma effects
+        if 'Variants' in ensemble_data.columns:
+            muts = row['mutations']
+            variant_sites = ensemble_data[ensemble_data['Variants'].str.contains(rf'\b{muts}\b', regex=True)]
+        else:
+            res_num = row['res_num']
+            variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
+
+        # Mutation not predicted w/ Allosigma effects
         if variant_sites.empty:
             return 'neutral'
 
@@ -1880,49 +1904,77 @@ class AllosigmaPSNLongRange(MavispModule):
         base_path = os.path.join(self.data_dir, self.module_dir, self.method_dir)
         psn_files = os.listdir(base_path)
 
-        if not set(psn_files).issubset(set(self.exp_files)):
-            this_error = (f"the input files for AlloSigma2-PSN must be named {', '.join(self.exp_files)}, "
+        if not set(self.exp_files).issubset(set(psn_files)):
+            this_error = (f"the input files for AlloSigma2-PSN must include {', '.join(self.exp_files)}, "
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        # Parsing input files + required columns
-        df_simple_data = self._read_file(
+        found_data_files = list(set(psn_files).intersection(self.datasets.keys()))
+
+        if len(found_data_files) < 1:
+            this_error = (f"the input files for AlloSigma2-PSN must include one or more of {', '.join(self.datasets.keys())}, "
+            f"found {', '.join(psn_files)}")
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        out_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        # Parsing constant input file - immutable
+        simple_mode_data = self._read_file(
             file_path=os.path.join(base_path, self.exp_files[0]),
             columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
             warnings=warnings)
-        df_ensemble_data = self._read_file(
-            file_path=os.path.join(base_path, self.exp_files[1]),
-            columns=['Variant_Site', 'Total_Paths'],
-            warnings=warnings)
 
-        # Build mutations column + order columns
-        df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
-            df_simple_data['position'].astype(str) +
-            df_simple_data['mutated_residue'])
-        df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
+        for data_file in found_data_files:
 
-        #Define working copy of data
-        psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+            # Create copy of simple mode data for processing
+            df_simple_data = simple_mode_data.copy(deep=True)
 
-        # Add residue number column
-        psn['res_num'] = psn.index.str[1:-1].astype(str)
+            # Parse ensemble mode data
+            try:
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Variants', 'Total_Paths'],
+                    warnings=warnings)
+            except MAVISpMultipleError as e:
+                # Retry with reduced columns (interim)
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Total_Paths'],
+                    warnings=warnings)
 
-        # Merge allosigma data with psn
-        psn = psn.merge(df_simple_data, on='mutations', how='left')
+            # Build mutations column + order columns
+            df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+                df_simple_data['position'].astype(str) +
+                df_simple_data['mutated_residue'])
+            df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
 
-        try:
-            # Perform classification
-            psn['AlloSigma2-PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
-            raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-        # Drop unnecessary columns
-        psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+            # Define working copy of data
+            psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
-        # Add new Allosigma-PSN column to data
-        self.data = psn.set_index('mutations')
+            # Add residue number column
+            psn['res_num'] = psn.index.str[1:-1].astype(str)
+
+            # Merge allosigma data with psn
+            psn = psn.merge(df_simple_data, on='mutations', how='left')
+
+            try:
+                # Perform classification
+                psn[self.datasets[data_file]] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
+                raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+            # Drop unnecessary column
+            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+
+            # Set index
+            psn = psn.set_index('mutations')
+
+            out_data = out_data.join(psn)
+
+        self.data = out_data
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -1949,7 +2001,7 @@ class ExperimentalData(MavispModule):
         # create a mask for every threshold we have
         for desc, thres in thresholds.items():
             if threshold_type == 'values':
-                if isinstance(thres, numbers.Number):
+                if not isinstance(thres, list):
                     mask = series == thres
                     masks.append(mask)
                     mask_descriptions.append(desc)
@@ -1959,17 +2011,23 @@ class ExperimentalData(MavispModule):
                         masks.append(mask)
                         mask_descriptions.append(desc)
             else:
-                if len(thres) != 2 or not thres[0] < thres[1]:
-                    raise RuntimeError("When using threshold type ranges, classes need to be made of a list of two values (min, max)")
-                mask = (series >= thres[0]) & (series < thres[1])
-                masks.append(mask)
-                mask_descriptions.append(desc)
+                for t in thres:
+                    if type(t) != list or len(t) != 2:
+                        raise RuntimeError("when using threshold type ranges, classes need to be made of a list of lists, each containing two values (min, max)")
+                    if not t[0] < t[1]:
+                        raise RuntimeError("when using threshold type ranges, the first value (min) must be lower than the second value (max)")
 
+                    mask = (series >= t[0]) & (series < t[1])
+                    masks.append(mask)
+                    mask_descriptions.append(desc)
+
+        # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
-
-        # check if any threshold overlap
+        print(all_masks)
         if any(all_masks.sum(axis=1) > 1):
-            raise RuntimeError("One or more mutations belong to multiple classes; are your definitions overlapping?")
+            raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
+        if any(all_masks.sum(axis=1) < 1):
+            raise RuntimeError("some mutations could not be classified - does your classification cover the whole range?")
 
         # generate classification
         out_series = series.copy()
@@ -1994,6 +2052,8 @@ class ExperimentalData(MavispModule):
 
         all_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
+        module_metadata = []
+
         for yaml_file in yaml_files:
             try:
                 with open(os.path.join(module_path, yaml_file)) as fh:
@@ -2003,6 +2063,15 @@ class ExperimentalData(MavispModule):
                 raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
+            dd_metadata = defaultdict(lambda: str(), metadata)
+            assay_metadata = {'Assay type' : dd_metadata['assay'],
+                              'Class of assay' : dd_metadata['class_of_assay'],
+                              'Reference' : dd_metadata['reference'],
+                              'Score set ID' : dd_metadata['score_set'],
+                              'Is reference peer-reviewed' : dd_metadata['peer-reviewed'],
+                              'License type' : dd_metadata['license'],
+                              'Columns in MAVISp' : []}
+
             for col in metadata['columns'].keys():
 
                 col_metadata = metadata['columns'][col]
@@ -2011,8 +2080,6 @@ class ExperimentalData(MavispModule):
                     this_error = f"Error in {yaml_file}, {col}: threshold_type can either be values or ranges"
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
-
-
                 try:
                     data = pd.read_csv(os.path.join(module_path, col_metadata['data_file']))
                 except Exception as e:
@@ -2026,7 +2093,7 @@ class ExperimentalData(MavispModule):
                     full_data_len = data.shape[0]
                     data = data[   data[col_metadata['mutation_column']].str.contains(self.hgvsp_regexp, regex=True, na=False) ]
                     if data.shape[0] != full_data_len:
-                        warnings.append(MAVISpWarningError("rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
+                        warnings.append(MAVISpWarningError(f"{yaml_file}, {col}: rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
 
                     data['mutations'] = data[col_metadata['mutation_column']].apply(self._hgvs_to_mavisp, offset=col_metadata['offset'])
 
@@ -2039,7 +2106,14 @@ class ExperimentalData(MavispModule):
                                               critical=[MAVISpCriticalError(this_error)])
 
 
+                # check missing data
+                data_na = pd.isna(data[col])
+                if any(data_na):
+                    warnings.append(MAVISpWarningError(f"{yaml_file}, {col}: rows with missing data removed from the dataset"))
+                    data = data[~ data_na]
+
                 data = data[['mutations', col]].set_index('mutations')
+
                 try:
                     data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
                 except Exception as e:
@@ -2047,10 +2121,21 @@ class ExperimentalData(MavispModule):
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
-                data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
-                                            f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
+                colname = f"Experimental data ({metadata['assay']}, {col_metadata['header']})"
+                classification_colname = f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"
+                data = data.rename(columns={col : colname,
+                                            f"{col} classification" : classification_colname})
+
+                assay_metadata['Columns in MAVISp'].append({})
+                assay_metadata['Columns in MAVISp'][-1]['Data column'] = colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification column'] = classification_colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification strategy'] = col_metadata['thresholds']
 
                 all_data = all_data.join(data)
+
+            module_metadata.append(assay_metadata)
+
+        self.metadata = module_metadata
 
         self.data = all_data
 
@@ -2078,7 +2163,7 @@ class Pfam(MavispModule):
 
         try:
             pfam = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pfam_file),
-                               sep=';', 
+                               sep=';',
                                dtype={'start': int, 'end': int, 'pfam_domain': str, 'accession': str})
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"

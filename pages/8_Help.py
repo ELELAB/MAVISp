@@ -22,7 +22,7 @@ import streamlit as st
 from streamlit_utils import add_mavisp_logo, add_affiliation_logo
 
 st.set_page_config(layout="wide",
-    page_title="Help",
+    page_title="MAVISp - Help",
     page_icon="❓")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
@@ -74,9 +74,13 @@ checkbox at the beginning of each row in the table. Each row also contains a
 link to the corresponding report, hosted on GitBook. In the case of ensemble 
 mode, the table also includes a link to the Open Science Foundation repository 
 where the structural ensemble is stored.
+         
+It is possible to filter the list of proteins to choose from by gene name,
+UniProt accession code as well as RefSeq identifier, by writing one of them
+in the filtering text box and pressing Enter, or clicking away.
 
-Once a protein of interest has been selected, users can choose betwen three
-tabs to explore and visualize the data: XX, YY and ZZ.
+Once a protein of interest has been selected, users can choose betwen four
+tabs to explore and visualize the data.
 """)
 
 st.subheader("First exploration and download of the dataset")
@@ -90,11 +94,17 @@ framework (mostly, the effect classification for each module), while the
 Full dataset contains all the availbile data in MAVISp. These datasets
 only differ in the number of columns and contain the same mutations.
 
-By using the button on each column header, which becomes visibile on when
-hovering the mouse point over the header itself, users can further explore
-and refine the dataset, by for instance adding or removing columns, hiding
-or showing specific rows. Clicking on any table header allows to sort the
-table by that column, in either ascending or descending order.""")
+By using the button on each column header, users can further explore
+and refine the dataset, by for instance hiding columns. It is also possible
+to visualize the table in full screen. Clicking on any table header allows to sort the
+table by that column, in either ascending or descending order.
+         
+It is also possible to filter the table by removing some mutation sources, or
+by selecting specific mutations or set of mutations to consider. Mutations can
+be selected according to three specific formats (MAVISp simple mutation, HGVSp
+HGVSg if available). If many mutations are desired, a custom mutation list with
+one mutation per row can be provided, instead of using manual selection. The
+same type of filtering can be performed in some of the other tabs.""")
 
 st.subheader("Plotting MAVISp classification for a custom set of mutations")
 
@@ -142,3 +152,11 @@ type of MAVISp classification should be considered. It supports two analysis mod
 one in which only the mutation sites that have at least a specified number of mutations
 that are classified as damaging are displayed; and another in which the user
 can freely select a set of mutation sites to be shown on the protein structure.""")
+
+st.subheader("Visualizing metadata of datasets used in MAVISp")
+
+st.write("""The Datasets and Metadata page allows to visualize metadata available on specific
+datasets used in MAVISp. Users can visualize metadata by selecting the desired MAVISp mode, gene
+name and MAVISp module. Currently, only metadata for the `EXPERIMENTAL_DATA` module is available,
+and we plan to add more in the future. For `EXPERIMENTAL_DATA`, metadata also includes references to relevant datasets
+we are including as experimental data.""")

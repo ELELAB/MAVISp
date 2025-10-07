@@ -18,7 +18,7 @@ from streamlit_utils import *
 import streamlit as st
 
 st.set_page_config(layout="wide",
-    page_title="Hello",
+    page_title="MAVISp - Welcome",
     page_icon="👋")
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
@@ -38,15 +38,16 @@ groups, headed by Dr. Elena Papaleo
 Please use the menu on the left to navigate the website.
 
 If you use data from MAVISp from your research, please cite
-[our preprint](https://www.biorxiv.org/content/10.1101/2022.10.22.513328v4):""")
+[our preprint](https://www.biorxiv.org/content/10.1101/2022.10.22.513328v6):""")
 
 st.code("""MAVISp: A Modular Structure-Based Framework for Genomic Variant Interpretation
-Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Simone Scrima,
-Pablo Sanchez Izquierdo, Karolina Krzesinska, Francesca Maselli, Terezia Dorcakova,
-Jordan Safer, Alberte Heering Estad, Katrine Meldgard, Philipp Becker, Julie Bruun Brockhoff,
-Amalie Drud Nielsen, Valentina Sora, Alberto Pettenella, Jeremy Vinhas,
-Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert, Sumaiya Iqbal, Matteo Lambrughi,
-Matteo Tiberti, Elena Papaleo. bioRxiv https://doi.org/10.1101/2022.10.22.513328""", language=None)
+Matteo Arnaudi, Mattia Utichi, Kristine Degn, Ludovica Beltrame, Simone Scrima, Karolina Krzesińska,
+Pablo Sánchez-Izquierdo Besora, Katrine Meldgård, Laura Bauer, Terézia Dorčaková, Anna Melidi,
+Lorenzo Favaro, Eleni Kiachaki, Anu Oswal, Alberte Heering Estad, Joachim Breitenstein, Jordan Safer,
+Paraskevi Saridaki, Francesca Maselli, Burcu Aykac Fas, Guglielmo Tedeschi, Philipp Becker,
+Jérémy Vinhas, Alberto Pettenella, Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert,
+Sumaiya Iqbal, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
+bioRxiv (2025), 10.1101/2022.10.22.513328""", language=None)
 
 st.write("""Please see the "Acknowledgement and data usage" section for information about our data
 sources, data license terms and data reuse""")

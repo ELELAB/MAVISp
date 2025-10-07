@@ -19,7 +19,6 @@ import streamlit as st
 import pandas as pd
 from streamlit_utils import add_mavisp_logo, add_affiliation_logo
 st.set_page_config(layout="wide",
-
     page_title="Documentation",
     page_icon="📖")
 
@@ -27,7 +26,7 @@ add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
-st.header('Documentation')
+st.title('Documentation')
 
 st.write("""This page contains an introduction to the MAVISp framework and a guide on the
 available data and on its interpretation. If you're looking on a guide on how to
@@ -52,16 +51,222 @@ methodologies - see the acknowledgements section or the MAVISp paper to know mor
 It should be noted that MAVISp also includes modules that perform preparatory steps
 to perform analyses for other modules, for instance identifying and obtaining
 protein structures. We will not refer to them in this documentation as they are
-typically not user-facing.""")
+typically not user-facing.
+         
+As detailed in the paper, MAVISp includes data for two separate modes, which effectively
+work as independent databases: simple and ensemble mode. MAVISp modules are defined on a
+per-mode base, meaning that the definition of each module might be different for in the
+two modes.""")
+
+st.subheader("Structure of a MAVISp mode table")
+
+st.write("""The MAVISp mode tables are summary table which include all the proteins that have been
+curated for certain release of MAVISp and a given mode. The table for simple mode includes the following columns:""")
+
+data = [
+    {
+        'Column': 'Protein',
+        'Description': 'HUGO Symbol of the corresponding gene. Occasionally, these might be modified to express that the protein has been studied in a particular state',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Uniprot AC',
+        'Description': 'UniProt Accession Code of the protein',
+        'Possible values': 'UniProt AC, e.g., "P04637"'
+    },
+    {
+        'Column': 'RefSeq ID',
+        'Description': 'NCBI RefSeq identifier for the protein sequence, without version number',
+        'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
+    },
+    {
+        'Column': 'Review status',
+        'Description': 'Review status of the entry. See https://elelab.gitbook.io/mavisp/documentation/mavisp-review-status for more information',
+        'Possible values': '0 to 4'
+    },
+    {
+        'Column': 'Curators',
+        'Description': 'Name(s) or identifier(s) of the curators responsible for the data',
+        'Possible values': 'Free text or list of names and their affiliations'
+    },
+    {
+        'Column': 'GitBook report',
+        'Description': 'Link to a GitBook page with detailed report on the protein',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Distance cut-off used for AlloSigma2',
+        'Description': 'Distance threshold used in AlloSigma2 for filtering out mutation and response sites that are too close by',
+        'Possible values': 'number, in Å'
+    },
+    {
+        'Column': 'Contact calculation mode for AlloSigma2 filtering',
+        'Description': 'Mode used to identify contacts between mutation and response sites',
+        'Possible values': 'either "CA-CA" (Distance between Cαs) or "atomic_contacts" (minimum distance between residues)'
+    },
+    {
+        'Column': 'Structure source',
+        'Description': 'Source of the structural model (experimental or computational).',
+        'Possible values': 'can be one of AFDB (AlphaFold Protein Structure Database), '
+        'AF3 (AlphaFold3 webserver), AF2 (AlphaFold2 standalone), PDB (Protein Data Bank), '
+        'Mod (Model refined or built using homology modelling)'
+    },
+    {
+        'Column': 'Description of structure source',
+        'Description': 'Description of the previous column',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Linker design included',
+        'Description': 'Indicates whether a long loop has been replaced by homology modelling in the structure',
+        'Possible values': 'True or False'
+    },
+    {
+        'Column': 'PDB ID',
+        'Description': 'PDB identifier of the structure used (when applicable)',
+        'Possible values': 'e.g., "1TUP"'
+    }
+]
+
+st.dataframe(pd.DataFrame(data))
+
+st.write("""The table for ensemble mode includes the following columns:""")
+
+data = [
+    {
+        'Column': 'Protein',
+        'Description': 'HUGO Symbol of the corresponding gene. Occasionally, these might be modified to express that the protein has been studied in a particular state',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Uniprot AC',
+        'Description': 'UniProt Accession Code of the protein',
+        'Possible values': 'UniProt AC, e.g., "P04637"'
+    },
+    {
+        'Column': 'RefSeq ID',
+        'Description': 'NCBI RefSeq identifier for the protein sequence, without version number',
+        'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
+    },
+    {
+        'Column': 'Ensemble sources',
+        'Description': 'The type of data source for the ensembles, one per ensemble',
+        'Possible values': 'Free text; e.g., "md"'
+    },
+    {
+        'Column': 'Ensemble sizes (FoldX)',
+        'Description': 'Number of models used for MutateX in the stability module, one per ensemble',
+        'Possible values': 'Integer number, e.g., 25'
+    },
+    {
+        'Column': 'Ensemble sizes (Rosetta)',
+        'Description': 'Number of models used for RosettaDDGPrediction in the stability module, one per ensemble',
+        'Possible values': 'Integer number, e.g., 3'
+    },
+    {
+        'Column': 'OSF repository for ensemble data',
+        'Description': 'Link to the OSF repository hosting ensemble files',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Sampling methods for functional dynamics',
+        'Description': 'Computational methods or algorithms used to perform the sampling used in the functional dynamics module',
+        'Possible values': 'Free text, e.g. "md"'
+    },
+    {
+        'Column': 'Regions of interest for functional dynamics',
+        'Description': 'Regions or interfaces within the protein system analyzed for functional dynamics',
+        'Possible values': 'Free text, e.g., "interface A-B", "DNA-binding domain", "allosteric loop"'
+    },
+    {
+        'Column': 'Simulation length (ns)',
+        'Description': 'Length of molecular dynamics simulation or sampling, in nanoseconds, one per ensemble',
+        'Possible values': 'Positive number, e.g., 100, 500'
+    },
+    {
+        'Column': 'Simulation force field',
+        'Description': 'Force field used in molecular dynamics simulations, one per ensemble',
+        'Possible values': 'e.g., "CHARMM36m", "AMBER99SB", "OPLS-AA"'
+    },
+    {
+        'Column': 'Review status',
+        'Description': 'Review status of the entry. See https://elelab.gitbook.io/mavisp/documentation/mavisp-review-status for more information',
+        'Possible values': '0 to 4'
+    },
+    {
+        'Column': 'Curators',
+        'Description': 'Name(s) or identifier(s) of the curators responsible for the data',
+        'Possible values': 'Free text or list of names and their affiliations'
+    },
+    {
+        'Column': 'GitBook report',
+        'Description': 'Link to a GitBook page with detailed report on the protein',
+        'Possible values': 'URL link'
+    },
+    {
+        'Column': 'Structure source',
+        'Description': 'Source of the structural model (experimental or computational)',
+        'Possible values': 'can be one of AFDB (AlphaFold Protein Structure Database), AF3 (AlphaFold3 webserver), AF2 (AlphaFold2 standalone), PDB (Protein Data Bank), Mod (Model refined or built using homology modelling)'
+    },
+    {
+        'Column': 'Description of structure source',
+        'Description': 'Description of the previous column',
+        'Possible values': 'Free text'
+    },
+    {
+        'Column': 'Linker design included',
+        'Description': 'Indicates whether a long loop has been replaced by homology modelling in the structure',
+        'Possible values': 'True or False'
+    },
+    {
+        'Column': 'PDB ID',
+        'Description': 'PDB identifier of the structure used (when applicable)',
+        'Possible values': 'e.g., "1TUP"'
+    }
+]
+
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("Structure of a typical MAVISp dataset")
 
 st.write("""The dataset for a protein is organized as a table, where each row is a protein mutation, and each
 column contains data that has been generated for that specific mutation or for the wild-type
 residue in that position, depending on the context. The dataset also contains classification
-columns that summarize the final classification outcome for a specific module.
+columns that summarize the final classification outcome for a specific module. Most columns
+are defined by the modules that are available for any given entry (see below), while some of them
+are in common to every entry:""")
 
-Furthermore, MAVISp operates on either a single protein structure (simple mode) or an
+data = [
+    {
+        'Column': 'Mutation',
+        'Description': 'Protein-level amino acid substitution for this row, expressed as [reference residue type][residue number][mutant residue type]. '
+        'The numbering refers to the numbering of the protein sequence corresponding to the RefSeq identifier for this entry.',
+        'Possible values': 'Strings in the aforamentioned format'
+    },
+    {
+        'Column': 'HGVSp',
+        'Description': 'Protein-level amino acid substitution for this row, expressed in the HGVSp format',
+        'Possible values': 'Strings in the HGVSp format'
+    },
+    {
+        'Column': 'HGVSg',
+        'Description': 'Genome-level substitution(s) corresponding to the protein mutation. This is typically available'
+        'for a selected subset of mutations that were available from our data sources',
+        'Possible values': 'Strings in the HGVSg format'
+    },
+    {
+        'Column': 'References',
+        'Description': "Reference to publication in which this mutation was investigated by us. If the mutation has not"
+        "been subject to an in-depth investigation and it's just part of the MAVISp database, only a reference to the main"
+        "MAVISp paper will be present. This column doesn't include references to datasets that were used as a data source"
+        "for MAVISp; for those, please check the metadata of specific genes and modules in the Datasets and metadata page.",
+        'Possible values': "Strings in the HGVSg format"
+    }
+]
+
+st.dataframe(pd.DataFrame(data))
+
+st.write("""Furthermore, as previously introduced, MAVISp operates on either a single protein structure (simple mode) or an
 ensemble of structures (ensemble mode). In ensemble mode, we occasionally include more than
 one ensemble (for instance, from molecular dynamics simulations or NMR experiments) in the
 dataset; for this reason, some of the columns will have a `[tag]` that defines which ensemble
@@ -99,7 +304,7 @@ st.subheader("Stability")
 st.write("""The Stability module predicts changes of folding free energy upon mutation, i.e. how the stability
 of the protein changes respect to the reference protein sequence (the wild-type). In this module,
 we use both FoldX and Rosetta or RAsP to calculate changes of free energy of folding associated
-with the mutation and build a consensus from their results as explained in the MAVISp paper.
+with the mutation and build a consensus from their results.
 
 A MAVISp dataset will typically have one or more columns named:""")
 
@@ -118,7 +323,7 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          ("Stability classification, alphafold, (RaSP, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
          "see below") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
 source of the structural model used for it and the unit the free energy changes are expressed in.
@@ -126,18 +331,30 @@ source of the structural model used for it and the unit the free energy changes 
 The `Stability` columns contain free energy changes values in kcal/mol associated to the
 specific mutations, with positive values indicating that the mutation destabilizies the protein
 structure and negative values indicating that the mutation makes the protein more stable.
-The final classification is derived from these values, as described in the MAVISp paper.
-The classification column is always generated by considering FoldX and Rosetta, or FoldX and RaSP.
+The final classification is derived from these values. The classification column is always
+generated by considering two methods at the time, either FoldX and Rosetta, or FoldX and RaSP.
 This means that the classification will only be available if the respective datasets are also available.
 
-The possible classification values are:""")
+The classification procedure works as follows. First, Rosetta/RaSP and FoldX are considered
+independently, and an implicit classification, unavailable to the final user, is performed
+for each, according to the following table:""")
+
+data = [ ( 'DDG >= 3',                       'Detabilizing'),
+         ( 'DDG <= -3',                      'Stabilizing'),
+         ( '-2 < DDG < 2',                   'Neutral'),
+         ( '-3 < DDG <= -2 or 2 <= DDG < 3', 'Uncertain') ]
+st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Preliminary classification']))
+
+st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
+classify the mutation in the same way), their consensus is the final classification for the mutation; if they do
+not agree, the final classificaiton will be Uncertain. Therefore, the final possible classification values are:""")
 
 data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein structure'),
-         ( 'Stabilizing'  , 'The mutation is destabilizing for the protein structure'),
+         ( 'Stabilizing'  , 'The mutation is stabilizing for the protein structure'),
          ( 'Neutral'      , 'The mutation has no significant effect on stability'),
          ( 'Uncertain'    , 'The mutation has a borderline effect on stability, or the two methods are not in agreement'),
          ( 'N.A'          , 'No data available to perform the classification') ]
-st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("Local interactions")
 
@@ -169,7 +386,7 @@ data = [ ("Local Int. (Binding with MAP1LC3B_AFmulti, heterodimer, FoldX5, kcal/
 ("Local Int. classification (OPTN_AFmulti)",
           "change of binding free energy upon mutation calculated using FoldX",
           "see below")]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The column names will have information on the protein that forms a complex with our
 protein of interest and on the origin of such complex structure, whether they are
@@ -183,14 +400,30 @@ the relative solvent accessible surface area for the side chain of the wild-type
 (see SAS module) in the considered structure or ensemble to classify cases for
 which free energy information is not available.
 
-The possible classification values are:""")
+As for the Stability module, first, Rosetta and FoldX are considered
+independently, and a implicit classification is performed for each, according to the following
+table:""")
 
-data = [ ( 'Destabilizing', 'The mutation is destabilizes the binding between the two proteins'),
-         ( 'Stabilizing'  , 'The mutation is stabilizes the binding between the two proteins'),
+data = [ ( 'DDG > 1',        'Destabilizing'),
+         ( 'DDG < -1',       'Stabilizing'),
+         ( '-1 <= DDG <= 1', 'Neutral') ]
+st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Preliminary classification']))
+
+st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
+classify the mutation in the same way), their consensus is the final classification for the mutation;
+if they do not agree, the final classificaiton will be Uncertain.
+
+If a mutation does not have an associated free energy value, the SAS is used to classify it:
+if SAS > 20%, the mutation is classified as Uncertain, otherwise it is not classified.
+
+Therefore, the final possible classification values are:""")
+
+data = [ ( 'Destabilizing', 'The mutation destabilizes the binding between the two proteins'),
+         ( 'Stabilizing'  , 'The mutation stabilizes the binding between the two proteins'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between the two proteins'),
          ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 20%'),
          ( 'N.A'          , 'free energy values are not available and SAS < 20%',) ]
-st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.write("""Notice that we typically calculate changes of free energy exclusively for
 residues located at the binding interface, meaning that most residues will likely not feature an
@@ -215,7 +448,7 @@ data = [ ("Local Int. With DNA (modeller_2KK0_1KQQ, heterodimer, FoldX5, kcal/mo
          ("Local Int. classification With DNA",
           "classification of the mutation according to binding with DNA",
           "see below") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""they follow a similar structure as those for `Local interactions`.
 The classification column che have the following values:""")
@@ -225,7 +458,7 @@ data = [ ( 'Destabilizing', 'The mutation destabilizes the binding between our p
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between our protein and DNA'),
          ( 'Uncertain'    , 'free energy values are not available and SAS >= 20%'),
          ( 'N.A.'          , 'free energy values are not available and SAS < 20%',) ]
-st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("Cancermuts table")
 
@@ -241,7 +474,7 @@ data = [ ( 'HGVSg'                           , 'Genomic mutation(s) cause of the
          ( 'gnomAD exome allele frequency'   , 'gnomAD allelel frequency on exome dataset'),
          ( 'REVEL score'                     , 'REVEL score(s) associated with the genomic mutation(s)'),
          ( 'Mutation sources'                , 'which database or dataset the mutations were gathered from',) ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description']))
 
 st.subheader("PTMs")
 
@@ -278,7 +511,7 @@ data = [ ( "PTMs",
          ( "PTM effect in function",
            "Final classification of the effect of PTM in terms of function",
            "see below") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The PTM regulation classification predicts on whether the mutation
 will have consequences on the functional regulation of the protein.
@@ -323,7 +556,7 @@ data = [ ( "AlloSigma2 mutation type",
          ( "AlloSigma2 predicted consequence - pockets and interfaces",
            "Classification for long range effects",
            "see below") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The classification column can have the following values:""")
 
@@ -333,7 +566,7 @@ data = [ ( 'destabilizing'  , 'The mutation has destabilizing long-range effects
          ( 'neutral'        , 'The mutation has neither stabilizing nor destabilizing long-range effects on the protein structure'),
          ( 'uncertain'      , 'The mutation results in a too small change of side-chain volume to be considered either UP or DOWN'),
          ( 'N.A.'           , 'The mutation site could not be predicted (for instance, because it is located in an unstructured region)') ]
-st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("""Long range: AlloSigma2-PSN""")
 
@@ -369,14 +602,14 @@ The dataset columns generated by this module are:""")
 data = [ ( "AlloSigma2-PSN classification",
            "Classification of long range AlloSigma2-PSN effects",
            "see below") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The classification column can have the following values:""")
 
 data = [ ( 'damaging'       , 'The mutation effect on pocket site(s) was identified by both methods'),
          ( 'neutral'        , 'The mutation was not predicted to have any effect on pocket site(s)'),
          ( 'uncertain'      , 'The the two methods are not in agreement, or the mutation results in a too small change of side-chain volume to be considered either UP or DOWN in AlloSigma2') ]
-st.table(pd.DataFrame(data, columns=['Value', 'Meaning']))
+st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("AlphaFold Metadata")
 
@@ -405,7 +638,7 @@ data = [ ( "ClinVar Variation ID",
          ( "ClinVar Review Status",
            "Review status associated with the variant",
            "comma-separated number, which is the number of stars associated with the variant") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("DeMaSk, GEMME, EVE and AlphaMissense modules")
 
@@ -424,25 +657,25 @@ data = [ ( "DeMaSk delta fitness", "Delta fitness value from DeMaSk", "value"),
             "gain_of_function, when Delta fitness > 0\n\
             loss_of_function, when Delta fitness < 0\n\
             neutral, when Delta fitness = 0" ) ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - GEMME module:""")
 
 data = [ ( "GEMME Score", "score from GEMME", "value"),
          ( "GEMME Score (rank-normalized)", "Rank-normalized gemme score", "value") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - EVE module:""")
 
 data = [ ( "EVE score", "score from EVE", "value"),
          ( "EVE classification (25% Uncertain)", "Classification performed by EVE at 25% uncertainty", "Benign, Uncertain or Pathogenic") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - AlphaMissense module:""")
 
 data = [ ( "'AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader('EFoldMine module')
 
@@ -457,7 +690,7 @@ data = [ ( "'EFoldMine score", "Score from EFoldMine", "value"),
          ( "EFoldMine - part of early folding region",
            "Whether the residue was predicted to be part of an early folding region",
            "`True` if it is, `False` otherwise") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("De novo Phosphosites module")
 
@@ -477,7 +710,7 @@ data = [ ( "Phosphorylation - gain of function",
          ("Mutation predicted to add new phosphorylation site",
           "Whether a mutation is predicted to add a new phosphorylation site",
           "`True` if it is, `False` if it isn't") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The gain and loss of function columns express whether the mutation has
 caused a new phosphosite to be predicted, or if the mutation has caused
@@ -498,7 +731,7 @@ data = [ ( "Functional sites (cofactor)",
          ( "Functional sites (active site)",
            "Consequence that the mutation can have on the active site of the protein",
            "`neutral` or `damaging`") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("Functional Dynamics module")
 
@@ -519,7 +752,7 @@ st.write("""This module uses results retrieved from Pfam, reporting the identifi
 data = [ ( "Pfam domain classification",
            "Pfam domains associated with the given residue in the protein",
            "single string reporting the Pfam domain description and accession code") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader('TED module')
 
@@ -530,5 +763,5 @@ st.write("""This module uses results retrieved from The Encyclopedia of Domains 
 data = [ ( "TED-CATH domain classification",
            "TED domains and their associated CATH-assigned labels for the given residue in the protein",
            "single string reporting the CATH-label code") ]
-st.table(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 

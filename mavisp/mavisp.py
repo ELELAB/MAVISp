@@ -19,6 +19,7 @@ from pathlib import Path
 import argparse
 from tabulate import tabulate
 import pandas as pd
+import yaml
 from mavisp.core import MAVISpFileSystem
 from mavisp.utils import mutation_to_HGVSp
 import logging as log
@@ -28,23 +29,22 @@ from time import gmtime
 header = """
                         .__
   _____  _____   ___  __|__|  ____________
- /     \ \__  \  \  \/ /|  | /  ___/\____ \
+ /     \ \__  \  \  \/ /|  | /  ___/\____ \\
 |  Y Y  \ / __ \_ \   / |  | \___ \ |  |_> >
 |__|_|  /(____  /  \_/  |__|/____  >|   __/
       \/      \/                 \/ |__|
 
 
-============================================
-
 If you use MAVISp for your research, please cite:
 
-    Matteo Arnaudi, Ludovica Beltrame, Kristine
-    Degn, Mattia Utichi, Alberto Pettenella,
-    Simone Scrima, Peter Wad Sackett, Matteo
-    Lambrughi, Matteo Tiberti, Elena Papaleo.
-    MAVISp: Multi-layered Assessment of VarIants
-    by Structure for proteins. bioRxiv 2022.10.22.513328;
-    doi: https://doi.org/10.1101/2022.10.22.513328
+    Matteo Arnaudi, Mattia Utichi, Kristine Degn, Ludovica Beltrame et al.
+    MAVISp: A Modular Structure-Based Framework for Protein Variant Effects
+    bioRxiv, https://doi.org/10.1101/2022.10.22.513328
+
+for more information about MAVISp see:
+    https://www.github.com/ELELAB/MAVISp
+    https://services.healthtech.dtu.dk/services/MAVISp-1.0/
+
 
 ============================================
 
@@ -70,10 +70,6 @@ def main():
                         dest="database_dir",
                         default="./database",
                         help="output directory where the csv database is written (default: ./database")
-    parser.add_argument("-w", "--stop-on-warnings",
-                        dest="stop_on_warnings",
-                        default=False,
-                        help="do not write output if any warning is found (default: false)")
     parser.add_argument("-m", "--mode",
                         dest="modes",
                         choices=['all', 'simple_mode', 'ensemble_mode'],
@@ -91,14 +87,24 @@ def main():
                         dest="dry_run",
                         default=False,
                         action="store_true",
-                        help="only perform check, do not write output files")
+                        help="perform processing as requested, but do not write output files")
     parser.add_argument("-f", "--force",
                         dest="force_write",
                         default=False,
                         action="store_true",
                         help="do not stop if output directory exists and overwrite files if necessary")
+    parser.add_argument("-v", "--verbose",
+                        dest="verbose",
+                        default=False,
+                        action="store_true",
+                        help="toggle verbose mode")
 
     args = parser.parse_args()
+
+    if args.verbose:
+        log.basicConfig(level=log.DEBUG)
+    else:
+        log.basicConfig(level=log.WARNING)
 
     if args.excluded_proteins is not None and args.included_proteins is not None:
         log.error("options -p and -e cannot be specified at the same time; exiting...")
@@ -134,12 +140,17 @@ def main():
     if args.modes == 'all':
         args.modes = None
 
+    print(header)
+
     mfs = MAVISpFileSystem( data_dir=in_path,
                             exclude_proteins=excluded_proteins,
                             include_proteins=included_proteins,
                             modes=args.modes)
 
     mfs.ingest()
+
+    all_modes_error_count = 0
+    all_modes_critical_count = 0
 
     for mode_name in mfs.supported_modes.keys():
         summary = mfs.get_datasets_table_summary(mode_name)
@@ -213,18 +224,18 @@ def main():
 
             details_text += f"*** {', '.join( [ x for x in [ critical_text, error_text, warning_text ] if x != ''] ) } ***\n"
 
+        all_modes_error_count += error_count
+        all_modes_critical_count += critical_count
+
         print(details_text)
 
     if args.dry_run:
         log.info("Exiting without writing any file, as dry-run mode is active")
         exit()
 
-    if error_count > 0 or critical_count > 0:
+    if all_modes_error_count > 0 or all_modes_critical_count > 0:
         log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
         exit(1)
-
-    if args.stop_on_warnings and warning_count > 0:
-        log.error("One or more warnings detected, and you asked to stop on warnings. Will not proceed to generate the database. Exiting...")
 
     try:
         out_path.mkdir(exist_ok=True)
@@ -238,17 +249,18 @@ def main():
     all_indexes = []
 
     for mode_name, mode in mfs.supported_modes.items():
-        out_table = mfs.dataset_tables[mode_name][mfs.dataset_tables[mode_name].apply(lambda r: len(r['criticals']) == 0, axis=1)]
 
-        if len(out_table) == 0:
+        if len(mfs.dataset_tables[mode_name]) == 0:
             continue
 
-        mode_path = out_path / Path(mode_name)
-        mode_path.mkdir(exist_ok=True)
+        out_table = mfs.dataset_tables[mode_name].copy(deep=True)
 
         out_index_table = out_table.copy(deep=True)
         out_index_table['mode'] = mode_name
         all_indexes.append(out_index_table)
+
+        mode_path = out_path / Path(mode_name)
+        mode_path.mkdir(exist_ok=True)
 
         out_table = out_table[mode.index_cols]
         out_table = out_table.rename(columns=mode.index_col_labels)
@@ -256,16 +268,18 @@ def main():
         out_table.to_csv(mode_path / 'index.csv', index=False)
 
         dataset_tables_path = mode_path / 'dataset_tables'
+        metadata_path = mode_path / 'metadata'
+
         dataset_tables_path.mkdir(exist_ok=True)
+        metadata_path.mkdir(exist_ok=True)
 
         for _, r in mfs.dataset_tables[mode_name].iterrows():
+
+            rows_n = {}
 
             this_refseq_id = out_table[out_table['Protein'] == r['system']]
             assert(this_refseq_id.shape[0]) == 1
             this_refseq_id = this_refseq_id.iloc[0]['RefSeq ID']
-
-            if len(r['criticals']) > 0:
-                continue
 
             this_df = r['mutations']
             this_df = this_df.rename(columns={'mutation' : 'Mutation',
@@ -273,11 +287,15 @@ def main():
             this_df['HGVSp'] = this_df.apply(lambda r: f"{this_refseq_id}:{mutation_to_HGVSp(r['Mutation'])}", axis=1)
             this_df = this_df.set_index('Mutation')
 
+            module_metadata = {}
+
             for mod_name in mode.module_order:
                 mod = r['modules'][mod_name]
                 if mod is None:
                     continue
                 this_df = this_df.join(mod.get_dataset_view())
+                rows_n[mod_name] = len(this_df)
+                module_metadata[mod.name] = mod.get_metadata_view()
 
             # move Reference column to last
             this_df = this_df[[c for c in this_df.columns if c != 'References'] + ['References']]
@@ -287,6 +305,15 @@ def main():
 
             # save final dataframe
             this_df.to_csv(dataset_tables_path / f"{r['system']}-{mode.name}.csv")
+
+            if any(this_df.index.duplicated()):
+                log.warning(f"duplicated mutations found in {r['system']}, {mode.name}")
+                log.debug("number of rows after each module:")
+                log.debug(rows_n)
+
+            # save metadata
+            with open(metadata_path / f"{r['system']}.yaml", 'w') as fh:
+                yaml.dump(module_metadata, fh, sort_keys=False)
 
     all_indexes = pd.concat(all_indexes, ignore_index=True)
 

@@ -3,15 +3,16 @@ curators:
         affiliation:
             - DCI, Denmark 
             - DTU, Denmark
-    Karolina Krzesinska:
+    Karolina Krzesińska:
         affiliation:
             - DTU, Denmark
             - DCI, Denmark
 uniprot_ac: Q99856
 refseq_id: NP_005215 
-allosigma_distance_cutoff: [ 15 ]
-structure_source: AF2
-linker_design: False
-pdb_id: None
 gitbook_entry: https://elelab.gitbook.io/mavisp/proteins/arid3a
 review_status: 3
+allosigma_distance_cutoff: [ 5.5 ]
+allosigma_distance_mode: [ atomic_contacts ]
+structure_source: PDB
+linker_design: False
+pdb_id: 2KK0
