@@ -441,7 +441,7 @@ class LocalInteractions(MultiMethodMavispModule):
         colnames = [ f"{m.type} (Binding with {ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
-            if row['sas_sc_rel'] >= 20:
+            if row['sas_sc_rel'] >= 25.0:
                 return 'Uncertain'
             return pd.NA
         if np.all( [ row[h] > stab_co for h in colnames ] ):
@@ -541,7 +541,7 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
         colnames = [ f"{m.type} ({ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
-            if row['sas_sc_rel'] >= 20:
+            if row['sas_sc_rel'] >= 25.0:
                 return 'Uncertain'
             return pd.NA
         if np.all( [ row[h] > stab_co for h in colnames ] ):
@@ -830,7 +830,7 @@ class DenovoPhospho(MavispModule):
             for mutation in available_mutations:
                 for index, row in aggregated_df.iterrows():
                     restype_resnum_kinase = row['restype_resnum_kinase']
-                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
+                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 25.0:
                         gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
                         loss_of_function[mutation].append(restype_resnum_kinase)
@@ -917,17 +917,17 @@ class PTMs(MavispModule):
                 return 'neutral'
 
             # otherwise, cases:
-                # any mutation sas < 20% or
+                # any mutation sas < 25% or
                 # any T/S to Y or
                 # any Y to T/S
                 # then return uncertain
-            elif row['sas_sc_rel'] < 20.0 or\
+            elif row['sas_sc_rel'] < 25.0 or\
             (ref in S_T and alt == 'Y') or\
             (ref == 'Y' and (alt in S_T)):
                 return 'uncertain'
 
-            # otherwise, if mutation sas >= 20% return damaging
-            elif row['sas_sc_rel'] >= 20.0:
+            # otherwise, if mutation sas >= 25% return damaging
+            elif row['sas_sc_rel'] >= 25.0:
                 return 'damaging'
 
         return '???'
@@ -1011,7 +1011,7 @@ class PTMs(MavispModule):
         # otherwise if either classification is NA, if it is phospho-motif
         # and solvent exposed, return potentially_damaging
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
-            if row['site_in_slim'] and row['sas_sc_rel'] >= 20:
+            if row['site_in_slim'] and row['sas_sc_rel'] >= 25.0:
                 return 'potentially_damaging'
             else:
                 return 'uncertain'
