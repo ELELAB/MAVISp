@@ -414,15 +414,15 @@ classify the mutation in the same way), their consensus is the final classificat
 if they do not agree, the final classificaiton will be Uncertain.
 
 If a mutation does not have an associated free energy value, the SAS is used to classify it:
-if SAS > 20%, the mutation is classified as Uncertain, otherwise it is not classified.
+if SAS > 25%, the mutation is classified as Uncertain, otherwise it is not classified.
 
 Therefore, the final possible classification values are:""")
 
 data = [ ( 'Destabilizing', 'The mutation destabilizes the binding between the two proteins'),
          ( 'Stabilizing'  , 'The mutation stabilizes the binding between the two proteins'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between the two proteins'),
-         ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 20%'),
-         ( 'N.A'          , 'free energy values are not available and SAS < 20%',) ]
+         ( 'Uncertain'    , 'the two methods are not in agreement, or free energy values are not available and SAS >= 25%'),
+         ( 'N.A'          , 'free energy values are not available and SAS < 25%',) ]
 st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.write("""Notice that we typically calculate changes of free energy exclusively for
@@ -456,8 +456,8 @@ The classification column che have the following values:""")
 data = [ ( 'Destabilizing', 'The mutation destabilizes the binding between our protein and DNA'),
          ( 'Stabilizing'  , 'The mutation stabilizes the binding between our protein and DNA'),
          ( 'Neutral'      , 'The mutation has no significant effect on the binding between our protein and DNA'),
-         ( 'Uncertain'    , 'free energy values are not available and SAS >= 20%'),
-         ( 'N.A.'          , 'free energy values are not available and SAS < 20%',) ]
+         ( 'Uncertain'    , 'free energy values are not available and SAS >= 25%'),
+         ( 'N.A.'          , 'free energy values are not available and SAS < 25%',) ]
 st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("Cancermuts table")
@@ -716,8 +716,10 @@ st.write("""The gain and loss of function columns express whether the mutation h
 caused a new phosphosite to be predicted, or if the mutation has caused
 a phosphosite to not be predicted anymore respect to the wild-type, respectively.
 If no value is present in such column, than the mutation had no effect in this
-regard; if themutation had an effect, the column will contain the phosphorylation
-site(s) together with the kinase that would phosphorylate the site.""")
+regard; if the mutation had an effect, the column will contain the phosphorylation
+site(s) together with the kinase that would phosphorylate the site.
+If a mutation is classified as gain of function, it will also be filtered by its
+solvent accessible surface - only those mutations with SAS > 25% will be kept""")
 
 st.subheader("Functional Sites module")
 
