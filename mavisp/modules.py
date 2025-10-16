@@ -2225,20 +2225,30 @@ class TED(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # Split TED_boundaries into start and end residues
-        try:
-            ted[['start', 'end']] = ted['TED_boundaries'].str.split('-', expand=True).astype(int)
-        except Exception as e:
-            this_error = f"Error parsing TED_boundaries column: {e}"
-            raise MAVISpMultipleError(warning=warnings,
+        multi_boundaries = []
+        for _, row in ted.iterrows():
+            boundaries = str(row['TED_boundaries']).split('_')
+            for b in boundaries:
+                try:
+                    start, end = map(int, b.split('-'))
+                    multi_boundaries.append({
+                        'TED_id': row['TED_id'],
+                        'CATH_label': row['CATH_label'],
+                        'start': start,
+                        'end': end})
+                except Exception as e:
+                    this_error = (f"Could not parse boundary '{b}' in TED_id {row['TED_id']}: {e}")
+                    raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
+        ted_expanded = pd.DataFrame(multi_boundaries)
         # Dictionary of muts + res_numbers
         mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
 
         # Map res_numbers to TED domains
         ted_annotations = {}
         for mutation, resn in mutation_residues.items():
-            matching_domains = ted[(ted['start'] <= resn) & (ted['end'] >= resn)]
+            matching_domains = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
             ted_annotations[mutation] = "| ".join(
                 f"{row['CATH_label']}" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
 
@@ -2248,4 +2258,3 @@ class TED(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
-        
