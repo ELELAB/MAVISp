@@ -38,6 +38,7 @@ class MAVISpSimpleMode(MAVISpMode):
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
                           Pfam,
+                          TED,
                           PTMs,
                           DenovoPhospho,
                           LongRange,
@@ -55,7 +56,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           AlphaMissense,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'stability', 'efoldmine', 'local_interactions',
+    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
@@ -177,6 +178,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
                           Pfam,
+                          TED,
                           EnsemblePTMs,
                           EnsembleAllosigmaPSNLongRange,
                           EnsembleStability,
@@ -195,7 +197,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           AlphaMissense,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
+    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'experimental_data']
