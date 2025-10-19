@@ -237,6 +237,22 @@ class Stability(MultiMethodMavispModule):
         else:
             rasp_header = None
 
+        # Add mean of FoldX and Rosetta (Foldetta)
+        if foldx_header in model_data.columns and rosetta_header in model_data.columns:
+            both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
+            model_data['Foldetta Mean (FoldX, Rosetta)'] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
+            model_data.loc[~both_valid, 'Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+        else:
+            model_data['Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+
+        # Add mean of FoldX and RaSP
+        if foldx_header in model_data.columns and rasp_header in model_data.columns:
+            both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
+            model_data['Mean (FoldX, RaSP)'] = model_data[[foldx_header, rasp_header]].mean(axis=1)
+            model_data.loc[~both_valid, 'Mean (FoldX, RaSP)'] = pd.NA
+        else:
+            model_data['Mean (FoldX, RaSP)'] = pd.NA
+
         # check if we have both FoldX and Rosetta/RaSP col
         if rosetta_header is not None and foldx_header is not None:
             model_data[f'Stability classification, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
@@ -350,6 +366,22 @@ class SimpleStability(Stability):
                 rasp_header = rasp_col[0]
             else:
                 rasp_header = None
+
+            # Add mean of FoldX and Rosetta (Foldetta)
+            if foldx_header in model_data.columns and rosetta_header in model_data.columns:
+                both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
+                model_data['Foldetta Mean (FoldX, Rosetta)'] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
+                model_data.loc[~both_valid, 'Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+            else:
+                model_data['Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+
+            # Add mean of FoldX and RaSP
+            if foldx_header in model_data.columns and rasp_header in model_data.columns:
+                both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
+                model_data['Mean (FoldX, RaSP)'] = model_data[[foldx_header, rasp_header]].mean(axis=1)
+                model_data.loc[~both_valid, 'Mean (FoldX, RaSP)'] = pd.NA
+            else:
+                model_data['Mean (FoldX, RaSP)'] = pd.NA
 
             # check if we have both FoldX and Rosetta/RaSP col
             if rosetta_header is not None and foldx_header is not None:
