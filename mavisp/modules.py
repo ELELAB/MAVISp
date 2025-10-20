@@ -242,16 +242,22 @@ class Stability(MultiMethodMavispModule):
             both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
             model_data['Foldetta Mean (FoldX, Rosetta)'] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
             model_data.loc[~both_valid, 'Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+            if not both_valid.all():
+                warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
         else:
-            model_data['Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+            model_data['Mean (FoldX, Rosetta)'] = pd.NA
+            warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
 
         # Add mean of FoldX and RaSP
         if foldx_header in model_data.columns and rasp_header in model_data.columns:
             both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
             model_data['Mean (FoldX, RaSP)'] = model_data[[foldx_header, rasp_header]].mean(axis=1)
             model_data.loc[~both_valid, 'Mean (FoldX, RaSP)'] = pd.NA
+            if not both_valid.all():
+                warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
         else:
             model_data['Mean (FoldX, RaSP)'] = pd.NA
+            warnings.append(MAVISpWarningError("Mean (FoldX, RaSP) could not be calculated because FoldX or RaSP column is missing."))
 
         # check if we have both FoldX and Rosetta/RaSP col
         if rosetta_header is not None and foldx_header is not None:
@@ -372,16 +378,22 @@ class SimpleStability(Stability):
                 both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
                 model_data['Foldetta Mean (FoldX, Rosetta)'] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
                 model_data.loc[~both_valid, 'Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+                if not both_valid.all():
+                    warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
             else:
-                model_data['Foldetta Mean (FoldX, Rosetta)'] = pd.NA
+                model_data['Mean (FoldX, Rosetta)'] = pd.NA
+                warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
 
             # Add mean of FoldX and RaSP
             if foldx_header in model_data.columns and rasp_header in model_data.columns:
                 both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
                 model_data['Mean (FoldX, RaSP)'] = model_data[[foldx_header, rasp_header]].mean(axis=1)
                 model_data.loc[~both_valid, 'Mean (FoldX, RaSP)'] = pd.NA
+                if not both_valid.all():
+                    warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
             else:
                 model_data['Mean (FoldX, RaSP)'] = pd.NA
+                warnings.append(MAVISpWarningError("Mean (FoldX, RaSP) could not be calculated because FoldX or RaSP column is missing."))
 
             # check if we have both FoldX and Rosetta/RaSP col
             if rosetta_header is not None and foldx_header is not None:
