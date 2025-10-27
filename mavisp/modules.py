@@ -2248,9 +2248,15 @@ class TED(MavispModule):
         # Map res_numbers to TED domains
         ted_annotations = {}
         for mutation, resn in mutation_residues.items():
-            matching_domains = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
-            ted_annotations[mutation] = "| ".join(
-                f"{row['CATH_label']}" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
+            matching = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
+            if matching.empty:
+                continue
+            else:
+                labels = matching['CATH_label'].dropna().astype(str)
+                labels = labels[labels.str.strip() != ""]
+                if labels.empty:
+                    continue  
+                ted_annotations[mutation] = " | ".join(labels)
 
         # Add new column to data
         self.data = pd.DataFrame.from_dict(ted_annotations, orient='index', columns=['TED-CATH domain classification'])
