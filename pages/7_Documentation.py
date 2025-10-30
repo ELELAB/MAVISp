@@ -755,3 +755,15 @@ data = [ ( "Pfam domain classification",
            "Pfam domains associated with the given residue in the protein",
            "single string reporting the Pfam domain description and accession code") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
+st.subheader('TED module')
+
+st.write("""This module uses results retrieved from The Encyclopedia of Domains (TED), reporting the identified
+         domain annotation for the given protein and the respective residue ranges for each domain.
+         This module produces the following columns:""")
+
+data = [ ( "TED-CATH domain classification",
+           "TED domains and their associated CATH-assigned labels for the given residue in the protein",
+           "single string reporting the CATH-label code") ]
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+

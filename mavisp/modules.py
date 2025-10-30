@@ -2280,3 +2280,76 @@ class Pfam(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class TED(MavispModule):
+
+    module_dir = "ted"
+    name = "ted"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        ted_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(ted_file) != 1:
+            this_error = f"multiple or no files found in {ted}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ted_file = ted_file[0]
+
+        log.info(f"parsing ted file {ted_file}")
+
+        try:
+            ted = pd.read_csv(os.path.join(self.data_dir, self.module_dir, ted_file),
+                               sep=',', 
+                               dtype={'TED_id': str, 'TED_boundaries': str, 'CATH_label': str})
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['TED_id','TED_boundaries','CATH_label']).issubset(set(ted.columns)):
+            this_error = f"The input file doesn't have the columns expected for a TED output file"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Split TED_boundaries into start and end residues
+        multi_boundaries = []
+        for _, row in ted.iterrows():
+            boundaries = str(row['TED_boundaries']).split('_')
+            for b in boundaries:
+                try:
+                    start, end = map(int, b.split('-'))
+                    multi_boundaries.append({
+                        'TED_id': row['TED_id'],
+                        'CATH_label': row['CATH_label'],
+                        'start': start,
+                        'end': end})
+                except Exception as e:
+                    this_error = (f"Could not parse boundary '{b}' in TED_id {row['TED_id']}: {e}")
+                    raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ted_expanded = pd.DataFrame(multi_boundaries)
+        # Dictionary of muts + res_numbers
+        mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
+
+        # Map res_numbers to TED domains
+        ted_annotations = {}
+        for mutation, resn in mutation_residues.items():
+            matching = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
+            if matching.empty:
+                continue
+            else:
+                labels = matching['CATH_label'].dropna().astype(str)
+                labels = labels[labels.str.strip() != ""]
+                if labels.empty:
+                    continue  
+                ted_annotations[mutation] = " | ".join(labels)
+
+        # Add new column to data
+        self.data = pd.DataFrame.from_dict(ted_annotations, orient='index', columns=['TED-CATH domain classification'])
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
