@@ -59,7 +59,6 @@ class MAVISpFileSystem:
 
         self.dataset_tables = {}
 
-
         for mode_name, mode in self.supported_modes.items():
             self.dataset_tables[mode_name] = self._gen_dataset_table(mode, include=include_proteins, exclude=exclude_proteins)
 
@@ -219,6 +218,7 @@ class MAVISpFileSystem:
                 analysis_basepath = os.path.join(self.data_dir, system, mode_name)
 
                 # for every available module:
+                all_columns = []
                 for mod in mode.supported_modules:
 
                     # check if the dataset is available
@@ -237,6 +237,16 @@ class MAVISpFileSystem:
                             if len(e.warning) != 0 and stop_at == 'warning':
                                 mavisp_modules[mod.name] = None
                                 continue
+
+                        # check if columns don't overlap with previously-existing module
+                        all_columns.extend(this_module.get_dataset_view().columns)
+                        unique_columns = list(set(all_columns))
+                        if len(unique_columns) != len(all_columns):
+                            mavisp_modules[mod.name] = None
+                            mavisp_errors.append(MAVISpCriticalError("this module provides columns whose name overlap "
+                                                                     "with those provided by another module"))
+                            continue
+                        all_columns = unique_columns
 
                         mavisp_modules[mod.name] = this_module
                 mavisp_dataset_column.append(mavisp_modules)
