@@ -1332,6 +1332,23 @@ class CancermutsTable(MavispModule):
         #     warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
 
         # filter by column and pretty rename column names
+
+        # regular data columns - these are mandatory
+        data_columns = ['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']
+
+
+        # data columns from clinvar that might or might not exist
+        do_clinvar_warning = False
+        for col in ['clinvar_variant_id', 'clinvar_classification', 'clinvar_condition', 'clinvar_review_status']:
+            if col in cancermuts.columns:
+                data_columns.append(col)
+            else:
+                do_clinvar_warning = True
+
+        if do_clinvar_warning:
+            warnings.append(MAVISpWarningError(f"not all expected ClinVar columns found in Cancermuts; please double"
+                                                "check that the ClinVar module is available (old-style entry)"))
+        
         cancermuts = cancermuts[['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
 
         self.data = cancermuts.rename(columns={ 'genomic_mutation' : 'HGVSg',
