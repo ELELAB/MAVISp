@@ -1351,11 +1351,16 @@ class CancermutsTable(MavispModule):
         
         cancermuts = cancermuts[['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
 
-        self.data = cancermuts.rename(columns={ 'genomic_mutation' : 'HGVSg',
-                                                'gnomad_genome_af' : 'gnomAD genome allele frequency',
-                                                'gnomad_exome_af'  : 'gnomAD exome allele frequency',
-                                                'REVEL_score'      : 'REVEL score',
-                                                'sources'          : 'Mutation sources' })
+        self.data = cancermuts.rename(columns={ 'genomic_mutation'       : 'HGVSg',
+                                                'gnomad_genome_af'       : 'gnomAD genome allele frequency',
+                                                'gnomad_exome_af'        : 'gnomAD exome allele frequency',
+                                                'REVEL_score'            : 'REVEL score',
+                                                'sources'                : 'Mutation sources',
+                                                'clinvar_variant_id'     : 'ClinVar Variation ID',
+                                                'clinvar_classification' : 'ClinVar Interpretation',
+                                                'clinvar_condition'      : 'ClinVar Condition',
+                                                'clinvar_review_status'  : 'ClinVar Review Status'
+                                              })
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -2040,7 +2045,6 @@ class ExperimentalData(MavispModule):
 
         # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
-        print(all_masks)
         if any(all_masks.sum(axis=1) > 1):
             raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
         if any(all_masks.sum(axis=1) < 1):
