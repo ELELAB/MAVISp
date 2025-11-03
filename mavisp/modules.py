@@ -1774,35 +1774,60 @@ class FunctionalSites(MavispModule):
                             'active_site_local_aggregate.txt']
     column_headers = {'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
                       'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
-    _site_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+    _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
 
     def _parse_table(self, fname):
 
         df = pd.read_csv(fname, index_col=False, header=None)
 
         if len(df.columns) != 1:
-            this_error = f"Functional Sites table {fname} must have one column (sites)"
+            this_error = f"Functional Mutations table {fname} must have one column (mutations)"
             raise TypeError(this_error)
 
         df[0] = df[0].str.strip()
 
-        # check if each element of the column is in the format Xn, where X is a
-        # residue type and N is an arbitrary number
-        if df[0].apply(lambda x: self._site_re.match(x) is None).any():
-            this_error = f"Functional Sites table {fname} must have sites in the format Xn, where X is a residue type and N is an arbitrary number"
-            raise TypeError(this_error)
+        # validate: every row must be a strict mutation XnY
+        kinds = df[0].apply(lambda s: bool(self._mut_re.match(s)))
+        if not kinds.all():
+            bad = df[0][~kinds].unique()[:5]
+            raise TypeError(
+                f"Functional Sites table {fname} must list mutations in the form XnY "
+                f"(e.g., E72K). Invalid examples: {list(bad)}"
+            )
 
-        df = df.drop_duplicates()
-        df['sites_type_table'] = df[0].str[0]
-        df['sites'] = pd.Series(df[0].str[1:].astype(int))
-        df = df.drop(columns=[0])
+        # expand to ref/pos/alt
+        def _expand(tok: str):
+            m = self._mut_re.match(tok)
+            return m.group('ref'), int(m.group('pos')), m.group('alt')
 
-        if df['sites'].duplicated().any():
-            this_error = f"Functional Sites table {fname} has duplicated sites with different residue types"
-            raise TypeError(this_error)
+        df_exp = pd.DataFrame(df[0].apply(_expand).tolist(),
+                              columns=['ref_aa', 'pos', 'alt_aa'])
 
-        df = df.set_index('sites')
-        df['classification'] = pd.Series(index=df.index, data='damaging')
+        # enforce ALT != REF (no-op mutations don’t make sense here)
+        same = df_exp['ref_aa'] == df_exp['alt_aa']
+        if same.any():
+            bad_rows = df_exp[same].head(5)
+            raise TypeError(
+                f"Functional Sites table {fname} contains no-op mutations (ref==alt). "
+                f"Examples: {bad_rows['ref_aa'] + bad_rows['pos'].astype(str) + bad_rows['alt_aa']}"
+            )
+
+        # drop exact duplicates
+        df_exp = df_exp.drop_duplicates(ignore_index=True)
+
+        # check if a position should has conflicting reference residues
+        ref_per_pos = df_exp.groupby('pos')['ref_aa'].nunique()
+        if (ref_per_pos > 1).any():
+            bad_pos = ref_per_pos[ref_per_pos > 1].index.tolist()[:5]
+            raise TypeError(
+                f"Functional Sites table {fname} has conflicting reference residues at positions: {bad_pos}"
+            )
+
+        # build mutation key (e.g., E72K)
+        df_exp['mutation'] = df_exp.apply(lambda r: f"{r.ref_aa}{r.pos}{r.alt_aa}", axis=1)
+
+        # final: index by mutation, mark as damaging
+        df = (df_exp.set_index('mutation').assign(classification='damaging')[['ref_aa', 'pos', 'alt_aa', 'classification']])
 
         return df
 
@@ -1817,11 +1842,19 @@ class FunctionalSites(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        out_df = pd.DataFrame({'mutations' : mutations})
-        out_df['sites'] = out_df['mutations'].str[1:-1].astype(int)
-        out_df['sites_type_mut'] = out_df['mutations'].str[0]
-        out_df = out_df.set_index('mutations')
+        out_df = pd.DataFrame({'mutation': mutations})
 
+        # Parse and validate incoming mutation keys (same regex)
+        mut_df = out_df['mutation'].str.extract(self._mut_re)
+        if mut_df.isnull().any().any():
+            bad = out_df['mutation'][mut_df.isnull().any(axis=1)].unique()[:5]
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(f"Invalid mutation keys in input (expect XnY, e.g. E72K). "
+                        f"Examples: {list(bad)}")],)
+        mut_df['pos'] = mut_df['pos'].astype(int)
+        out_df = pd.concat([out_df, mut_df], axis=1).set_index('mutation')
+        
         for fs_file in fs_files:
 
             log.info(f"parsing Functional Sites data file {fs_file}")
@@ -1832,21 +1865,16 @@ class FunctionalSites(MavispModule):
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
-            out_df = out_df.join(df, on='sites')
 
-            if not out_df.apply(lambda r: r['sites_type_table'] == r['sites_type_mut'] if not pd.isna(r['classification']) else True, axis=1).all():
-                this_error = f"Functional Sites table {fs_file} has sites with residue type different than in mutations"
-                raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+            # Merge classification by mutation index
+            out_df = out_df.merge(df[['classification']].rename(columns={'classification': self.column_headers[fs_file]}),
+                left_index=True, right_index=True, how='left')
 
-            out_df = out_df.rename(columns={'classification' : self.column_headers[fs_file]})
-            out_df = out_df.drop(columns=['sites_type_table'])
+        # Final data table: mutation-level, fill missing with neutral
+        self.data = out_df.drop(columns=['ref', 'pos', 'alt']).fillna('neutral')
 
-        self.data = out_df.drop(columns=['sites_type_mut', 'sites']).fillna('neutral')
-
-        if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+        if warnings:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
 
