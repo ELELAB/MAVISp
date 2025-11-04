@@ -82,8 +82,8 @@ if len(protein_table.selection['rows']) == 0:
 
 protein_row = protein_table.selection['rows'][0]
 
-protein = show_table.iloc[protein_row]['Protein']
-upac = show_table.iloc[protein_row]['Uniprot AC']
+protein = filtered_show_table.iloc[protein_row]['Protein']
+upac = filtered_show_table.iloc[protein_row]['Uniprot AC']
 
 st.write(f"Currently viewing: {protein}")
 
