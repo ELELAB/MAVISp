@@ -365,9 +365,6 @@ with structure:
         disable_structure = True
 
     # download model and stop if it can't be found
-    print("https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v6.pdb")
-
-
     if not disable_structure:
         try:
             response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v6.pdb")
