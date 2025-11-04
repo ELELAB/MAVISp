@@ -1774,34 +1774,28 @@ class FunctionalSites(MavispModule):
                             'active_site_local_aggregate.txt']
     column_headers = {'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
                       'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
-    _site_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+    _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
 
     def _parse_table(self, fname):
 
         df = pd.read_csv(fname, index_col=False, header=None)
 
         if len(df.columns) != 1:
-            this_error = f"Functional Sites table {fname} must have one column (sites)"
+            this_error = f"Functional Sites table {fname} must have one column (mutations)"
             raise TypeError(this_error)
 
-        df[0] = df[0].str.strip()
+        df[0] = df[0].astype(str).str.strip()
 
-        # check if each element of the column is in the format Xn, where X is a
-        # residue type and N is an arbitrary number
-        if df[0].apply(lambda x: self._site_re.match(x) is None).any():
-            this_error = f"Functional Sites table {fname} must have sites in the format Xn, where X is a residue type and N is an arbitrary number"
+        # check if each element of the column is in the format XnY, where X/Y are residue types
+        # and n is an arbitrary number
+        if df[0].apply(lambda x: self._mut_re.match(x) is None).any():
+            this_error = (f"Functional Sites table {fname} must have mutations in the format XnY, "
+                          f"where X and Y are residue types and n is an arbitrary number")
             raise TypeError(this_error)
 
         df = df.drop_duplicates()
-        df['sites_type_table'] = df[0].str[0]
-        df['sites'] = pd.Series(df[0].str[1:].astype(int))
-        df = df.drop(columns=[0])
-
-        if df['sites'].duplicated().any():
-            this_error = f"Functional Sites table {fname} has duplicated sites with different residue types"
-            raise TypeError(this_error)
-
-        df = df.set_index('sites')
+        df = df.rename(columns={0: 'mutation'})
+        df = df.set_index('mutation')
         df['classification'] = pd.Series(index=df.index, data='damaging')
 
         return df
@@ -1815,11 +1809,9 @@ class FunctionalSites(MavispModule):
         if not set(fs_files).issubset(set(self.accepted_filenames)):
             this_error = f"the input files for Functional Sites must be named {', '.join(self.accepted_filenames)}"
             raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                                      critical=[MAVISpCriticalError(this_error)])
 
-        out_df = pd.DataFrame({'mutations' : mutations})
-        out_df['sites'] = out_df['mutations'].str[1:-1].astype(int)
-        out_df['sites_type_mut'] = out_df['mutations'].str[0]
+        out_df = pd.DataFrame({'mutations': mutations})
         out_df = out_df.set_index('mutations')
 
         for fs_file in fs_files:
@@ -1831,22 +1823,19 @@ class FunctionalSites(MavispModule):
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-            out_df = out_df.join(df, on='sites')
+                                          critical=[MAVISpCriticalError(this_error)])
 
-            if not out_df.apply(lambda r: r['sites_type_table'] == r['sites_type_mut'] if not pd.isna(r['classification']) else True, axis=1).all():
-                this_error = f"Functional Sites table {fs_file} has sites with residue type different than in mutations"
-                raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+            # join by mutation (index)
+            out_df = out_df.join(
+                df.rename(columns={'classification': self.column_headers[fs_file]}),
+                how='left'
+            )
 
-            out_df = out_df.rename(columns={'classification' : self.column_headers[fs_file]})
-            out_df = out_df.drop(columns=['sites_type_table'])
-
-        self.data = out_df.drop(columns=['sites_type_mut', 'sites']).fillna('neutral')
+        # final: only keep functional-sites columns; fill missing with neutral
+        self.data = out_df.fillna('neutral')
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
 
