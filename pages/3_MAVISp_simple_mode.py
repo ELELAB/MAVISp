@@ -366,13 +366,13 @@ with structure:
     # download model and stop if it can't be found
     if not disable_structure:
         try:
-            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
+            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v6.pdb")
             response.raise_for_status()
         except ConnectionError:
-            st.write("Failed connecting to the AlphaFold Protein Structure Database")
+            st.write("ERROR: Failed connecting to the AlphaFold Protein Structure Database")
             st.stop()
         except HTTPError:
-            st.write("Could not fetch protein structure model from the AlphaFold Protein Structure Database")
+            st.write("ERROR: Could not fetch protein structure model from the AlphaFold Protein Structure Database")
             st.stop()
         else:
             model = response.text
