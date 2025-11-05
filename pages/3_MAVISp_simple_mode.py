@@ -1,3 +1,4 @@
+import streamlit
 # MAVISp - Streamlit application
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #
@@ -215,9 +216,9 @@ with dotplots:
         placeholder_text += f"{'\n'.join(this_dataset_table[mutation_format_dotplot].dropna().unique().tolist()[0:3])}\n..."
 
         selected_mutations_input_dotplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
-                    height=100,
-                    placeholder=placeholder_text,
-                    key="text_area_dotplot")
+                     height=100,
+                     placeholder=placeholder_text,
+                     key="text_area_dotplot")
         
         if selected_mutations_input_dotplot is None or selected_mutations_input_dotplot == "":
             selected_mutations_dotplot = None
@@ -231,7 +232,7 @@ with dotplots:
                 selected_mutations_dotplot = None
 
     if st.button('Generate plot',
-                disabled=not bool(selected_mutations_dotplot)):
+                 disabled=not bool(selected_mutations_dotplot)):
         
         this_dataset_table_dotplot = this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_dotplot)].set_index('Mutation')
 
@@ -261,7 +262,6 @@ with dotplots:
 with lolliplots:
 
     this_dataset_table_lolliplot = this_dataset.copy()
-
     this_dataset_table_lolliplot = this_dataset_table_lolliplot.set_index('Mutation')
     this_dataset_table_lolliplot = process_df_for_lolliplot(this_dataset_table_lolliplot)
     this_dataset_table_lolliplot = this_dataset_table_lolliplot.join(this_dataset.set_index('Mutation')[['HGVSp', 'HGVSg']])
@@ -295,10 +295,10 @@ with lolliplots:
         placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
 
         selected_mutations_input_lolliplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
-                    height=100,
-                    placeholder=placeholder_text,
-                    key="text_area_lolliplot")
-
+                     height=100,
+                     placeholder=placeholder_text,
+                     key="text_area_lolliplot")
+ 
         if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
             selected_mutations_lolliplot = None
         else:
