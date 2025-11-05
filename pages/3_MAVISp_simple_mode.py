@@ -182,105 +182,90 @@ with dataset:
 
 with dotplots:
 
-    if "ClinVar Interpretation" not in this_dataset_table.columns:
-        st.write("""There is no information about ClinVar classification
-                 for this entry, therefore this section has been disabled""")
+    this_dataset_table = this_dataset.copy()
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        do_revel = st.checkbox('Show available REVEL classification', )
+        revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
+        demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
+        gemme_co = st.number_input("Curoff for GEMME", value=3.0)
+    with col2:
+        do_demask = st.checkbox('Show available DeMaSk classification', value=True)
+        n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
+        fig_width = st.number_input("Plot width (inches)", value=14, min_value=1)
+        fig_height = st.number_input("Plot height (inches)", value=6, min_value=1)
+
+    st.write("""Select up to 50 mutations to be shown in the dot plot below.""")
+
+    mutation_format_dotplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_dotplots")
+
+    filtering_input_type_dotplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_dotplot")
+
+    if filtering_input_type_dotplot == 'Select from list':
+        selected_mutations_dotplot = st.multiselect(label="Mutations to be considered (all if empty)",
+                                                    options=this_dataset_table[mutation_format_dotplot].dropna().unique().tolist(),
+                                                    default=None,
+                                                    placeholder="Type or select a mutation",
+                                                    key="mut_select_dotplot")
+        
     else:
+        placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
+        placeholder_text += f"{'\n'.join(this_dataset_table[mutation_format_dotplot].dropna().unique().tolist()[0:3])}\n..."
 
-        this_dataset_table = this_dataset.copy()
-
-
-
-
-        col1, col2 = st.columns(2)
-
-        with col1:
-            do_revel = st.checkbox('Show available REVEL classification', )
-            revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
-            demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
-            gemme_co = st.number_input("Curoff for GEMME", value=3.0)
-        with col2:
-            do_demask = st.checkbox('Show available DeMaSk classification', value=True)
-            n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
-            fig_width = st.number_input("Plot width (inches)", value=14, min_value=1)
-            fig_height = st.number_input("Plot height (inches)", value=6, min_value=1)
-
-        st.write("""Select up to 50 mutations to be shown in the dot plot below.""")
-
-        mutation_format_dotplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_dotplots")
-
-        filtering_input_type_dotplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_dotplot")
-
-        if filtering_input_type_dotplot == 'Select from list':
-            selected_mutations_dotplot = st.multiselect(label="Mutations to be considered (all if empty)",
-                                                        options=this_dataset_table[mutation_format_dotplot].dropna().unique().tolist(),
-                                                        default=None,
-                                                        placeholder="Type or select a mutation",
-                                                        key="mut_select_dotplot")
-            
+        selected_mutations_input_dotplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
+                    height=100,
+                    placeholder=placeholder_text,
+                    key="text_area_dotplot")
+        
+        if selected_mutations_input_dotplot is None or selected_mutations_input_dotplot == "":
+            selected_mutations_dotplot = None
         else:
-            placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
-            placeholder_text += f"{'\n'.join(this_dataset_table[mutation_format_dotplot].dropna().unique().tolist()[0:3])}\n..."
-
-            selected_mutations_input_dotplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
-                        height=100,
-                        placeholder=placeholder_text,
-                        key="text_area_dotplot")
-            
-            if selected_mutations_input_dotplot is None or selected_mutations_input_dotplot == "":
-                selected_mutations_dotplot = None
+            selected_mutations_input_dotplot = selected_mutations_input_dotplot.split('\n')
+            selected_mutations_input_dotplot = list(filter(lambda x: x, selected_mutations_input_dotplot))
+            if len(selected_mutations_input_dotplot) == len(this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_input_dotplot)]):
+                selected_mutations_dotplot = selected_mutations_input_dotplot
             else:
-                selected_mutations_input_dotplot = selected_mutations_input_dotplot.split('\n')
-                selected_mutations_input_dotplot = list(filter(lambda x: x, selected_mutations_input_dotplot))
-                if len(selected_mutations_input_dotplot) == len(this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_input_dotplot)]):
-                    selected_mutations_dotplot = selected_mutations_input_dotplot
-                else:
-                    st.error("One or more mutations not present in the specified column, please double check their format")
-                    selected_mutations_dotplot = None
+                st.error("One or more mutations not present in the specified column, please double check their format")
+                selected_mutations_dotplot = None
 
-        if st.button('Generate plot',
-                    disabled=not bool(selected_mutations_dotplot)):
-            
-            this_dataset_table_dotplot = this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_dotplot)].set_index('Mutation')
+    if st.button('Generate plot',
+                disabled=not bool(selected_mutations_dotplot)):
+        
+        this_dataset_table_dotplot = this_dataset_table[this_dataset_table[mutation_format_dotplot].isin(selected_mutations_dotplot)].set_index('Mutation')
 
-            plots = plot_dotplot(this_dataset_table_dotplot,
-                                demask_co=demask_co,
-                                revel_co=revel_co,
-                                gemme_co=gemme_co,
-                                n_muts=n_muts,
-                                fig_width=fig_width,
-                                fig_height=fig_height,
-                                do_revel=do_revel,
-                                do_demask=do_demask)
+        plots = plot_dotplot(this_dataset_table_dotplot,
+                            demask_co=demask_co,
+                            revel_co=revel_co,
+                            gemme_co=gemme_co,
+                            n_muts=n_muts,
+                            fig_width=fig_width,
+                            fig_height=fig_height,
+                            do_revel=do_revel,
+                            do_demask=do_demask)
 
-            with BytesIO() as pdf_stream:
-                with PdfPages(pdf_stream) as pdf:
-                    for fig in plots:
-                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
+        with BytesIO() as pdf_stream:
+            with PdfPages(pdf_stream) as pdf:
+                for fig in plots:
+                    fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
 
-                st.download_button(label="Download as PDF",
-                                data=pdf_stream,
-                                mime="application/pdf",
-                                file_name=f'{protein}-{mode}_dotplots.pdf')
+            st.download_button(label="Download as PDF",
+                            data=pdf_stream,
+                            mime="application/pdf",
+                            file_name=f'{protein}-{mode}_dotplots.pdf')
 
-            for fig in plots:
-                st.pyplot(fig, use_container_width=False)
+        for fig in plots:
+            st.pyplot(fig, use_container_width=False)
 
 with lolliplots:
 
-    if "ClinVar Interpretation" not in this_dataset_table.columns:
+    this_dataset_table_lolliplot = this_dataset.copy()
+
+    if "ClinVar Interpretation" not in this_dataset_table_lolliplot.columns:
         st.write("""There is no information about ClinVar classification
                  for this entry, therefore this section has been disabledAAA""")
-        print(this_dataset_table.columns)
     else:
-
-        this_dataset_table_lolliplot = this_dataset.copy()
-
-        if "ClinVar Interpretation" not in this_dataset_table_lolliplot.columns:
-            st.write("""There is no information about ClinVar classification
-                    for this entry, therefore this section has been disabled""")
-            st.stop()
-
         this_dataset_table_lolliplot = this_dataset_table_lolliplot.set_index('Mutation')
         this_dataset_table_lolliplot = process_df_for_lolliplot(this_dataset_table_lolliplot)
         this_dataset_table_lolliplot = this_dataset_table_lolliplot.join(this_dataset.set_index('Mutation')[['HGVSp', 'HGVSg']])
