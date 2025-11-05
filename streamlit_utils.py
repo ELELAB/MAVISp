@@ -80,6 +80,35 @@ def add_mavisp_logo(png_file, *args, **kwargs):
     )
 
 @st.cache_data
+def get_database_dir(dir_var_name='MAVISP_DATABASE_PATH', default_dir_name='.'):
+    dir_name = os.getenv(dir_var_name)
+
+    if dir_name is None:
+        dir_name = default_dir_name
+
+    return dir_name
+
+@st.cache_data
+def find_database_files(dir):
+
+    dfs = []
+
+    files = list(Path(dir).glob('*.zip'))
+
+    for f in files:
+        zfs = ZipFileSystem(f)
+        try:
+            with zfs.open('dataset_info.csv') as fh:
+                df = pd.read_csv(fh)
+                df ['File name'] = f
+        except KeyError:
+            continue
+
+        dfs.append(df)
+
+    return pd.concat(dfs).rename(columns={'Date of run' : 'Date of generation'})
+
+@st.cache_data
 def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
                             db_var_name='MAVISP_DATABASE_NAME',
                             default_dir_name='.',
@@ -202,7 +231,6 @@ def get_compact_dataset(this_dataset_table):
     return this_dataset_table[default_cols + selected_cols + ['References']]
 
 def replace_boolean_col(df, col, dictionary={True : 'Yes', False : 'No'}):
-
     df[col] = df[col].astype(str)
 
     for k,v in dictionary.items():
