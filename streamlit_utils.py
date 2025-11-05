@@ -97,7 +97,7 @@ def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
     db_path = Path(dir_name) / Path(db_name)
 
     if not db_path.exists():
-        raise FileExistsError(f"provided database path {db_path} does not exist")
+        raise FileNotFoundError(f"provided database path {db_path} does not exist")
 
     if db_path.is_file() and db_path.suffix == ".zip":
         fs = ZipFileSystem(db_path)
