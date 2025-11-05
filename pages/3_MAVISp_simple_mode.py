@@ -288,7 +288,7 @@ with lolliplots:
                                                     default=None,
                                                     placeholder="Type or select a mutation",
                                                     key="mut_select_lolliplots")
-        
+
     else:
         placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
         placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
@@ -297,7 +297,7 @@ with lolliplots:
                      height=100,
                      placeholder=placeholder_text,
                      key="text_area_lolliplot")
-        
+ 
         if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
             selected_mutations_lolliplot = None
         else:

@@ -110,7 +110,11 @@ def load_clinvar_dict(tsv_file):
 
 @st.cache_data
 def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
+
     df = df.copy()
+
+    if 'ClinVar Interpretation' not in df.columns:
+        df['ClinVar Interpretation'] = None
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
@@ -151,7 +155,7 @@ def process_df_for_lolliplot(df):
                                                             plot_Demask=True,
                                                             plot_Source=None,
                                                             plot_Clinvar=None,
-                                                            color_Clinvar=True)
+                                                            color_Clinvar=False)
 
     text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
 
