@@ -110,7 +110,11 @@ def load_clinvar_dict(tsv_file):
 
 @st.cache_data
 def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
+
     df = df.copy()
+
+    if 'ClinVar Interpretation' not in df.columns:
+        df['ClinVar Interpretation'] = None
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
