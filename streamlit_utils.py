@@ -151,7 +151,7 @@ def process_df_for_lolliplot(df):
                                                             plot_Demask=True,
                                                             plot_Source=None,
                                                             plot_Clinvar=None,
-                                                            color_Clinvar=True)
+                                                            color_Clinvar=False)
 
     text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
 
