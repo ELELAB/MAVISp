@@ -35,7 +35,7 @@ add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
-database_dir = get_database_dir()
+database_fs = get_database_filesystem()
 
 st.title("MAVISp ensemble mode")
 
@@ -51,7 +51,7 @@ st.write('''If you need to download the MAVISp dataset in bulk and/or check the 
 dataset for any of our proteins, please refer to our [OSF repository](https://osf.io/ufpzm/)''')
 
 try:
-    show_table = load_main_table(database_dir, mode)
+    show_table = load_main_table(database_fs, mode)
 except FileNotFoundError:
     st.write('No entries are currently available for ensemble mode.')
     st.stop()
@@ -88,7 +88,7 @@ upac = filtered_show_table.iloc[protein_row]['Uniprot AC']
 
 st.write(f"Currently viewing: {protein}")
 
-this_dataset = load_dataset(database_dir, protein, mode)
+this_dataset = load_dataset(database_fs, protein, mode)
 
 dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Damaging mutations on structure"])
 
@@ -174,7 +174,8 @@ with dataset:
                              mime="text/csv",
                              key='download-csv-compact')
 
-    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+    with database_fs.open(os.path.join(mode, 'dataset_tables', f'{protein}-{mode}.csv')) as fh:
+        data = BytesIO(fh.read())
         st.download_button(label="Download original full dataset",
                                  data=data,
                                  file_name=f'{protein}-{mode}.csv',
@@ -289,7 +290,7 @@ with lolliplots:
                                                     default=None,
                                                     placeholder="Type or select a mutation",
                                                     key="mut_select_lolliplots")
-        
+
     else:
         placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
         placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
@@ -298,7 +299,7 @@ with lolliplots:
                      height=100,
                      placeholder=placeholder_text,
                      key="text_area_lolliplot")
-        
+
         if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
             selected_mutations_lolliplot = None
         else:
