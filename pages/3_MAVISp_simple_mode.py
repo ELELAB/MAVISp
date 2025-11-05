@@ -262,83 +262,79 @@ with lolliplots:
 
     this_dataset_table_lolliplot = this_dataset.copy()
 
-    if "ClinVar Interpretation" not in this_dataset_table_lolliplot.columns:
-        st.write("""There is no information about ClinVar classification
-                 for this entry, therefore this section has been disabledAAA""")
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.set_index('Mutation')
+    this_dataset_table_lolliplot = process_df_for_lolliplot(this_dataset_table_lolliplot)
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.join(this_dataset.set_index('Mutation')[['HGVSp', 'HGVSg']])
+    this_dataset_table_lolliplot = this_dataset_table_lolliplot.reset_index()
+
+    if this_dataset_table_lolliplot.shape[0] == 0:
+        st.write("""There are no suitable mutations in this dataset, therefore
+        this section has been disabled""")
+        st.stop()
+
+    st.write(f"""Select one or more mutations below, up to 50, to be included
+    in the plot. These are only those mutations that are at the same time
+    i) classified as pathogenic for AlphaMissense, ii) classified as loss
+    of function or gain of function for either GEMME or DeMaSk and
+    iii) damaging for the respective module in MAVISp. They are
+    {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
+
+    mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
+
+    filtering_input_type_lolliplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_lolliplots")
+
+    if filtering_input_type_lolliplot == 'Select from list':
+        selected_mutations_lolliplot = st.multiselect(label="Mutations to be considered (all if empty)",
+                                                    options=this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist(),
+                                                    default=None,
+                                                    placeholder="Type or select a mutation",
+                                                    key="mut_select_lolliplots")
+
     else:
-        this_dataset_table_lolliplot = this_dataset_table_lolliplot.set_index('Mutation')
-        this_dataset_table_lolliplot = process_df_for_lolliplot(this_dataset_table_lolliplot)
-        this_dataset_table_lolliplot = this_dataset_table_lolliplot.join(this_dataset.set_index('Mutation')[['HGVSp', 'HGVSg']])
-        this_dataset_table_lolliplot = this_dataset_table_lolliplot.reset_index()
+        placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
+        placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
 
-        if this_dataset_table_lolliplot.shape[0] == 0:
-            st.write("""There are no suitable mutations in this dataset, therefore
-            this section has been disabled""")
-            st.stop()
+        selected_mutations_input_lolliplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
+                    height=100,
+                    placeholder=placeholder_text,
+                    key="text_area_lolliplot")
 
-        st.write(f"""Select one or more mutations below, up to 50, to be included
-        in the plot. These are only those mutations that are at the same time
-        i) classified as pathogenic for AlphaMissense, ii) classified as loss
-        of function or gain of function for either GEMME or DeMaSk and
-        iii) damaging for the respective module in MAVISp. They are
-        {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
-
-        mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
-
-        filtering_input_type_lolliplot = st.radio("Input method for mutations to select on", options=['Select from list', 'Free text format'], key="sel_col_lolliplots")
-
-        if filtering_input_type_lolliplot == 'Select from list':
-            selected_mutations_lolliplot = st.multiselect(label="Mutations to be considered (all if empty)",
-                                                        options=this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist(),
-                                                        default=None,
-                                                        placeholder="Type or select a mutation",
-                                                        key="mut_select_lolliplots")
-            
+        if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
+            selected_mutations_lolliplot = None
         else:
-            placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
-            placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
-
-            selected_mutations_input_lolliplot = st.text_area("Insert list of mutations, one per line, according to the format selected previously",
-                        height=100,
-                        placeholder=placeholder_text,
-                        key="text_area_lolliplot")
-            
-            if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
-                selected_mutations_lolliplot = None
+            selected_mutations_input_lolliplot = selected_mutations_input_lolliplot.split('\n')
+            selected_mutations_input_lolliplot = list(filter(lambda x: x, selected_mutations_input_lolliplot))
+            if len(selected_mutations_input_lolliplot) == len(this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_input_lolliplot)]):
+                selected_mutations_lolliplot = selected_mutations_input_lolliplot
             else:
-                selected_mutations_input_lolliplot = selected_mutations_input_lolliplot.split('\n')
-                selected_mutations_input_lolliplot = list(filter(lambda x: x, selected_mutations_input_lolliplot))
-                if len(selected_mutations_input_lolliplot) == len(this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_input_lolliplot)]):
-                    selected_mutations_lolliplot = selected_mutations_input_lolliplot
-                else:
-                    st.error("One or more mutations not present in the specified column, please double check their format")
-                    selected_mutations_lolliplot = None
+                st.error("One or more mutations not present in the specified column, please double check their format")
+                selected_mutations_lolliplot = None
 
-        if st.button('Generate plot',
-                        disabled=not bool(selected_mutations_lolliplot),
-                        key='qwe123'):
+    if st.button('Generate plot',
+                    disabled=not bool(selected_mutations_lolliplot),
+                    key='qwe123'):
 
-            this_dataset_table_lolliplot = this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_lolliplot)].set_index('Mutation')
+        this_dataset_table_lolliplot = this_dataset_table_lolliplot[this_dataset_table_lolliplot[mutation_format_lolliplot].isin(selected_mutations_lolliplot)].set_index('Mutation')
 
-            plots = plot_lolliplots(this_dataset_table_lolliplot)
+        plots = plot_lolliplots(this_dataset_table_lolliplot)
 
-            with BytesIO() as pdf_stream:
-                with PdfPages(pdf_stream) as pdf:
-                    for fig in plots:
-                        fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
+        with BytesIO() as pdf_stream:
+            with PdfPages(pdf_stream) as pdf:
+                for fig in plots:
+                    fig.savefig(pdf, format='pdf', dpi=300, bbox_inches='tight')
 
-                st.download_button(label="Download as PDF",
-                                data=pdf_stream,
-                                mime="application/pdf",
-                                file_name=f'{protein}-{mode}_lolliplots.pdf',
-                                key='1231')
+            st.download_button(label="Download as PDF",
+                            data=pdf_stream,
+                            mime="application/pdf",
+                            file_name=f'{protein}-{mode}_lolliplots.pdf',
+                            key='1231')
 
-            for fig in plots:
-                st.pyplot(fig, use_container_width=False)
+        for fig in plots:
+            st.pyplot(fig, use_container_width=False)
 
 with structure:
 
-    structure_colors = {'Stability'  : 'redC    arbon',
+    structure_colors = {'Stability'  : 'redCarbon',
                         'Local Int.' : 'orangeCarbon',
                         'PTM'        : 'greenCarbon',
                         'Long Range' : 'blueCarbon',
