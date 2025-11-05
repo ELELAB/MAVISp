@@ -96,6 +96,10 @@ def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
 
     db_path = Path(dir_name) / Path(db_name)
 
+    print('MAVISP_DATABASE_PATH', os.getenv(dir_var_name))
+    print('MAVISP_DATABASE_NAME', os.getenv(db_var_name))
+    print(dir_name, '|', db_name, '|', db_path)
+
     if not db_path.exists():
         raise FileExistsError(f"provided database path {db_path} does not exist")
 
