@@ -80,7 +80,7 @@ def add_mavisp_logo(png_file, *args, **kwargs):
     )
 
 @st.cache_data
-def get_database_filesystem(dir_var_name='MAVIS_DATABASE_PATH',
+def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
                             db_var_name='MAVISP_DATABASE_NAME',
                             default_dir_name='.',
                             default_db_name='database'):
