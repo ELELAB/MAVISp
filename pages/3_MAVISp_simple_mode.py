@@ -1,4 +1,3 @@
-import streamlit
 # MAVISp - Streamlit application
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
 #
