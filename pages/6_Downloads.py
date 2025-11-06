@@ -20,18 +20,21 @@ from io import BytesIO
 import yaml
 
 st.set_page_config(layout="wide",
-    page_title="MAVISp - Datasets and metadata",
-    page_icon="🔬")
+    page_title="MAVISp - Downloads",
+    page_icon="⬇️")
+
+st.title('Download MAVISp dataset')
 
 add_mavisp_logo("static/logo_small.png", image_width='50%')
 add_affiliation_logo()
 
-database_dir = get_database_dir()
+db_files = find_database_files(get_database_dir())
 
-db_files = find_database_files(database_dir)
+if db_files is None:
+    st.write("No MAVISp datasets are currently available to download.")
+    st.stop()
+
 db_files_display = db_files.drop(columns=['File name'])
-
-st.title('Download MAVISp dataset')
 
 st.write("""In this page, you are able to download complete MAVISp datasets in bulk. Please select the
 dataset of interest by selecting a row of interest in the table below, finally click on the Download button to
