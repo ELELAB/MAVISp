@@ -139,7 +139,7 @@ for example:
 
 ```
 export MAVISP_DATABASE_PATH=/my/path/to/directory
-export MAVISP_DATABASE_NAME=mavisp_database_2025-11-01_current
+export MAVISP_DATABASE_NAME=mavisp_database_2025-11-01_current.zip
 ```
 
 4. With your Python environment still active and from inside the `MAVISp` repository
