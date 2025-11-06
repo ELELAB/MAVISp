@@ -66,8 +66,12 @@ else:
     download_button_disabled = True
 
 if not download_button_disabled:
+    current_date = db_files['Date of run'].loc[selected_row]
+    if current_date.endswith("(current)"):
+        current_date = current_date.strip(" (current)") + '_current'
+
     fh = open(db_files['File name'].loc[selected_row], "rb")
-    file_name = f'mavisp_database_{db_files['Date of run'].loc[selected_row]}.zip'
+    file_name = f'mavisp_database_{current_date}.zip'
 else:
     fh = BytesIO()
     file_name = 'none.zip'
