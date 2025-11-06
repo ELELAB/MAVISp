@@ -2253,3 +2253,61 @@ class TED(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
+
+class DisulfideBridges(MavispModule):
+
+    module_dir = "disulfide_bridges"
+    name = "disulfide_bridges"
+
+    required_files = set(['mutlist_disulfide_disruptions.tsv',
+                          'denovo_summary.csv'])
+
+    def ingest(self, mutations):
+
+        out_df = pd.DataFrame({'mutation' : mutations}).set_index('mutation')
+
+        warnings = []
+
+        ss_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        
+        if not set(self.required_files).issubset(set(ss_files)):
+            this_error = f"the following files are required: {', '.join(self.required_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        
+        try:
+            df_dis = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'mutlist_disulfide_disruptions.tsv'),
+                               sep='\t')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the mutlist_disulfide_disruptions.tsv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            df_denovo = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'denovo_summary.csv'))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the denovo_summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        df_dis['mutation'] = df_dis.wt + df_dis.pos.astype(str) + df_dis.mut
+        df_dis = df_dis.set_index('mutation')
+        df_dis['Loss of disulfide bridge'] = 'damaging'
+        df_dis = df_dis[['Loss of disulfide bridge']]
+
+        df_denovo['mutation'] = df_denovo.wt + df_denovo.pos.astype(str) + df_denovo.mut
+        df_denovo = df_denovo.set_index('mutation')
+        df_denovo = df_denovo[['classification']].replace({'de_novo_disulfide' : 'damaging'})
+        df_denovo = df_denovo.rename(columns={'classification' : 'Predicted de-novo disulfide bridge'})
+        out_df.join(df_denovo)
+
+        out_df = out_df.join(df_dis)
+        out_df = out_df.join(df_denovo)
+
+        out_df = out_df.fillna('neutral')
+
+        self.data = out_df
+    
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
