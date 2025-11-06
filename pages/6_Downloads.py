@@ -34,17 +34,28 @@ if db_files is None:
     st.write("No MAVISp datasets are currently available to download.")
     st.stop()
 
-db_files_display = db_files.drop(columns=['File name'])
+db_files_display = db_files.rename(columns={'Date of run' : 'Date of generation',
+                                                    'Number of mutations' : 'Mutations',
+                                                    'Number of proteins' : 'Proteins'})
+
+db_files_display = db_files_display[['Date of generation', 'Proteins', 'Mutations']]
 
 st.write("""In this page, you are able to download complete MAVISp datasets in bulk. Please select the
 dataset of interest by selecting a row of interest in the table below, finally click on the Download button to
 start your download.""")
 
-download = st.dataframe(db_files,
+download = st.dataframe(db_files_display,
                         hide_index=True,
-                        use_container_width=True,
                         on_select='rerun',
-                        selection_mode='single-row')
+                        selection_mode='single-row',
+                        width='content',
+                        column_config={
+                            "Proteins": st.column_config.NumberColumn(
+                                        help="Total nunber of proteins in the database",
+                                        format='localized'),
+                            "Mutations": st.column_config.NumberColumn(
+                                        help="Total nunber of mutations in the database",
+                                        format='localized')})
 
 selected_row = download['selection']['rows']
 if len(selected_row) == 1:
@@ -56,7 +67,7 @@ else:
 
 if not download_button_disabled:
     fh = open(db_files['File name'].loc[selected_row], "rb")
-    file_name = f'mavisp_database_{db_files['Date of generation'].loc[selected_row]}.zip'
+    file_name = f'mavisp_database_{db_files['Date of run'].loc[selected_row]}.zip'
 else:
     fh = BytesIO()
     file_name = 'none.zip'

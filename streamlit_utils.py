@@ -122,7 +122,7 @@ def find_database_files(dir):
         dfs.append(df)
 
     if len(dfs) > 0:
-        return pd.concat(dfs).rename(columns={'Date of run' : 'Date of generation'})
+        return pd.concat(dfs)
     else:
         return None
 
