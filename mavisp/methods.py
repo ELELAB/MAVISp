@@ -450,7 +450,7 @@ class AlloSigma(Method):
             if not re.fullmatch(self.mutation_re, c):
                 forbidden_cols.append(c)
         if len(forbidden_cols) > 0:
-            raise KeyError(f"column names {", ".join(forbidden_cols)} are not in the expected residue format")
+            raise KeyError(f"column names {', '.join(forbidden_cols)} are not in the expected residue format")
 
         return filt
 

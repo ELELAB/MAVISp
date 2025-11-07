@@ -41,6 +41,7 @@ Python packages:
 - streamlit 1.47.1
 - pandas 2.3.1
 - matplotlib 3.10.5
+- fsspec 2025.10.0
 
 In principle, it is compatible with all operating systems that support Python.
 
@@ -50,6 +51,8 @@ with Python 3.13.5 and the following package versions:
 - streamlit 1.47.1
 - pandas 2.3.1
 - matplotlib 3.10.5
+- fsspec 2025.10.0
+
 
 In order to download the full MAVISp dataset from OSF, you will also need the `wget` 
 program (see below). We last tested the download with wget 1.21.3.
