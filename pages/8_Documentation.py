@@ -669,7 +669,7 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 
 st.write("""  - AlphaMissense module:""")
 
-data = [ ( "'AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
+data = [ ( "AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
