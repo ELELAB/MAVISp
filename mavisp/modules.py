@@ -2003,7 +2003,6 @@ class ExperimentalData(MavispModule):
 
         # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
-        print(all_masks)
         if any(all_masks.sum(axis=1) > 1):
             raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
         if any(all_masks.sum(axis=1) < 1):
