@@ -1673,17 +1673,11 @@ class GEMME(MavispModule):
         # reconstruct mutations in the usual format
         gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
 
-        # drop unnecessary columns and rename for pretty
+        # drop unnecessary columns
         gemme = gemme.drop(columns=['wt', 'res', 'mut'])
 
-        # rank-normalize
-        max_s = gemme['score'].max()
-        min_s = gemme['score'].min()
-        gemme['score_rn'] = (gemme['score'] - min_s) / (max_s - min_s)
-
         # rename for pretty
-        gemme = gemme.rename(columns={'score'    : 'GEMME Score',
-                                      'score_rn' : 'GEMME Score (rank-normalized)'})
+        gemme = gemme.rename(columns={'score'    : 'GEMME Score'})
 
         self.data = gemme.set_index('mutations')
 
