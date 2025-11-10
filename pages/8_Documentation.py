@@ -645,18 +645,14 @@ st.subheader("DeMaSk, GEMME, EVE and AlphaMissense modules")
 st.write("""Each of this modules is named after a different predictor of
 pathogenicity for mutations, and it adds the results of the predictions of the
 respective method to the MAVISp dataset. For some of them, we also report
-their own or our own variant classification calculated from the available
-scores. Each of these module will have its own columns:
+their own variant classification, when available. Each of these module will
+have its own columns:
 
   - DeMaSk module:""")
 
 data = [ ( "DeMaSk delta fitness", "Delta fitness value from DeMaSk", "value"),
          ( "DeMaSk Shannon entropy", "Shannon entropy value for DeMaSk", "value"),
-         ( "DeMaSk log2 variant frequency" , "log2 of DeMaSk variant frequency", "value"),
-         ( "DeMaSk predicted consequence", "MAVISp-predicted consequence for DeMaSk",
-            "gain_of_function, when Delta fitness > 0\n\
-            loss_of_function, when Delta fitness < 0\n\
-            neutral, when Delta fitness = 0" ) ]
+         ( "DeMaSk log2 variant frequency" , "log2 of DeMaSk variant frequency", "value") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - GEMME module:""")
@@ -673,7 +669,7 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 
 st.write("""  - AlphaMissense module:""")
 
-data = [ ( "'AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
+data = [ ( "AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
