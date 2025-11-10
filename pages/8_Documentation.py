@@ -657,8 +657,8 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 
 st.write("""  - GEMME module:""")
 
-data = [ ( "GEMME Score", "score from GEMME", "value"),
-         ( "GEMME Score (rank-normalized)", "Rank-normalized gemme score", "value") ]
+data = [ ( "GEMME Score", "score from GEMME", "value") ]
+
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - EVE module:""")
