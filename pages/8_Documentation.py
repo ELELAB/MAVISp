@@ -234,7 +234,7 @@ data = [
         'Description': 'List of cofactors found in starting structures of each ensemble, and therefore '
                         'in the ensemble structures. These are described as [ensemble name]:[list of cofactors],'
                         'for each ensemble.',
-        'Possible values': 'cofactor names, e.g. Zn2+'
+        'Possible values': 'ensemble name and associated cofactor names,, e.g. md: Zn2+'
     }
 
 ]
