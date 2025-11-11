@@ -125,6 +125,11 @@ data = [
         'Column': 'PDB ID',
         'Description': 'PDB identifier of the structure used (when applicable)',
         'Possible values': 'e.g., "1TUP"'
+    },
+    {
+        'Column': 'Cofactors in starting structure',
+        'Description': 'List of cofactors found in starting structure',
+        'Possible values': 'cofactor names, e.g. Zn2+'
     }
 ]
 
@@ -222,6 +227,13 @@ data = [
         'Column': 'PDB ID',
         'Description': 'PDB identifier of the structure used (when applicable)',
         'Possible values': 'e.g., "1TUP"'
+    },
+    {
+        'Column': 'Cofactors in starting structures',
+        'Description': 'List of cofactors found in starting structures of each ensemble, and therefore '
+                        'in the ensemble structures. These are described as [ensemble name]:[list of cofactors],'
+                        'for each ensemble.',
+        'Possible values': 'ensemble name and associated cofactor names,, e.g. md: Zn2+'
     }
 ]
 
