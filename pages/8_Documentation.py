@@ -131,7 +131,6 @@ data = [
         'Description': 'List of cofactors found in starting structure',
         'Possible values': 'cofactor names, e.g. Zn2+'
     }
-
 ]
 
 st.dataframe(pd.DataFrame(data))
@@ -236,7 +235,6 @@ data = [
                         'for each ensemble.',
         'Possible values': 'ensemble name and associated cofactor names,, e.g. md: Zn2+'
     }
-
 ]
 
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
