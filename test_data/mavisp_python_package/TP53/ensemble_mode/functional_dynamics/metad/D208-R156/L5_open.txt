@@ -1,0 +1,11 @@
+mutation	207-213 interface
+K120E	neutral
+R158L	neutral
+R181H	destabilizing
+R248Q	destabilizing
+R248W	neutral
+R273C	stabilizing
+R273H	neutral
+S215G	destabilizing
+S215I	uncertain
+S215R	stabilizing
