@@ -23,7 +23,7 @@ from fsspec.implementations.zip   import ZipFileSystem
 from pathlib import Path
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
-from dot_plot import generate_summary, filter_am_summary
+from dot_plot import generate_summary, filter_vep_summary
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
 
@@ -193,7 +193,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+    plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
                                                             d_cutoff=demask_co,
                                                             r_cutoff=revel_co,
                                                             g_cutoff=gemme_co,
@@ -209,7 +209,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
+    my_plots = do_dotplots(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
 
     return my_plots
 
@@ -219,7 +219,7 @@ def process_df_for_lolliplot(df):
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+    plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
                                                             r_cutoff=0.5,
                                                             d_cutoff=0.25,
                                                             g_cutoff=3.0,
@@ -234,7 +234,7 @@ def process_df_for_lolliplot(df):
 
     text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
 
-    filtered_summary_df = filter_am_summary(summary_df, processed_df, True)
+    filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
 
     return process_input_for_lolliplot(filtered_summary_df)
 
