@@ -298,7 +298,7 @@ with lolliplots:
                      height=100,
                      placeholder=placeholder_text,
                      key="text_area_lolliplot")
- 
+
         if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
             selected_mutations_lolliplot = None
         else:
