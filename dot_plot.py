@@ -297,9 +297,10 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
     Returns
     ----------
+    plot_df: dataframe
+        copy of the processed dataframe trimmed according to plotting flags.
     df: dataframe
-        output dataframe in which the classification is
-        converted to number to facilitate the plotting.
+        processed dataframe retaining all classification columns for downstream filters.
     full_df: dataframe
               mavisp csv without altered columns
 
@@ -349,22 +350,18 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
     try:
         # Convert GEMME score into absolute value
-        df['GEMME predicted consequence'] = np.where(df['GEMME Score'].isna(), None,
-                np.where(df['GEMME Score'] >= g_cutoff,'gain_of_function',
-                np.where(df['GEMME Score'] <= -g_cutoff,'loss_of_function',
-                'Neutral')))
+        df['GEMME predicted consequence'] = np.where(
+        df['GEMME Score'].isna(), None,
+        np.where(df['GEMME Score'] <= g_cutoff, 'Damaging', 'Neutral')
+    )
     except:
         log.warning(f'- no GEMME found in MAVISp csv.')
 
     # Convert Demask delta fitness into absolute value
-    df['DeMaSk'] = np.where(df['DeMaSk delta fitness'].isna(), None,
-                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
-                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
+    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk delta fitness'].isna(), None,
+                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'GoF',
+                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'LoF',
                 'Neutral')))
-
-    # Only keep Demask consequence for those mutations that satisfy the Demask threshold
-    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk'].isna(), None,
-            np.where(df['DeMaSk'] != 'Damaging', 'Neutral', df['DeMaSk predicted consequence']))
 
     # Drop score columns
     if 'GEMME Score' in df.columns:
@@ -379,10 +376,41 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     stability_cols = [col for col in df.columns if 'stability' in col.lower() and 'experimental data classification' not in col.lower()]
     efold_col = [col for col in df.columns if 'efoldmine' in col.lower()]
     other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower() and 'efoldmine' not in col.lower()]
-    experimental_cols = list(set([col for col in df.columns if 'Experimental data classification' in col]))
+    experimental_cols = []
+    for col in df.columns:
+        if 'Experimental data classification' in col and col not in experimental_cols:
+            experimental_cols.append(col)
 
     # Combine lists in order
     df = df[stability_cols + efold_col + functional_cols + other_cols + experimental_cols]
+
+    # Reorder rows so VEP classifiers appear at the top of the plot (Alpha, EVE, GEMME, REVEL),
+    # followed by DeMaSk and Experimental rows, while keeping the remaining blocks unchanged.
+    preferred_vep_order = [
+        'AlphaMissense classification',
+        'EVE classification (25% Uncertain)',
+        'GEMME predicted consequence',
+        'REVEL'
+    ]
+    demask_pred_col = 'DeMaSk predicted consequence'
+    experimental_present = [col for col in experimental_cols if col in df.columns]
+
+    remaining_cols = [
+        col for col in df.columns
+        if col not in preferred_vep_order
+        and col != demask_pred_col
+        and col not in experimental_present
+    ]
+
+    ordered_cols = remaining_cols + experimental_present
+    if demask_pred_col in df.columns:
+        ordered_cols.append(demask_pred_col)
+
+    for col in reversed(preferred_vep_order):
+        if col in df.columns:
+            ordered_cols.append(col)
+
+    df = df[ordered_cols]
 
     # Define a dictionary of effect: code_number
     # Damaging : 1, 5, 6
@@ -406,7 +434,11 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
                    '(?i)uncertain': 4,
                    'ambiguous': 4,
                    'loss_of_function' : 7,
+                   '(?i)loss[ _]?of[ _]?function' : 7,
+                   '(?i)LoF' : 7,
                    'gain_of_function' : 8,
+                   '(?i)gain[ _]?of[ _]?function' : 8,
+                   '(?i)GoF' : 8,
                     True : 9,
                     False : 2}
 
@@ -424,15 +456,8 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     last_columns = []
     if 'DeMaSk' in df.columns:
         last_columns.append('DeMaSk')
-    if 'DeMaSk predicted consequence' in df.columns:
-        last_columns.append('DeMaSk predicted consequence')
-    if 'GEMME predicted consequence' in df.columns:
-        last_columns.append('GEMME predicted consequence')
 
-    # Filter out the last columns from the main columns list
     columns_to_keep = [col for col in df.columns if col not in last_columns]
-
-    # Append the last columns to the final list
     df = df[columns_to_keep + last_columns]
 
     # Keep only mutations associated to user-defined positions
@@ -480,20 +505,6 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
         # Filter dataframe according to the user-defined mutations
         df = df[df.index.isin(mutations[0])]
-
-    # If the flag is not selected drop REVEL
-    if not plot_Revel:
-        df.drop(columns=['REVEL'],
-                inplace=True)
-
-    # If the flag is not selected drop Demask consequence
-    if not plot_Demask:
-        df.drop(columns=['DeMaSk predicted consequence'],
-                    inplace=True)
-
-    # If the flag is selected drop DeMaSk fitness for plotting
-    if plot_Demask:
-        df = df.drop(columns=['DeMaSk'])
 
     # Initialize indexes for additive filtering
     source_idx = pd.Index([])
@@ -572,7 +583,19 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
             log.warning("No mutations remain after filtering. Exiting...")
             raise TypeError("No mutations remain after filtering. Exiting...")
 
-    return df, full_df, clinvar_mapped_df
+    # Create plotting dataframe and drop columns only used for visualization
+    plot_df = df.copy()
+
+    if not plot_Revel and 'REVEL' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['REVEL'])
+
+    if not plot_Demask and 'DeMaSk predicted consequence' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['DeMaSk predicted consequence'])
+
+    if plot_Demask and 'DeMaSk' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['DeMaSk'])
+
+    return plot_df, df, full_df, clinvar_mapped_df
 
 def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
     ''' Plot
@@ -694,8 +717,8 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                     'lightgray': 'Uncertain',
                     'white': 'Not_available',
                     '#9BB295': 'Early Folding Region',
-                    '#8E5466' : 'Loss of Function',
-                    '#636D87' : 'Gain of Function'}
+                    '#8E5466' : 'LoF',
+                    '#636D87' : 'GoF'}
 
         legend_list = [Line2D([0], [0],
                         color='w',
@@ -735,14 +758,13 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
             fake = Line2D([], [], color="none")
             labels = ["ClinVar classification:"] + list(xtick_legend_dict.values())
             handles = [fake] + xtick_legend_list
-
             second_legend = ax2.legend(handles=handles,
-            labels=labels,
-            loc='lower right',
-            bbox_to_anchor=(1, -0.4),
-            ncol=6,
-            fancybox=True,
-            shadow=True)
+                                       labels=labels,
+                                       loc='lower right',
+                                       bbox_to_anchor=(1, -0.4),
+                                       ncol=6,
+                                       fancybox=True,
+                                       shadow=True)
 
         # Save plot as png and pdf
         fig.tight_layout()
@@ -1499,7 +1521,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     except KeyError:
         out += '\nClinvar grouped classification not available.\n'
 
-    return out, alpha_d_df
+    return out, full_data_d
 
 def remove_duplicate_mutations(dictionary):
     ''' Remove duplucate mutations in mutations with
@@ -1698,7 +1720,7 @@ def map_clinvar_categories(dataframe, clinvar_dict):
     return dataframe
 
 
-def filter_am_summary(am_summary, df, amx_flag):
+def filter_vep_summary(summary, df, vep_filter, glof_filter):
     """Filter the AlphafoldMissense summary dataframe
 
     This function filters the input dataframe to keep only columns of interest
@@ -1706,12 +1728,15 @@ def filter_am_summary(am_summary, df, amx_flag):
 
     Parameters
     ----------
-    am_summary : dataframe
-        dataframe for alphamissense summary
+    summary : dataframe
+        summary data frame
     df : dataframe
         full data frame
-    amx_flag: bool
-        denotes whether to filter df on G/D thresholds
+    vep_filter: str
+        which VEP to use for filtering for pathogenic variants. "none" implies no filter
+    glof_filter: bool
+        whether to filter for cases that have DeMaSk LoF/GoF assignment
+
     Returns
     -------
     dataframe : dataframe
@@ -1728,21 +1753,34 @@ def filter_am_summary(am_summary, df, amx_flag):
               ('Mutation' in x and 'Mutation sources' not in x)
 
     # Filter the columns to keep only classification info
-    filter_columns = [col for col in am_summary.columns if f(col)]
+    filter_columns = [col for col in summary.columns if f(col)]
 
     # Create a new df with the selected columns
-    filtered_am = am_summary[filter_columns]
+    filtered_am = summary[filter_columns]
 
     # Filter output according to previously applied args
     filtered_am = filtered_am[filtered_am.index.isin(df.index)]
 
-    if amx_flag:
-        # Filter for LOF/GOF in at least one Gemme/Demask
-        filtered_index = df[
-        (df['DeMaSk predicted consequence'].isin([7, 8]) if 'DeMaSk predicted consequence' in df.columns else False) |
-        (df['GEMME predicted consequence'].isin([7, 8]) if 'GEMME predicted consequence' in df.columns else False)].index
-        filtered_am = filtered_am[filtered_am.index.isin(filtered_index)]
+    if vep_filter == 'alphamissense':
+        filtered_index_vep = df[df['AlphaMissense classification'] == 1].index
+    elif vep_filter == 'gemme':
+        filtered_index_vep = df[df['GEMME predicted consequence'] == 1].index
+    elif vep_filter == 'revel':
+        filtered_index_vep = df[df['REVEL'] == 1].index
+    elif vep_filter == 'eve':
+        filtered_index_vep = df[df['EVE classification (25% Uncertain)'] == 1].index
+    elif vep_filter == 'none':
+        filtered_index_vep = df.index
 
+    if glof_filter:
+        filtered_index_glof = df[df['DeMaSk predicted consequence'].isin([7, 8])].index
+    else:
+        filtered_index_glof = df.index
+
+    filtered_index = list(set(filtered_index_vep).intersection(set(filtered_index_glof)))
+
+    filtered_am = filtered_am[filtered_am.index.isin(filtered_index)]
+    
     # Add new column with identified broad effects
     filtered_am = effect_summary(filtered_am)
 
@@ -1817,7 +1855,7 @@ def main():
 	                    type = float,
                         help = D_helpstr)
 
-    G_default = 3.0
+    G_default = -3.0
     G_helpstr = f"Threshold to classify a mutation according to the " \
                 f"GEMME  score. (Default = {G_default})"
     parser.add_argument("-G","--gemme_threshold",
@@ -1849,7 +1887,7 @@ def main():
                         action = 'store_true',
                         help = pltR_helpstr)
 
-    pltD_helpstr = f"Plotting of Demask LOF/GOF if" \
+    pltD_helpstr = f"Plotting of Demask LoF/GoF if" \
                     f" mutation is above demask threshold. " \
                     f"(Default = None)"
     parser.add_argument("-pltD", "--plot_Demask",
@@ -1891,15 +1929,29 @@ def main():
                                    "cbioportal"],
                         help = pltS_helpstr)
 
-    AMx_helpstr =   f"Include AM pathogenic mutations that " \
-                    f"also satisfy at least one of either GEMME " \
-                    f"or DeMaSk thresholds for " \
-                    f"LOF/GOF, default or specificied using respective " \
-                    f"flags. "
-    parser.add_argument("-amx", "--AMx",
+    AMx_helpstr = "Restrict mechanisitc indicators output to pathogenic variants. Choose the VEP to use" \
+                  "to detect pathogenic variants between none, alphamissense, revel, gemme, eve. If this option" \
+                  "is used without argument it will default to alphamissense"
+    parser.add_argument("-vep", "--vep-filter",
+                        choices=["none", "alphamissense", "revel", "gemme", "eve"],
+                        nargs="?",
+                        const="alphamissense",
+                        default="none",
+                        help = AMx_helpstr,
+                        dest='AMx')
+    
+    lgof_helpstr = "Restrict mechanisitc indicators output to variants that are classified as LoF or GoF for DeMaSk"
+    parser.add_argument("-lgof", "--vep-filter-lgof",
                         action = 'store_true',
-                        help = AMx_helpstr)
-    argcomplete.autocomplete(parser)
+                        help = lgof_helpstr,
+                        dest='adf',
+                        default=False)
+                        
+    # Enable shell autocompletion when available (safe guard)
+    try:
+        argcomplete.autocomplete(parser)
+    except Exception:
+        pass
     args = parser.parse_args()
 
     # Assert the user didn't provide both -r and -m options
@@ -1953,7 +2005,7 @@ def main():
 
 
     try:
-        df, dataframe, clinvar_mapped_df =  process_input(full_df = full_df,
+        plot_df, classification_df, dataframe, clinvar_mapped_df =  process_input(full_df = full_df,
                                                           r_cutoff = args.revel_threshold,
                                                           d_cutoff = args.demask_threshold,
                                                           g_cutoff= args.gemme_threshold,
@@ -1972,21 +2024,18 @@ def main():
         print(f"ERROR: {str(e)}")
         exit(1)
 
-
-
-
     ############################### SUMMARY ###############################
 
     # Write summary output file
     with open('log.txt', 'w') as out:
-        summary, am_summary = generate_summary(data = dataframe,
-                                d_cutoff = args.demask_threshold,
-                                r_cutoff= args.revel_threshold)
+        summary, summary_df = generate_summary(data = dataframe,
+                                               d_cutoff = args.demask_threshold,
+                                               r_cutoff= args.revel_threshold)
         out.write(summary)
 
     ################################# PLOT #################################
     '''
-    filter_col = [col for col in df if col.startswith("Local Int.")]
+    filter_col = [col for col in plot_df if col.startswith("Local Int.")]
     try:
         func_sites = df[['Functional sites (cofactor)', 'Functional sites (active site)']]
         tmp_df = df.drop(columns=['Functional sites (cofactor)', 'Functional sites (active site)'])
@@ -1999,7 +2048,7 @@ def main():
     '''
 
     # Plot dot plot
-    figures = plot(df = df,
+    figures = plot(df = plot_df,
                    full_df = clinvar_mapped_df,
                    width = args.figsize[0],
                    height = args.figsize[1],
@@ -2015,9 +2064,9 @@ def main():
                 figure.savefig(f'{args.output}_{i}.png', dpi=300)
 
 ################################# AM CSV #################################
-    filtered_am = filter_am_summary(am_summary, df, args.AMx)
+    filtered_am = filter_vep_summary(summary_df, classification_df, args.AMx, args.adf)
 
-    filtered_am.to_csv('alphamissense_out.csv', index=True)
+    filtered_am.to_csv('mechanistic_indicators_out.csv', index=True)
 
 if __name__ == '__main__':
     main()

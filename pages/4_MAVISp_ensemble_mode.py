@@ -276,9 +276,9 @@ with lolliplots:
     st.write(f"""Select one or more mutations below, up to 50, to be included
     in the plot. These are only those mutations that are at the same time
     i) classified as pathogenic for AlphaMissense, ii) classified as loss
-    of function or gain of function for either GEMME or DeMaSk and
-    iii) damaging for the respective module in MAVISp. They are
-    {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
+    of fitness or gain of fitness for DeMaSk and iii) damaging for the respective
+    module in MAVISp. They are {this_dataset_table_lolliplot.shape[0]} in
+    this dataset.""")
 
     mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
 
