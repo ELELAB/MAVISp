@@ -48,6 +48,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           LocalInteractionsDNA,
                           LocalInteractionsHomodimer,
                           FunctionalSites,
+                          DisulfideBridges,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
@@ -58,7 +59,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
-    'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
+    'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
                           'allosigma_distance_cutoff', 'allosigma_distance_mode', 
@@ -204,6 +205,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleLocalInteractionsHomodimer,
                           EnsembleFunctionalDynamics,
                           FunctionalSites,
+                          DisulfideBridges,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
@@ -214,7 +216,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
-    'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
+    'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
