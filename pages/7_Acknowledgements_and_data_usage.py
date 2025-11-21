@@ -133,7 +133,7 @@ st.subheader('Prediction of the effect of mutations')
 
 st.markdown('''MAVISp uses the following software for the prediction of the effect of mutations:
 
-  - [**AlloSigma**](http://allosigma.bii.a-star.edu.sg/home/), a webserver for the prediction of allosteric effects.
+  - [**AlloSigMA 2**](http://allosigma.bii.a-star.edu.sg/home/), a webserver for the prediction of allosteric effects.
   - [**PyInteraph**](https://www.github.com/ELELAV/pyinteraph2), a sfotware for the definition and analysis of
     protein structure networks
   - [**FoldX**](http://foldxsuite.crg.eu/), a software suite for the prediction of changes of protein stability upon mutation. FoldX was licensed to us according to the Academic license terms.
