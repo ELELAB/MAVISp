@@ -329,12 +329,24 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          ("Stability (RaSP, alphafold, kcal/mol)",
          "change of folding free energy upon mutation calculated using RaSP",
          "value (kcal/mol)"),
+         ("Stability (Foldetta from FoldX and Rosetta, alphafold, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and Rosetta",
+         "value (kcal/mol)"),
+         ("Stability (Mean of FoldX and RaSP, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and RaSP",
+         "value (kcal/mol)"),
          ("Stability classification, alphafold, (Rosetta, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
          "see below"),
          ("Stability classification, alphafold, (RaSP, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
-         "see below") ]
+         "see below"),
+         ("Stability classification (Foldetta from Rosetta and FoldX)",
+         "Stability classification using Foldetta",
+         "see below"),
+         ("Stability classification (Mean of FoldX and RaSP)",
+         "Stability classification using the mean of FoldX and RaSP",
+         "see below"), ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
