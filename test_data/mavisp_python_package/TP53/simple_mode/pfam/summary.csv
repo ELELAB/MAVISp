@@ -1,0 +1,5 @@
+start;end;pfam_domain;accession
+6;30;P53 transactivation motif;PF08563
+35;59;Transactivation domain 2;PF18521
+100;288;P53 DNA-binding domain;PF00870
+319;357;P53 tetramerisation motif;PF07710

@@ -23,7 +23,7 @@ from fsspec.implementations.zip   import ZipFileSystem
 from pathlib import Path
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
-from dot_plot import generate_summary, filter_am_summary
+from dot_plot import generate_summary, filter_vep_summary
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
 
@@ -78,6 +78,53 @@ def add_mavisp_logo(png_file, *args, **kwargs):
         logo_markup,
         unsafe_allow_html=True,
     )
+
+@st.cache_data
+def get_database_dir(dir_var_name='MAVISP_DATABASE_PATH', default_dir_name='.'):
+    dir_name = os.getenv(dir_var_name)
+
+    if dir_name is None:
+        dir_name = default_dir_name
+
+    return dir_name
+
+@st.cache_data
+def get_database_name(db_var_name='MAVISP_DATABASE_NAME', default_db_name='database'):
+    db_name = os.getenv(db_var_name)
+
+    if db_name is None:
+        db_name = default_db_name
+
+    return db_name
+
+@st.cache_data
+def find_database_files(dir):
+
+    dfs = []
+
+    current_db_name = str(Path(dir) / Path(get_database_name()))
+
+    files = map(str, list(Path(dir).glob('*.zip')))
+
+    for f in files:
+        zfs = ZipFileSystem(f)
+        try:
+            with zfs.open('dataset_info.csv') as fh:
+                df = pd.read_csv(fh)
+                df ['File name'] = f
+        except KeyError:
+            continue
+
+        print(f, current_db_name)
+        if f == current_db_name:
+            df['Date of run'] = f"{df.loc[0, 'Date of run']} (current)"
+
+        dfs.append(df)
+
+    if len(dfs) > 0:
+        return pd.concat(dfs)
+    else:
+        return None
 
 @st.cache_data
 def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
@@ -146,7 +193,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+    plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
                                                             d_cutoff=demask_co,
                                                             r_cutoff=revel_co,
                                                             g_cutoff=gemme_co,
@@ -162,7 +209,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
+    my_plots = do_dotplots(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
 
     return my_plots
 
@@ -172,7 +219,7 @@ def process_df_for_lolliplot(df):
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+    plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
                                                             r_cutoff=0.5,
                                                             d_cutoff=0.25,
                                                             g_cutoff=3.0,
@@ -187,7 +234,7 @@ def process_df_for_lolliplot(df):
 
     text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
 
-    filtered_summary_df = filter_am_summary(summary_df, processed_df, True)
+    filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
 
     return process_input_for_lolliplot(filtered_summary_df)
 
@@ -202,7 +249,6 @@ def get_compact_dataset(this_dataset_table):
     return this_dataset_table[default_cols + selected_cols + ['References']]
 
 def replace_boolean_col(df, col, dictionary={True : 'Yes', False : 'No'}):
-
     df[col] = df[col].astype(str)
 
     for k,v in dictionary.items():

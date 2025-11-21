@@ -48,6 +48,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           LocalInteractionsDNA,
                           LocalInteractionsHomodimer,
                           FunctionalSites,
+                          DisulfideBridges,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
@@ -58,14 +59,14 @@ class MAVISpSimpleMode(MAVISpMode):
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
-    'denovo_phospho', 'long_range', 'functional_sites', 'clinvar', 'alphafold',
+    'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
                           'allosigma_distance_cutoff', 'allosigma_distance_mode', 
-                          'structure_source', 'structure_description', 'linker_design', 'pdb_id']
+                          'structure_source', 'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
                   'allosigma_distance_cutoff', 'allosigma_distance_mode', 'structure_source',
-                  'structure_description', 'linker_design', 'pdb_id']
+                  'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_col_labels = {'system': "Protein",
                         'uniprot_ac': 'Uniprot AC',
                         'refseq_id': "RefSeq ID",
@@ -77,7 +78,8 @@ class MAVISpSimpleMode(MAVISpMode):
                         'structure_source': 'Structure source',
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
-                        'pdb_id': 'PDB ID'}
+                        'pdb_id': 'PDB ID',
+                        'cofactors_in_structure' : 'Cofactors in starting structure'}
     
     structure_sources = {
         "AFDB": "AlphaFold database",
@@ -87,6 +89,8 @@ class MAVISpSimpleMode(MAVISpMode):
         "Mod": "Homology model (PDB template, reconstruction)"}
 
     allosigma_modes = { "CA-CA", "atomic_contacts"}
+
+    supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
@@ -131,7 +135,6 @@ class MAVISpSimpleMode(MAVISpMode):
         else:
             out_metadata['allosigma_distance_mode'] = ''
 
-
         if 'gitbook_entry' in metadata.keys():
             out_metadata['gitbook_entry'] = metadata['gitbook_entry']
         else:
@@ -172,6 +175,19 @@ class MAVISpSimpleMode(MAVISpMode):
 
             out_metadata["pdb_id"] = pdb_id
 
+        if 'cofactors_in_structure' in metadata.keys():
+            cofactors = metadata['cofactors_in_structure']
+            if cofactors is None:
+                cofactors = []
+            if not isinstance(cofactors, list):
+                cofactors = [ cofactors ]
+            if not set(cofactors).issubset(self.supported_cofactors):
+                mavisp_criticals.append(MAVISpCriticalError(f"only these cofactors are allowed for cofactors_in_structure: {', '.join(list(self.supported_cofactors))}"))
+            else:
+                out_metadata['cofactors_in_structure'] = ', '.join(list(cofactors))
+        else:
+            out_metadata['cofactors_in_structure'] = ''
+
         return out_metadata, mavisp_criticals
 
 class MAVISpEnsembleMode(MAVISpMode):
@@ -189,6 +205,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           EnsembleLocalInteractionsHomodimer,
                           EnsembleFunctionalDynamics,
                           FunctionalSites,
+                          DisulfideBridges,
                           ClinVar,
                           AlphaFoldMetadata,
                           DeMaSk,
@@ -199,17 +216,17 @@ class MAVISpEnsembleMode(MAVISpMode):
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
-    'functional_dynamics', 'functional_sites', 'clinvar', 'alphafold', 'demask',
+    'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
-    'structure_description', 'linker_design', 'pdb_id']
+    'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
     'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
-    'structure_description', 'linker_design', 'pdb_id']
+    'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
                         'refseq_id' : "RefSeq ID",
@@ -227,13 +244,18 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'structure_source': 'Structure source',
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
-                        'pdb_id': 'PDB ID'}
+                        'pdb_id' : 'PDB ID',
+                        'cofactors_in_structure': 'Cofactors in starting structures'}
     structure_sources = {
         "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
         "AF2": "AlphaFold2 standalone",
         "PDB": "Experimental PDB structure",
         "Mod": "Homology model (PDB template, reconstruction)"}
+
+    supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+"}
+
+    ensemble_names = {"md", "cabsflex", "bioemu", "nmr", "metad"}
 
     def parse_metadata(self, data_dir, system):
 
@@ -332,6 +354,29 @@ class MAVISpEnsembleMode(MAVISpMode):
                     pdb_id = None
 
             out_metadata["pdb_id"] = pdb_id
+        
+        if 'cofactors_in_structure' in metadata.keys():
+            cofactors = metadata['cofactors_in_structure']
+            out_string = []
+            if cofactors is None:
+                cofactors = {}
+            if not isinstance(cofactors, dict):
+                mavisp_criticals.append(MAVISpCriticalError(f"cofactors_in_structure must be a dictionary, with ensemble names as keys and either a single cofactor or a list of cofactors as value"))
+            else:
+                for k in cofactors:
+                    if cofactors[k] is None:
+                        cofactors[k] = []
+                    if not isinstance(cofactors[k], list):
+                        cofactors[k] = [ cofactors[k] ]
+                    if k not in self.ensemble_names:
+                        mavisp_criticals.append(MAVISpCriticalError(f"only these ensembles are allowed for cofactors_in_structure: {', '.join(list(self.ensemble_names))}"))
+                    elif not set(cofactors[k]).issubset(self.supported_cofactors):
+                        mavisp_criticals.append(MAVISpCriticalError(f"only these cofactors are allowed for cofactors_in_structure: {', '.join(list(self.supported_cofactors))}"))
+                    else:
+                        out_string.append(f"{k}: {', '.join(list(cofactors[k]))}")
+                out_metadata['cofactors_in_structure'] = '; '.join(out_string)
+        else:
+            out_metadata['cofactors_in_structure'] = ''
 
         return out_metadata, mavisp_criticals
 
