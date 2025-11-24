@@ -1942,9 +1942,9 @@ class AllosigmaPSNLongRange(MavispModule):
 
     exp_files = ['allosigma_mut.txt']
 
-    datasets = {'results_sub_cat.txt'  : 'AlloSigma2-PSN classification - active sites',
-                'results_cofactor.txt' : 'AlloSigma2-PSN classification - cofactor sites',
-                'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
+    datasets = {'results_sub_cat.txt'  : 'AlloSigMA2-PSN classification - active sites',
+                'results_cofactor.txt' : 'AlloSigMA2-PSN classification - cofactor sites',
+                'results_summary.txt'  : 'AlloSigMA2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
         allosigma_mode = row['allosigma-mode']
