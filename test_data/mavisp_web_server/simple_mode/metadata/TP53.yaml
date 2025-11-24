@@ -10,6 +10,7 @@ sas: null
 ptms: null
 long_range: null
 functional_sites: null
+disulfide_bridges: null
 clinvar: null
 alphafold: null
 demask: null
