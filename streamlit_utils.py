@@ -18,10 +18,12 @@ import streamlit as st
 import base64
 import os
 import pandas as pd
-from st_aggrid import JsCode
+from fsspec.implementations.dirfs import DirFileSystem
+from fsspec.implementations.zip   import ZipFileSystem
+from pathlib import Path
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
-from dot_plot import generate_summary, filter_am_summary
+from dot_plot import generate_summary, filter_vep_summary
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
 
@@ -78,11 +80,80 @@ def add_mavisp_logo(png_file, *args, **kwargs):
     )
 
 @st.cache_data
-def get_database_dir(var_name='MAVISP_DATABASE', default_dir='./database'):
-    dir_name = os.getenv(var_name)
+def get_database_dir(dir_var_name='MAVISP_DATABASE_PATH', default_dir_name='.'):
+    dir_name = os.getenv(dir_var_name)
+
     if dir_name is None:
-        return default_dir
+        dir_name = default_dir_name
+
     return dir_name
+
+@st.cache_data
+def get_database_name(db_var_name='MAVISP_DATABASE_NAME', default_db_name='database'):
+    db_name = os.getenv(db_var_name)
+
+    if db_name is None:
+        db_name = default_db_name
+
+    return db_name
+
+@st.cache_data
+def find_database_files(dir):
+
+    dfs = []
+
+    current_db_name = str(Path(dir) / Path(get_database_name()))
+
+    files = map(str, list(Path(dir).glob('*.zip')))
+
+    for f in files:
+        zfs = ZipFileSystem(f)
+        try:
+            with zfs.open('dataset_info.csv') as fh:
+                df = pd.read_csv(fh)
+                df ['File name'] = f
+        except KeyError:
+            continue
+
+        print(f, current_db_name)
+        if f == current_db_name:
+            df['Date of run'] = f"{df.loc[0, 'Date of run']} (current)"
+
+        dfs.append(df)
+
+    if len(dfs) > 0:
+        return pd.concat(dfs)
+    else:
+        return None
+
+@st.cache_data
+def get_database_filesystem(dir_var_name='MAVISP_DATABASE_PATH',
+                            db_var_name='MAVISP_DATABASE_NAME',
+                            default_dir_name='.',
+                            default_db_name='database'):
+    
+    dir_name = os.getenv(dir_var_name)
+    db_name = os.getenv(db_var_name)
+
+    if dir_name is None:
+        dir_name = default_dir_name
+
+    if db_name is None:
+        db_name = default_db_name
+
+    db_path = Path(dir_name) / Path(db_name)
+
+    if not db_path.exists():
+        raise FileNotFoundError(f"provided database path {db_path} does not exist")
+
+    if db_path.is_file() and db_path.suffix == ".zip":
+        fs = ZipFileSystem(db_path)
+    elif db_path.is_dir():
+        fs = DirFileSystem(db_path)
+    else:
+        raise TypeError(f"database must be either a directory or a zip file with .zip extensions. Current database is: {db_path}")
+
+    return fs
 
 def add_affiliation_logo():
     columns = st.sidebar.columns(2)
@@ -94,30 +165,77 @@ def add_affiliation_logo():
         st.write("""<div style="width:100%;text-align:center;"><a href="https://www.dtu.dk" style="float:center"><img src="app/static/dtu_logo.png" width="60px"></img></a></div>""", unsafe_allow_html=True)
 
 @st.cache_data
-def load_dataset(data_dir, protein, mode):
-    return pd.read_csv(os.path.join(data_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv'))
+def load_dataset(_data_fs, protein, mode):
+    with _data_fs.open(os.path.join(mode, 'dataset_tables', f'{protein}-{mode}.csv')) as fh:
+        return pd.read_csv(fh)
+
 
 @st.cache_data
-def load_main_table(data_dir, mode):
-    return pd.read_csv(os.path.join(data_dir, mode, 'index.csv')).sort_values('Protein')
+def load_main_table(_data_fs, mode):
+    with _data_fs.open(os.path.join(mode, 'index.csv')) as fh:
+        return pd.read_csv(fh).sort_values('Protein')
+
+@st.cache_data
+def load_clinvar_dict(tsv_file):
+    clinvar_dict = pd.read_csv(tsv_file,
+                                sep='\t',
+                                header=None,
+                                names=['clinvar', 'internal_category'])
+    return clinvar_dict.set_index('clinvar')['internal_category'].to_dict()
 
 @st.cache_data
 def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
+
     df = df.copy()
-    processed_df, processed_df2 = process_input_for_dotplot(df, d_cutoff=demask_co, r_cutoff=revel_co, g_cutoff=gemme_co)
+
+    if 'ClinVar Interpretation' not in df.columns:
+        df['ClinVar Interpretation'] = None
+
+    clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
+
+    plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                            d_cutoff=demask_co,
+                                                            r_cutoff=revel_co,
+                                                            g_cutoff=gemme_co,
+                                                            residues=None,
+                                                            mutations=None,
+                                                            clinvar_dict=clinvar_dict,
+                                                            plot_Revel=True,
+                                                            plot_Demask=True,
+                                                            plot_Source=None,
+                                                            plot_Clinvar=None,
+                                                            color_Clinvar=True)
 
     if not do_revel:
         processed_df = processed_df.drop(columns=['REVEL'])
 
-    my_plots = do_dotplots(processed_df, processed_df2, fig_width, fig_height, n_muts, False, None)
-    return my_plots
+    my_plots = do_dotplots(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
 
+    return my_plots
 
 @st.cache_data
 def process_df_for_lolliplot(df):
-    _, processed_df = process_input_for_dotplot(df, d_cutoff=0.3, r_cutoff=0.5, g_cutoff=0.3)
-    text, summary_df = generate_summary(processed_df, d_cutoff=0.3, r_cutoff=0.5)
-    filtered_summary_df = filter_am_summary(summary_df, processed_df)
+    df = df.copy()
+
+    clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
+
+    plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                            r_cutoff=0.5,
+                                                            d_cutoff=0.25,
+                                                            g_cutoff=3.0,
+                                                            residues=None,
+                                                            mutations=None,
+                                                            clinvar_dict=clinvar_dict,
+                                                            plot_Revel=False,
+                                                            plot_Demask=True,
+                                                            plot_Source=None,
+                                                            plot_Clinvar=None,
+                                                            color_Clinvar=False)
+
+    text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
+
+    filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
+
     return process_input_for_lolliplot(filtered_summary_df)
 
 @st.cache_data
@@ -130,91 +248,10 @@ def get_compact_dataset(this_dataset_table):
     selected_cols = [c for c in this_dataset_table.columns if "classification" in c ]
     return this_dataset_table[default_cols + selected_cols + ['References']]
 
-# JavaScript column renderers, to dynamically add web links
+def replace_boolean_col(df, col, dictionary={True : 'Yes', False : 'No'}):
+    df[col] = df[col].astype(str)
 
-cell_renderers = {}
-
-cell_renderers['GitBook report'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">report</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}
-''')
-
-cell_renderers['OSF repository for ensemble data'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="${params.value}">OSF</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}
-''')
-
-cell_renderers['Mutation sources'] = JsCode('''
-class SourceCellRenderer {
-  init(params) {
-    this.eGui = document.createElement('span');
-    // Split the string into an array using comma as separator
-    var array = params.value.split(',');
-
-    // Loop through array and create a link for each item
-    for (var i = 0; i < array.length; i++) {
-        var item = array[i].trim();
-        var link = "";
-
-        // Check the item and assign the corresponding link
-        if (item === "COSMIC") {
-            link = "https://cancer.sanger.ac.uk/cosmic";
-        } else if (item === "cBioPortal") {
-            link = "https://www.cbioportal.org";
-        } else if (item === "clinvar") {
-            item = "ClinVar";
-            link = "https://www.ncbi.nlm.nih.gov/clinvar/";
-        }
-
-        // If a link is assigned, create the anchor tag
-        if (link !== "") {
-            array[i] = `<a target="_parent" href=${link}>${item}</a>`;
-        } else {
-            array[i] = item;
-        }
-    }
-
-    this.eGui.innerHTML = array.join(', ');
-
-  }
-  getGui() {
-    return this.eGui;
-  }
-}''')
-
-cell_renderers['PTMs'] = JsCode('''
-class PTMCellRenderer {
-    init(params) {
-        this.eGui = document.createElement('span');
-        if (params.value == null) {
-            this.eGui.innerHTML = '';
-        } else {
-            this.eGui.innerHTML = `<a target="_parent" href="http://www.phosphosite.org/uniprotAccAction?id=${params.data.UniProtAC}">${params.value}</a>`;
-        }
-    }
-  getGui() {
-    return this.eGui;
-  }
-}''')
+    for k,v in dictionary.items():
+        k, v = str(k), str(v)
+        df[col] = df[col].replace(to_replace=k, value=v)
+    return df

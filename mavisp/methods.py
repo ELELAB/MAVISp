@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np
 from mavisp.error import *
 import os
+import re
 
 class Method(object):
     name = "name"
@@ -424,6 +425,8 @@ class AlloSigma(Method):
 
     directions = ['up', 'down']
 
+    mutation_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
 
         if pd.isna(row['allosigma-mode']):
@@ -454,10 +457,24 @@ class AlloSigma(Method):
 
         filt = pd.read_csv(fname, sep='\t', index_col=0)
 
+        # process dataframe
         filt = filt.reset_index()
         filt['mutations'] = filt['mutations'].str.split()
         filt = filt.explode('mutations')
         filt = filt.set_index('mutations')
+
+        # remove columns not be considered, if present
+        for c in ['n_mutations', 'avg_dG', 'index']:
+            if c in filt.columns:
+                filt = filt.drop(columns=c)
+
+        # raise error if columns don't match the residue format
+        forbidden_cols = []
+        for c in filt.columns:
+            if not re.fullmatch(self.mutation_re, c):
+                forbidden_cols.append(c)
+        if len(forbidden_cols) > 0:
+            raise KeyError(f"column names {', '.join(forbidden_cols)} are not in the expected residue format")
 
         return filt
 

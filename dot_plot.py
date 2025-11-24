@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2023 Ludovica Beltrame, Simone Scrima, Karolina Krzesińska
-# <beltrameludo@gmail.com> <simonescrima@gmail.com> <kzokr@dtu.dk>
+# Copyright (C) 2023 Ludovica Beltrame <beltrameludo@gmail.com>,
+# Simone Scrima <simonescrima@gmail.com>, Karolina Krzesińska <kzokr@dtu.dk>,
+# Matteo Tiberti
 # Danish Cancer Society & Technical University of Denmark
 
 # This program is free software: you can redistribute it and/or modify
@@ -156,10 +157,11 @@ def color_yticklabels(labels):
     # an effect on stability, function or other
     stability = ['Stability classification',
                  'PTM effect in stability',
-                 'Functional sites (cofactor)',
-                 'Functional sites (active site)',
                  'EFoldMine - part of early folding region']
+
     function = ['Local Int.',
+                'Functional sites (cofactor)',
+                'Functional sites (active site)',
                 'PTM',
                 'AlloSigma2']
 
@@ -259,7 +261,8 @@ def convert_to_float(value):
     else:
         return value
 
-def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
+def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
+    clinvar_dict, plot_Revel, plot_Demask, plot_Source, plot_Clinvar, color_Clinvar):
     ''' Read MAVISp aggregated table.
 
     The function takes as input a MAVISp csv file and returns
@@ -267,23 +270,51 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
 
     Parameters
     ----------
-    data: dataframe
+    full_df: dataframe
 	   input MAVISp dataframe
     r_cutoff: float
         REVEL score cutoff
+    d_cutoff: float
+        DeMaSk cutoff
+    g_cutoff: float
+        GEMME cutoff
+    residues: list or None
+        list of residues to be considered
+    mutations: list or None
+        list of mutations to be considered
+    clinvar_dict: pandas.DataFrame
+        dataframe containing the ClinVar dictionary
+    plot_Revel: bool
+        whether to keep Revel results
+    plot_Demask: bool
+        whether to keep DeMaSk results
+    plot_Source: list
+        list of sources to be included (if any)
+    plot_Clinvar: list
+        list of ClinVar
+    color_Clinvar: bool
+        whether to color output for ClinVar
+
     Returns
     ----------
+    plot_df: dataframe
+        copy of the processed dataframe trimmed according to plotting flags.
     df: dataframe
-        output dataframe in which the classification is
-        converted to number to facilitate the plotting.
+        processed dataframe retaining all classification columns for downstream filters.
     full_df: dataframe
               mavisp csv without altered columns
 
     '''
+
+    # Assert the required column is present
+    if (plot_Clinvar or color_Clinvar) and 'ClinVar Interpretation' not in full_df.columns:
+        log.error("ClinVar Interpretation column is missing from the input data.")
+        raise TypeError("ClinVar Interpretation column is missing from the input data.")
+
     f = lambda x: '(Rosetta, FoldX)' in x or \
                     '(RaSP, FoldX)' in x or \
                     'Local Int. classification' in x or \
-                    x == 'Local Int. With DNA' or \
+                    'Local Int. With DNA classification' in x or \
                     'Functional sites (cofactor)' in x or \
                     'Functional sites (active site)' in x or \
                     'AlloSigma2 predicted consequence - active sites' in x or \
@@ -319,35 +350,67 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
 
     try:
         # Convert GEMME score into absolute value
-        df['GEMME predicted consequence'] = np.where(df['GEMME Score'].isna(), None,
-                np.where(df['GEMME Score'] >= g_cutoff,'gain_of_function',
-                np.where(df['GEMME Score'] <= -g_cutoff,'loss_of_function',
-                'Neutral')))
+        df['GEMME predicted consequence'] = np.where(
+        df['GEMME Score'].isna(), None,
+        np.where(df['GEMME Score'] <= g_cutoff, 'Damaging', 'Neutral')
+    )
     except:
         log.warning(f'- no GEMME found in MAVISp csv.')
 
     # Convert Demask delta fitness into absolute value
-    df['DeMaSk'] = np.where(df['DeMaSk delta fitness'].isna(), None,
-                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'Damaging',
-                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'Damaging',
+    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk delta fitness'].isna(), None,
+                np.where(df['DeMaSk delta fitness'] >= d_cutoff,'GoF',
+                np.where(df['DeMaSk delta fitness'] <= -d_cutoff,'LoF',
                 'Neutral')))
 
-    # Only keep Demask consequence for those mutations that satisfy the Demask threshold
-    df['DeMaSk predicted consequence'] = np.where(df['DeMaSk'].isna(), None,
-            np.where(df['DeMaSk'] != 'Damaging', 'Neutral', df['DeMaSk predicted consequence']))
-
     # Drop score columns
-    df.drop(columns = ['REVEL score','DeMaSk delta fitness', 'GEMME Score'],
+    if 'GEMME Score' in df.columns:
+        df.drop(columns = ['REVEL score','DeMaSk delta fitness', 'GEMME Score'],
+            inplace = True)
+    else:
+        df.drop(columns = ['REVEL score','DeMaSk delta fitness'],
             inplace = True)
 
     # Sort columns based on broad effect categories
     functional_cols = [col for col in df.columns if 'functional' in col.lower() and 'experimental data classification' not in col.lower()]
     stability_cols = [col for col in df.columns if 'stability' in col.lower() and 'experimental data classification' not in col.lower()]
-    other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower()]
-    experimental_cols = list(set([col for col in df.columns if 'Experimental data classification' in col]))
+    efold_col = [col for col in df.columns if 'efoldmine' in col.lower()]
+    other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower() and 'efoldmine' not in col.lower()]
+    experimental_cols = []
+    for col in df.columns:
+        if 'Experimental data classification' in col and col not in experimental_cols:
+            experimental_cols.append(col)
 
     # Combine lists in order
-    df = df[functional_cols + stability_cols + other_cols + experimental_cols]
+    df = df[stability_cols + efold_col + functional_cols + other_cols + experimental_cols]
+
+    # Reorder rows so VEP classifiers appear at the top of the plot (Alpha, EVE, GEMME, REVEL),
+    # followed by DeMaSk and Experimental rows, while keeping the remaining blocks unchanged.
+    preferred_vep_order = [
+        'AlphaMissense classification',
+        'EVE classification (25% Uncertain)',
+        'GEMME predicted consequence',
+        'REVEL'
+    ]
+    demask_pred_col = 'DeMaSk predicted consequence'
+    experimental_present = [col for col in experimental_cols if col in df.columns]
+
+    remaining_cols = [
+        col for col in df.columns
+        if col not in preferred_vep_order
+        and col != demask_pred_col
+        and col not in experimental_present
+    ]
+
+    ordered_cols = remaining_cols + experimental_present
+    if demask_pred_col in df.columns:
+        ordered_cols.append(demask_pred_col)
+
+    for col in reversed(preferred_vep_order):
+        if col in df.columns:
+            ordered_cols.append(col)
+
+    df = df[ordered_cols]
 
     # Define a dictionary of effect: code_number
     # Damaging : 1, 5, 6
@@ -371,7 +434,11 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
                    '(?i)uncertain': 4,
                    'ambiguous': 4,
                    'loss_of_function' : 7,
+                   '(?i)loss[ _]?of[ _]?function' : 7,
+                   '(?i)LoF' : 7,
                    'gain_of_function' : 8,
+                   '(?i)gain[ _]?of[ _]?function' : 8,
+                   '(?i)GoF' : 8,
                     True : 9,
                     False : 2}
 
@@ -389,18 +456,146 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff):
     last_columns = []
     if 'DeMaSk' in df.columns:
         last_columns.append('DeMaSk')
-    if 'DeMaSk predicted consequence' in df.columns:
-        last_columns.append('DeMaSk predicted consequence')
-    if 'GEMME predicted consequence' in df.columns:
-        last_columns.append('GEMME predicted consequence')
 
-    # Filter out the last columns from the main columns list
     columns_to_keep = [col for col in df.columns if col not in last_columns]
-
-    # Append the last columns to the final list
     df = df[columns_to_keep + last_columns]
 
-    return df, full_df
+    # Keep only mutations associated to user-defined positions
+    if residues:
+
+        # Extract and store in a temporary 'pos' column the
+        # positions associated to the mutations
+        df['pos'] = df.index.astype(str).str[1:-1]
+        log.info(f'Using residues: {residues[0]}')
+
+        # Raise warning if position not in dataframe
+        found_residues = False
+        for r in residues[0]:
+            if r not in df['pos'].to_list():
+                log.warning(f'{r} not found in table. Continuing...')
+            else:
+                found_residues = True
+
+        if not found_residues:
+            log.error('ERROR: none of the residues specified with --residues was foundin the input dataframe')
+            raise TypeError('ERROR: none of the residues specified with --residues was foundin the input dataframe')
+
+        # Filter dataframe according to the user-defined residues
+        df = df[df['pos'].isin(residues[0])]
+
+        # Remove temporary 'pos' column
+        df.drop(columns= ['pos'],
+                inplace=True)
+
+    # Keep only user-defined mutations
+    if mutations:
+
+        # Raise warning if mutation not in dataframe
+        found_mutations = False
+        for m in mutations[0]:
+            if m not in df.index.to_list():
+                log.warning(f'{m} not found in table. Continuing...')
+            else:
+                found_mutations = True
+
+
+        if not found_mutations:
+            log.error('ERROR: none of the mutations specified with --mutations was found in the input dataframe')
+            raise TypeError('ERROR: none of the mutations specified with --mutations was found in the input dataframe')
+
+        # Filter dataframe according to the user-defined mutations
+        df = df[df.index.isin(mutations[0])]
+
+    # Initialize indexes for additive filtering
+    source_idx = pd.Index([])
+    clinvar_idx = pd.Index([])
+
+    if plot_Source:
+        # Accommodate multiple user options
+        pattern = '|'.join(plot_Source)
+
+        # Filter df based on desired mutation source
+        source_idx = full_df[full_df['Mutation sources'].str.contains(pattern, case=False, na=False)].index
+
+        # Raise error if filtering leaves df empty
+        if source_idx.empty:
+            log.warning(f"No mutations found matching the mutation source: {plot_Source}. Exiting...")
+            raise TypeError(f"No mutations found matching the mutation source: {plot_Source}.")
+
+        log.info(f"Found {len(source_idx)} mutations matching the source filter: {plot_Source}")
+
+    # Define an empty df if flags -pltC/-colC are not used
+    clinvar_mapped_df = None
+
+    # Assert the required column is present
+    if plot_Clinvar or color_Clinvar:
+
+        # Filter df according to poss. previous arguments
+        clinvar_mapped_df = full_df.loc[full_df.index.isin(df.index)]
+        # Map dictionary to df
+        clinvar_mapped_df = map_clinvar_categories(clinvar_mapped_df, clinvar_dict)
+
+    # Keep only user-defined mutations according to ClinVar annotation
+    if plot_Clinvar:
+        # Define a mapping of user-input to categories
+        filter_terms = {
+            'benign': ['benign'],
+            'likely_benign' : ['likely benign'],
+            'pathogenic': ['pathogenic'],
+            'likely_pathogenic': ['likely pathogenic'],
+            'uncertain': ['uncertain'],
+            'conflicting': ['conflicting']}
+
+        # Filter dataframe according to flag option
+        if 'all' in plot_Clinvar:
+            clinvar_idx = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].notna()].index
+        else:
+            # Accommodate multiple user options
+            for clinvar_option in plot_Clinvar:
+                if clinvar_option in filter_terms:
+                    category_values = filter_terms[clinvar_option]
+                    # Match categories
+                    pattern = '|'.join(category_values)
+                    #  Get indexes of mutations matching current ClinVar category
+                    indexes_to_add = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].str.contains(pattern, case=False, na=False)].index
+                    clinvar_idx = clinvar_idx.union(indexes_to_add)
+                else:
+                    log.warning(f"Unrecognized ClinVar filter option: {clinvar_option}")
+                    raise TypeError(f"Unrecognized ClinVar filter option: {clinvar_option}")
+
+        # Raise error if filtering leaves df empty
+        if len(clinvar_idx) == 0:
+            log.warning(f"No mutations found matching the ClinVar filter {plot_Clinvar}. Exiting...")
+            raise TypeError(f"No mutations found matching the ClinVar filter {plot_Clinvar}.")
+
+        log.info(f"Found {len(clinvar_idx)} mutations matching the ClinVar filter {plot_Clinvar}")
+
+
+    # Additively filter if -pltS -pltC
+    if plot_Source or plot_Clinvar:
+        #Save individual pngs
+        combined_indexes = source_idx.union(clinvar_idx)
+        df = df[df.index.isin(combined_indexes)]
+
+        log.info(f"Found {len(df)} mutations matching filters.")
+        # Raise error if filtering leaves df empty
+        if df.empty:
+            log.warning("No mutations remain after filtering. Exiting...")
+            raise TypeError("No mutations remain after filtering. Exiting...")
+
+    # Create plotting dataframe and drop columns only used for visualization
+    plot_df = df.copy()
+
+    if not plot_Revel and 'REVEL' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['REVEL'])
+
+    if not plot_Demask and 'DeMaSk predicted consequence' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['DeMaSk predicted consequence'])
+
+    if plot_Demask and 'DeMaSk' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['DeMaSk'])
+
+    return plot_df, df, full_df, clinvar_mapped_df
 
 def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
     ''' Plot
@@ -522,8 +717,8 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                     'lightgray': 'Uncertain',
                     'white': 'Not_available',
                     '#9BB295': 'Early Folding Region',
-                    '#8E5466' : 'Loss of Function',
-                    '#636D87' : 'Gain of Function'}
+                    '#8E5466' : 'LoF',
+                    '#636D87' : 'GoF'}
 
         legend_list = [Line2D([0], [0],
                         color='w',
@@ -532,7 +727,6 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                         markerfacecolor=k,
                         label=legend_dict[k],
                         markeredgecolor='k') for k in legend_dict.keys()]
-
 
         first_legend = ax.legend(handles = legend_list,
                 loc='upper right',
@@ -547,6 +741,7 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
             ax2.get_yaxis().set_visible(False)
 
             xtick_legend_dict = {
+                    '#000000': 'Not available',
                     '#EBD479': 'Conflicting',
                     '#878E99': 'Uncertain ',
                     '#3A8752': 'Benign/Likely Benign',
@@ -560,13 +755,16 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                                 label=xtick_legend_dict[k],
                                 markeredgecolor='k') for k in xtick_legend_dict.keys()]
 
-
-            second_legend = ax2.legend(handles=xtick_legend_list,
-            loc='upper right',
-            bbox_to_anchor=(1, 1.11),
-            ncol=4,
-            fancybox=True,
-            shadow=True)
+            fake = Line2D([], [], color="none")
+            labels = ["ClinVar classification:"] + list(xtick_legend_dict.values())
+            handles = [fake] + xtick_legend_list
+            second_legend = ax2.legend(handles=handles,
+                                       labels=labels,
+                                       loc='lower right',
+                                       bbox_to_anchor=(1, -0.4),
+                                       ncol=6,
+                                       fancybox=True,
+                                       shadow=True)
 
         # Save plot as png and pdf
         fig.tight_layout()
@@ -605,11 +803,10 @@ def generate_summary(data,d_cutoff,r_cutoff):
     data = data.apply(lambda col: col.map(lambda x: str(x) if isinstance(x, bool) else x))
     data = data.apply(lambda x: x.str.lower() if x.dtype == object else x)
 
-
     # Colnames ptm and allosigma
 
     filter_col_stability = [col for col in data if '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
-    filter_col_local = [col for col in data if ('Local Int. classification') in col]
+    filter_col_local = [col for col in data if 'Local Int. classification' in col or 'Local Int. With DNA classification' in col]
     ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
     ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
     ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
@@ -653,7 +850,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         except KeyError:
             log.warning(f'None of the STABILITY modules were found in MAVISp csv')
 
-
     ### Local interactions ###
     interactors = r'\((.*?)\)' # interactor are delimited by ()
     if filter_col_local:
@@ -673,21 +869,21 @@ def generate_summary(data,d_cutoff,r_cutoff):
                 mutlist = out_list(loc_un_list)
 
                 if ensemble:
+                    if 'DNA' in col:
+                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
+                        continue
                     if inter:
                         out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA. {ensemble[0]}. {mutlist}'
                 else:
+                    if 'DNA' in col:
+                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {mutlist}'
+                        continue
                     if inter:
                         out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter}. {mutlist}'
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA. {mutlist}'
-
             except KeyError:
                 log.warning(f'{col} not found in MAVISp csv.')
     else:
         out += '- No classification for LOCAL_INTERACTION available yet.\n'
-
 
     ### PTM_stability ###
     for col in ptm_stab_clmn:
@@ -751,7 +947,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         except KeyError:
             log.warning(f'- {ptm_funct_clmn} not found in MAVISp csv.')
 
-
     ### Assess presence of PTM module ####
     # Start counter
     count_ptm_na = 0
@@ -764,7 +959,6 @@ def generate_summary(data,d_cutoff,r_cutoff):
         matches = re.findall(pattern, ptm)
         if matches:
             d[matches[0]] = 0
-
 
     for col in ptm_module:
         ensemble = re.findall(pattern, col)
@@ -933,7 +1127,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     if len(filter_col_local) > 0:
         for col in filter_col_local:
             ensemble = re.findall(pattern, col)
-            inter = re.findall(interactors, col) # search for interactors
+            inter = re.findall(interactors, col)
 
             # Calculate number of damaging mutations
             loc_d = str(len(data[data[col].isin(d_s)]))
@@ -945,15 +1139,17 @@ def generate_summary(data,d_cutoff,r_cutoff):
             # Print list of mutations only if the are less than 10
             mutlist = out_list(loc_d_list)
             if ensemble:
+                if 'DNA' in col:
+                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
+                    continue
                 if inter:
                     out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA. {ensemble[0]}. {mutlist}'
             else:
+                if 'DNA' in col:
+                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {mutlist}'
+                    continue
                 if inter:
                     out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter}. {mutlist}'
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA. {mutlist}'
     else:
         all_local = []
         out += '- No classification for LOCAL_INTERACTION available yet.\n'
@@ -1325,7 +1521,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     except KeyError:
         out += '\nClinvar grouped classification not available.\n'
 
-    return out, alpha_d_df
+    return out, full_data_d
 
 def remove_duplicate_mutations(dictionary):
     ''' Remove duplucate mutations in mutations with
@@ -1465,7 +1661,7 @@ def effect_summary(df):
         # For each effect cattegory check if effect found
         # i.e. value is 1
         for category, pattern in effect_categories.items():
-            if row.filter(regex=pattern).max() == 1:
+            if pd.to_numeric(row.filter(regex=pattern), errors="coerce").max() == 1:
                 effects.append(category)
         effects_summary.at[idx] = ', '.join(effects)
 
@@ -1524,8 +1720,7 @@ def map_clinvar_categories(dataframe, clinvar_dict):
     return dataframe
 
 
-
-def filter_am_summary(am_summary, df):
+def filter_vep_summary(summary, df, vep_filter, glof_filter):
     """Filter the AlphafoldMissense summary dataframe
 
     This function filters the input dataframe to keep only columns of interest
@@ -1533,10 +1728,14 @@ def filter_am_summary(am_summary, df):
 
     Parameters
     ----------
-    am_summary : dataframe
-        dataframe for alphamissense summary
+    summary : dataframe
+        summary data frame
     df : dataframe
         full data frame
+    vep_filter: str
+        which VEP to use for filtering for pathogenic variants. "none" implies no filter
+    glof_filter: bool
+        whether to filter for cases that have DeMaSk LoF/GoF assignment
 
     Returns
     -------
@@ -1544,9 +1743,9 @@ def filter_am_summary(am_summary, df):
         filtered dataframe for alphamissense summary
     """
 
-
     f = lambda x: 'Stability classification' in x or \
               'Local Int. classification' in x or \
+              'Local Int. With DNA classification' in x or \
               'AlloSigma2 predicted consequence' in x or \
               'AlloSigma2-PSN classification' in x or \
               'PTM effect' in x or \
@@ -1554,14 +1753,34 @@ def filter_am_summary(am_summary, df):
               ('Mutation' in x and 'Mutation sources' not in x)
 
     # Filter the columns to keep only classification info
-    filter_columns = [col for col in am_summary.columns if f(col)]
+    filter_columns = [col for col in summary.columns if f(col)]
 
     # Create a new df with the selected columns
-    filtered_am = am_summary[filter_columns]
+    filtered_am = summary[filter_columns]
 
     # Filter output according to previously applied args
     filtered_am = filtered_am[filtered_am.index.isin(df.index)]
 
+    if vep_filter == 'alphamissense':
+        filtered_index_vep = df[df['AlphaMissense classification'] == 1].index
+    elif vep_filter == 'gemme':
+        filtered_index_vep = df[df['GEMME predicted consequence'] == 1].index
+    elif vep_filter == 'revel':
+        filtered_index_vep = df[df['REVEL'] == 1].index
+    elif vep_filter == 'eve':
+        filtered_index_vep = df[df['EVE classification (25% Uncertain)'] == 1].index
+    elif vep_filter == 'none':
+        filtered_index_vep = df.index
+
+    if glof_filter:
+        filtered_index_glof = df[df['DeMaSk predicted consequence'].isin([7, 8])].index
+    else:
+        filtered_index_glof = df.index
+
+    filtered_index = list(set(filtered_index_vep).intersection(set(filtered_index_glof)))
+
+    filtered_am = filtered_am[filtered_am.index.isin(filtered_index)]
+    
     # Add new column with identified broad effects
     filtered_am = effect_summary(filtered_am)
 
@@ -1590,6 +1809,14 @@ def main():
                         type = str,
                         help = i_helpstr,
                         required = True)
+
+    v_helpstr = "Input: MAVISp ClinVar dictionary file. Only required if options -pltC or -colC are used."
+    parser.add_argument("-v", "--clinvar-dictionary",
+                        dest = "clinvar_dict",
+                        action = "store",
+                        type = str,
+                        help = v_helpstr,
+                        default = "dictionary.csv")
 
     o_default = 'dot_plot'
     o_helpstr = f"Output filename. Default = {o_default}"
@@ -1628,7 +1855,7 @@ def main():
 	                    type = float,
                         help = D_helpstr)
 
-    G_default = 3.0
+    G_default = -3.0
     G_helpstr = f"Threshold to classify a mutation according to the " \
                 f"GEMME  score. (Default = {G_default})"
     parser.add_argument("-G","--gemme_threshold",
@@ -1660,7 +1887,7 @@ def main():
                         action = 'store_true',
                         help = pltR_helpstr)
 
-    pltD_helpstr = f"Plotting of Demask LOF/GOF if" \
+    pltD_helpstr = f"Plotting of Demask LoF/GoF if" \
                     f" mutation is above demask threshold. " \
                     f"(Default = None)"
     parser.add_argument("-pltD", "--plot_Demask",
@@ -1691,24 +1918,41 @@ def main():
                         action = 'store_true',
                         help = colC_helpstr)
 
-    argcomplete.autocomplete(parser)
+    pltS_helpstr =  f"Plotting of mutations based on source " \
+                    f"choose from: saturation, cosmic, cbioportal. " \
+                    f"For combinations, provide space separated options " \
+                    f"(e.g. saturation cosmic). Default = all."
+    parser.add_argument("-pltS", "--plot_Source",
+                        nargs = "+",
+                        choices = ["saturation",
+                                   "cosmic",
+                                   "cbioportal"],
+                        help = pltS_helpstr)
+
+    AMx_helpstr = "Restrict mechanisitc indicators output to pathogenic variants. Choose the VEP to use" \
+                  "to detect pathogenic variants between none, alphamissense, revel, gemme, eve. If this option" \
+                  "is used without argument it will default to alphamissense"
+    parser.add_argument("-vep", "--vep-filter",
+                        choices=["none", "alphamissense", "revel", "gemme", "eve"],
+                        nargs="?",
+                        const="alphamissense",
+                        default="none",
+                        help = AMx_helpstr,
+                        dest='AMx')
+    
+    lgof_helpstr = "Restrict mechanisitc indicators output to variants that are classified as LoF or GoF for DeMaSk"
+    parser.add_argument("-lgof", "--vep-filter-lgof",
+                        action = 'store_true',
+                        help = lgof_helpstr,
+                        dest='adf',
+                        default=False)
+                        
+    # Enable shell autocompletion when available (safe guard)
+    try:
+        argcomplete.autocomplete(parser)
+    except Exception:
+        pass
     args = parser.parse_args()
-
-    ################################# INPUT #################################
-
-    # Read input
-
-    full_df = pd.read_csv(args.input, index_col = 'Mutation')
-
-    df , dataframe =  process_input(full_df = full_df,
-                                    r_cutoff = args.revel_threshold,
-                                    d_cutoff = args.demask_threshold,
-                                    g_cutoff= args.gemme_threshold)
-
-    # Only save individual pngs of plots if flags r/m used
-    save_png = False
-    # Define an empty df if flags -pltC/-colC are not used
-    clinvar_mapped_df = None
 
     # Assert the user didn't provide both -r and -m options
     if args.residues and args.mutations:
@@ -1716,69 +1960,22 @@ def main():
                   "positions (-r) and mutations (-m). Exiting...")
         sys.exit(1)
 
-    # Keep only mutations associated to user-defined positions
+    # If user provided custom residues,
     if args.residues:
-
         # Assert length of the argument; must be 1
         # as expecting comma-separated values
         if len(args.residues) > 1:
             log.error('Please provide comma-separated residues. Exiting...')
             sys.exit(1)
 
-        # Extract and store in a temporary 'pos' column the
-        # positions associated to the mutations
-        df['pos'] = df.index.astype(str).str[1:-1]
-        log.info(f'Using residues: {args.residues[0]}')
-
-        # Raise warning if position not in dataframe
-        for r in args.residues[0]:
-            if r not in df['pos'].to_list():
-                log.warning(f'{r} not found in table. Continuing...')
-
-        # Filter dataframe according to the user-defined residues
-        df = df[df['pos'].isin(args.residues[0])]
-
-        # Remove temporary 'pos' column
-        df.drop(columns= ['pos'],
-                inplace=True)
-
-        # Save individual pngs
-        save_png = True
-
-    # Keep only user-defined mutations
+    # If user provided custom mutations,
     if args.mutations:
-
         # Assert length of the argument; must be 1
         # as expecting comma-separated values
         if len(args.mutations) > 1:
             log.error('Please provide comma-separated mutations. Exiting...')
             sys.exit(1)
         log.info(f'Using mutations: {args.mutations[0]}')
-
-        # Raise warning if mutation not in dataframe
-        for m in args.mutations[0]:
-            if m not in df.index.to_list():
-                log.warning(f'{m} not found in table. Continuing...')
-
-        # Filter dataframe according to the user-defined mutations
-        df = df[df.index.isin(args.mutations[0])]
-
-        # Save individual pngs
-        save_png = True
-
-    # If the flag is not selected drop REVEL
-    if not args.plot_Revel:
-        df.drop(columns=['REVEL'],
-                inplace=True)
-
-    # If the flag is not selected drop Demask consequence
-    if not args.plot_Demask:
-        df.drop(columns=['DeMaSk predicted consequence'],
-                    inplace=True)
-
-    # If the flag is selected drop DeMaSk fitness for plotting
-    if args.plot_Demask:
-        df = df.drop(columns=['DeMaSk'])
 
     # Assert the user didn't provide both -pltC and -colC options
     if args.plot_Clinvar and args.color_Clinvar:
@@ -1788,91 +1985,57 @@ def main():
                   "Exiting...")
         sys.exit(1)
 
-    # Assert the required column is present
-    if args.plot_Clinvar or args.color_Clinvar:
+    save_png = bool(args.residues) or bool(args.mutations) or bool(args.plot_Source) or bool(args.plot_Clinvar)
 
-        if 'ClinVar Interpretation' not in dataframe.columns:
-            log.error("ClinVar Interpretation column is missing from the input data.")
-            sys.exit(1)
+    ################################# INPUT #################################
+
+    # Read input
+
+    full_df = pd.read_csv(args.input, index_col = 'Mutation')
+
+    if args.plot_Clinvar or args.color_Clinvar:
         try:
             # Load the ClinVar dictionary
-            clinvar_dict = load_clinvar_dict('dictionary.csv')
-            # Filter df according to poss. previous arguments
-            clinvar_mapped_df = dataframe.loc[dataframe.index.isin(df.index)]
-            # Map dictionary to df
-            clinvar_mapped_df = map_clinvar_categories(clinvar_mapped_df, clinvar_dict)
-
+            clinvar_dict = load_clinvar_dict(args.clinvar_dict)
         except FileNotFoundError as e:
             log.error(f"ClinVar dictionary file not found: {e}. Exiting...")
-            sys.exit(1)
-        except Exception as e:
-            log.error(f"Error occurred: {e}. Exiting...")
-            sys.exit(1)
+            exit(1)
+    else:
+        clinvar_dict = None
 
-    # Keep only user-defined mutations according to ClinVar annotation
-    if args.plot_Clinvar:
 
-        try:
-            # Define a mapping of user-input to categories
-            filter_terms = {
-                'benign': ['benign'],
-                'likely_benign' : ['likely benign'],
-                'pathogenic': ['pathogenic'],
-                'likely_pathogenic': ['likely pathogenic'],
-                'uncertain': ['uncertain'],
-                'conflicting': ['conflicting']}
-
-            # Initialize an empty list to collect indexes
-            filtered_indexes = pd.Index([])
-
-            # Filter dataframe according to flag option
-            if 'all' in args.plot_Clinvar:
-                filtered_indexes = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].notna()].index
-            else:
-                # Accommodate multiple user options
-                for clinvar_option in args.plot_Clinvar:
-                    if clinvar_option in filter_terms:
-                        category_values = filter_terms[clinvar_option]
-                        # Match categories
-                        pattern = '|'.join(category_values)
-                        #  Get indexes of mutations matching current ClinVar category
-                        indexes_to_add = clinvar_mapped_df[clinvar_mapped_df['ClinVar Category'].str.contains(pattern, case=False, na=False)].index
-                        filtered_indexes = filtered_indexes.union(indexes_to_add)
-                    else:
-                        log.warning(f"Unrecognized ClinVar filter option: {clinvar_option}")
-                        sys.exit(1)
-
-            # Raise error if filtering leaves df empty
-            if len(filtered_indexes) == 0:
-                log.warning(f"No mutations found matching the ClinVar filter {args.plot_Clinvar}. Exiting...")
-                sys.exit(1)
-            else:
-                # Log the number of mutations remaining after filtering
-                log.info(f"Found {len(filtered_indexes)} mutations matching the ClinVar filter {args.plot_Clinvar}")
-
-            # Keep only mutations according to user-input
-            df = df[df.index.isin(filtered_indexes)]
-
-            if df.empty:
-                log.warning("No mutations remain after ClinVar filtering. Exiting...")
-                sys.exit(1)
-
-        except Exception as e:
-            log.error(f"Error occurred: {e}. Exiting...")
-            sys.exit(1)
+    try:
+        plot_df, classification_df, dataframe, clinvar_mapped_df =  process_input(full_df = full_df,
+                                                          r_cutoff = args.revel_threshold,
+                                                          d_cutoff = args.demask_threshold,
+                                                          g_cutoff= args.gemme_threshold,
+                                                          residues = args.residues,
+                                                          mutations = args.mutations,
+                                                          clinvar_dict = clinvar_dict,
+                                                          plot_Revel = args.plot_Revel,
+                                                          plot_Demask = args.plot_Demask,
+                                                          plot_Source = args.plot_Source,
+                                                          plot_Clinvar = args.plot_Clinvar,
+                                                          color_Clinvar = args.color_Clinvar)
+    except TypeError as e:
+        print(f"ERROR: {str(e)}")
+        exit(1)
+    except FileNotFoundError as e:
+        print(f"ERROR: {str(e)}")
+        exit(1)
 
     ############################### SUMMARY ###############################
 
     # Write summary output file
     with open('log.txt', 'w') as out:
-        summary, am_summary = generate_summary(data = dataframe,
-                                d_cutoff = args.demask_threshold,
-                                r_cutoff= args.revel_threshold)
+        summary, summary_df = generate_summary(data = dataframe,
+                                               d_cutoff = args.demask_threshold,
+                                               r_cutoff= args.revel_threshold)
         out.write(summary)
 
     ################################# PLOT #################################
-
-    filter_col = [col for col in df if col.startswith("Local Int.")]
+    '''
+    filter_col = [col for col in plot_df if col.startswith("Local Int.")]
     try:
         func_sites = df[['Functional sites (cofactor)', 'Functional sites (active site)']]
         tmp_df = df.drop(columns=['Functional sites (cofactor)', 'Functional sites (active site)'])
@@ -1882,30 +2045,28 @@ def main():
         df = df[new_order]
     except:
         pass
+    '''
 
     # Plot dot plot
-    figures = plot(df = df,
+    figures = plot(df = plot_df,
                    full_df = clinvar_mapped_df,
                    width = args.figsize[0],
                    height = args.figsize[1],
                    xlim = args.x_lim,
                    clinvar_flag = bool(args.plot_Clinvar),
-                   clinvar_col = args.color_Clinvar)
+                   clinvar_col = bool(args.color_Clinvar))
 
     with PdfPages(f"{args.output}.pdf") as pdf:
-        for figure in figures:
+        for i, figure in enumerate(figures):
             figure.savefig(pdf, format='pdf', dpi=300)
 
-        if save_png:
-            figure.savefig(f'{output}_{p}.png', dpi=300)
-
-
+            if save_png:
+                figure.savefig(f'{args.output}_{i}.png', dpi=300)
 
 ################################# AM CSV #################################
+    filtered_am = filter_vep_summary(summary_df, classification_df, args.AMx, args.adf)
 
-    filtered_am = filter_am_summary(am_summary, df)
-
-    filtered_am.to_csv('alphamissense_out.csv', index=True)
+    filtered_am.to_csv('mechanistic_indicators_out.csv', index=True)
 
 if __name__ == '__main__':
     main()

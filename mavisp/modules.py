@@ -34,6 +34,7 @@ class MavispModule(object):
 
         self.data_dir = data_dir
         self.data = None
+        self.metadata = None
 
         if module_dir is not None:
             self.module_dir = module_dir
@@ -64,6 +65,9 @@ class MavispModule(object):
 
     def get_dataset_view(self):
         return self.data
+
+    def get_metadata_view(self):
+        return self.metadata
 
 class MavispMultiEnsembleModule(MavispModule):
     def __init_subclass__(cls, module_class, **kwargs):
@@ -433,7 +437,7 @@ class LocalInteractions(MultiMethodMavispModule):
         colnames = [ f"{m.type} (Binding with {ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
-            if row['sas_sc_rel'] >= 20:
+            if row['sas_sc_rel'] >= 25.0:
                 return 'Uncertain'
             return pd.NA
         if np.all( [ row[h] > stab_co for h in colnames ] ):
@@ -529,7 +533,7 @@ class LocalInteractionsDNA(MultiMethodMavispModule):
         colnames = [ f"{m.type} ({ci}, {m.complex_status}, {m.version}, {m.unit})" for k, m in self.methods.items() ]
 
         if np.any( [ pd.isna(row[h]) for h in colnames ] ):
-            if row['sas_sc_rel'] >= 20:
+            if row['sas_sc_rel'] >= 25.0:
                 return 'Uncertain'
             return pd.NA
         if np.all( [ row[h] > stab_co for h in colnames ] ):
@@ -818,7 +822,7 @@ class DenovoPhospho(MavispModule):
             for mutation in available_mutations:
                 for index, row in aggregated_df.iterrows():
                     restype_resnum_kinase = row['restype_resnum_kinase']
-                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 20:
+                    if pd.isna(row['WT']) and not pd.isna(row[mutation]) and row['sas_sc_rel'] > 25.0:
                         gain_of_function[mutation].append(restype_resnum_kinase)
                     elif not pd.isna(row['WT']) and pd.isna(row[mutation]):
                         loss_of_function[mutation].append(restype_resnum_kinase)
@@ -905,17 +909,17 @@ class PTMs(MavispModule):
                 return 'neutral'
 
             # otherwise, cases:
-                # any mutation sas < 20% or
+                # any mutation sas < 25% or
                 # any T/S to Y or
                 # any Y to T/S
                 # then return uncertain
-            elif row['sas_sc_rel'] < 20.0 or\
+            elif row['sas_sc_rel'] < 25.0 or\
             (ref in S_T and alt == 'Y') or\
             (ref == 'Y' and (alt in S_T)):
                 return 'uncertain'
 
-            # otherwise, if mutation sas >= 20% return damaging
-            elif row['sas_sc_rel'] >= 20.0:
+            # otherwise, if mutation sas >= 25% return damaging
+            elif row['sas_sc_rel'] >= 25.0:
                 return 'damaging'
 
         return '???'
@@ -999,7 +1003,7 @@ class PTMs(MavispModule):
         # otherwise if either classification is NA, if it is phospho-motif
         # and solvent exposed, return potentially_damaging
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
-            if row['site_in_slim'] and row['sas_sc_rel'] >= 20:
+            if row['site_in_slim'] and row['sas_sc_rel'] >= 25.0:
                 return 'potentially_damaging'
             else:
                 return 'uncertain'
@@ -1386,6 +1390,16 @@ class ClinVar(MavispModule):
 
         clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
 
+        if clinvar_found[['variant_id', 'interpretation']].isna().any().any():
+            this_error = f"variant_id or interpretation columns have missing values"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        if any(pd.isna(clinvar_found['condition'])):
+            warnings.append(MAVISpWarningError(f"the condition column contains missing values"))
+
+        clinvar_found = clinvar_found.drop(columns=['condition'])
+
         try:
             clinvar_found['mutations'] = clinvar_found.apply(self._get_mutation_string, axis=1)
         except TypeError as e:
@@ -1513,14 +1527,6 @@ class DeMaSk(MavispModule):
     module_dir = "demask"
     name = "demask"
 
-    def _classify(self, row):
-        if row['score'] > 0:
-            return 'gain_of_function'
-        elif row['score'] < 0:
-            return 'loss_of_function'
-        else:
-            return 'neutral'
-
     def ingest(self, mutations):
 
         warnings = []
@@ -1550,7 +1556,6 @@ class DeMaSk(MavispModule):
         demask['mutations'] = demask['WT'] + demask['pos'].astype(str) + demask['var']
         demask = demask[['mutations', 'score', 'entropy', 'log2f_var']]
         demask = demask.set_index('mutations')
-        demask['DeMaSk predicted consequence'] = demask.apply(self._classify, axis=1)
 
         self.data = demask.rename(columns = {'score'     : 'DeMaSk delta fitness',
                                              'entropy'   : 'DeMaSk Shannon entropy',
@@ -1651,17 +1656,11 @@ class GEMME(MavispModule):
         # reconstruct mutations in the usual format
         gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
 
-        # drop unnecessary columns and rename for pretty
+        # drop unnecessary columns
         gemme = gemme.drop(columns=['wt', 'res', 'mut'])
 
-        # rank-normalize
-        max_s = gemme['score'].max()
-        min_s = gemme['score'].min()
-        gemme['score_rn'] = (gemme['score'] - min_s) / (max_s - min_s)
-
         # rename for pretty
-        gemme = gemme.rename(columns={'score'    : 'GEMME Score',
-                                      'score_rn' : 'GEMME Score (rank-normalized)'})
+        gemme = gemme.rename(columns={'score'    : 'GEMME Score'})
 
         self.data = gemme.set_index('mutations')
 
@@ -1752,34 +1751,28 @@ class FunctionalSites(MavispModule):
                             'active_site_local_aggregate.txt']
     column_headers = {'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
                       'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
-    _site_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+    _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
 
     def _parse_table(self, fname):
 
         df = pd.read_csv(fname, index_col=False, header=None)
 
         if len(df.columns) != 1:
-            this_error = f"Functional Sites table {fname} must have one column (sites)"
+            this_error = f"Functional Sites table {fname} must have one column (mutations)"
             raise TypeError(this_error)
 
-        df[0] = df[0].str.strip()
+        df[0] = df[0].astype(str).str.strip()
 
-        # check if each element of the column is in the format Xn, where X is a
-        # residue type and N is an arbitrary number
-        if df[0].apply(lambda x: self._site_re.match(x) is None).any():
-            this_error = f"Functional Sites table {fname} must have sites in the format Xn, where X is a residue type and N is an arbitrary number"
+        # check if each element of the column is in the format XnY, where X/Y are residue types
+        # and n is an arbitrary number
+        if df[0].apply(lambda x: self._mut_re.match(x) is None).any():
+            this_error = (f"Functional Sites table {fname} must have mutations in the format XnY, "
+                          f"where X and Y are residue types and n is an arbitrary number")
             raise TypeError(this_error)
 
         df = df.drop_duplicates()
-        df['sites_type_table'] = df[0].str[0]
-        df['sites'] = pd.Series(df[0].str[1:].astype(int))
-        df = df.drop(columns=[0])
-
-        if df['sites'].duplicated().any():
-            this_error = f"Functional Sites table {fname} has duplicated sites with different residue types"
-            raise TypeError(this_error)
-
-        df = df.set_index('sites')
+        df = df.rename(columns={0: 'mutation'})
+        df = df.set_index('mutation')
         df['classification'] = pd.Series(index=df.index, data='damaging')
 
         return df
@@ -1793,11 +1786,9 @@ class FunctionalSites(MavispModule):
         if not set(fs_files).issubset(set(self.accepted_filenames)):
             this_error = f"the input files for Functional Sites must be named {', '.join(self.accepted_filenames)}"
             raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                                      critical=[MAVISpCriticalError(this_error)])
 
-        out_df = pd.DataFrame({'mutations' : mutations})
-        out_df['sites'] = out_df['mutations'].str[1:-1].astype(int)
-        out_df['sites_type_mut'] = out_df['mutations'].str[0]
+        out_df = pd.DataFrame({'mutations': mutations})
         out_df = out_df.set_index('mutations')
 
         for fs_file in fs_files:
@@ -1809,40 +1800,47 @@ class FunctionalSites(MavispModule):
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-            out_df = out_df.join(df, on='sites')
+                                          critical=[MAVISpCriticalError(this_error)])
 
-            if not out_df.apply(lambda r: r['sites_type_table'] == r['sites_type_mut'] if not pd.isna(r['classification']) else True, axis=1).all():
-                this_error = f"Functional Sites table {fs_file} has sites with residue type different than in mutations"
-                raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+            # join by mutation (index)
+            out_df = out_df.join(
+                df.rename(columns={'classification': self.column_headers[fs_file]}),
+                how='left'
+            )
 
-            out_df = out_df.rename(columns={'classification' : self.column_headers[fs_file]})
-            out_df = out_df.drop(columns=['sites_type_table'])
-
-        self.data = out_df.drop(columns=['sites_type_mut', 'sites']).fillna('neutral')
+        # final: only keep functional-sites columns; fill missing with neutral
+        self.data = out_df.fillna('neutral')
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
 
     module_dir = "long_range"
     name = "long_range"
     method_dir = "allosigma2_psn"
-    exp_files = ['allosigma_mut.txt', 'results_summary.txt']
+
+    exp_files = ['allosigma_mut.txt']
+
+    datasets = {'results_sub_cat.txt'  : 'AlloSigma2-PSN classification - active sites',
+                'results_cofactor.txt' : 'AlloSigma2-PSN classification - cofactor sites',
+                'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
-        res_num = row['res_num']
         allosigma_mode = row['allosigma-mode']
-        variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
 
         # Mutation not classified by Allosigma
         if not allosigma_mode in ['UP', 'DOWN']:
             return 'uncertain'
 
-        # No predicted Allosigma effects
+        if 'Variants' in ensemble_data.columns:
+            muts = row['mutations']
+            variant_sites = ensemble_data[ensemble_data['Variants'].str.contains(rf'\b{muts}\b', regex=True)]
+        else:
+            res_num = row['res_num']
+            variant_sites = ensemble_data[ensemble_data['Variant_Site'].astype(str) == res_num]
+
+        # Mutation not predicted w/ Allosigma effects
         if variant_sites.empty:
             return 'neutral'
 
@@ -1872,49 +1870,77 @@ class AllosigmaPSNLongRange(MavispModule):
         base_path = os.path.join(self.data_dir, self.module_dir, self.method_dir)
         psn_files = os.listdir(base_path)
 
-        if not set(psn_files).issubset(set(self.exp_files)):
-            this_error = (f"the input files for AlloSigma2-PSN must be named {', '.join(self.exp_files)}, "
+        if not set(self.exp_files).issubset(set(psn_files)):
+            this_error = (f"the input files for AlloSigma2-PSN must include {', '.join(self.exp_files)}, "
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        # Parsing input files + required columns
-        df_simple_data = self._read_file(
+        found_data_files = list(set(psn_files).intersection(self.datasets.keys()))
+
+        if len(found_data_files) < 1:
+            this_error = (f"the input files for AlloSigma2-PSN must include one or more of {', '.join(self.datasets.keys())}, "
+            f"found {', '.join(psn_files)}")
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        out_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+
+        # Parsing constant input file - immutable
+        simple_mode_data = self._read_file(
             file_path=os.path.join(base_path, self.exp_files[0]),
             columns=['wt_residue', 'position', 'mutated_residue', 'allosigma-mode'],
             warnings=warnings)
-        df_ensemble_data = self._read_file(
-            file_path=os.path.join(base_path, self.exp_files[1]),
-            columns=['Variant_Site', 'Total_Paths'],
-            warnings=warnings)
 
-        # Build mutations column + order columns
-        df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
-            df_simple_data['position'].astype(str) +
-            df_simple_data['mutated_residue'])
-        df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
+        for data_file in found_data_files:
 
-        #Define working copy of data
-        psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
+            # Create copy of simple mode data for processing
+            df_simple_data = simple_mode_data.copy(deep=True)
 
-        # Add residue number column
-        psn['res_num'] = psn.index.str[1:-1].astype(str)
+            # Parse ensemble mode data
+            try:
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Variants', 'Total_Paths'],
+                    warnings=warnings)
+            except MAVISpMultipleError as e:
+                # Retry with reduced columns (interim)
+                df_ensemble_data = self._read_file(
+                    file_path=os.path.join(base_path, data_file),
+                    columns=['Variant_Site', 'Total_Paths'],
+                    warnings=warnings)
 
-        # Merge allosigma data with psn
-        psn = psn.merge(df_simple_data, on='mutations', how='left')
+            # Build mutations column + order columns
+            df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+                df_simple_data['position'].astype(str) +
+                df_simple_data['mutated_residue'])
+            df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
 
-        try:
-            # Perform classification
-            psn['AlloSigma2-PSN classification'] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
-            raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-        # Drop unnecessary columns
-        psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+            # Define working copy of data
+            psn = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
-        # Add new Allosigma-PSN column to data
-        self.data = psn.set_index('mutations')
+            # Add residue number column
+            psn['res_num'] = psn.index.str[1:-1].astype(str)
+
+            # Merge allosigma data with psn
+            psn = psn.merge(df_simple_data, on='mutations', how='left')
+
+            try:
+                # Perform classification
+                psn[self.datasets[data_file]] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+            except Exception as e:
+                this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
+                raise MAVISpMultipleError(warning=warnings,
+                                                critical=[MAVISpCriticalError(this_error)])
+            # Drop unnecessary column
+            psn = psn.drop(columns=['res_num', 'allosigma-mode'])
+
+            # Set index
+            psn = psn.set_index('mutations')
+
+            out_data = out_data.join(psn)
+
+        self.data = out_data
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -1941,7 +1967,7 @@ class ExperimentalData(MavispModule):
         # create a mask for every threshold we have
         for desc, thres in thresholds.items():
             if threshold_type == 'values':
-                if isinstance(thres, numbers.Number):
+                if not isinstance(thres, list):
                     mask = series == thres
                     masks.append(mask)
                     mask_descriptions.append(desc)
@@ -1951,17 +1977,22 @@ class ExperimentalData(MavispModule):
                         masks.append(mask)
                         mask_descriptions.append(desc)
             else:
-                if len(thres) != 2 or not thres[0] < thres[1]:
-                    raise RuntimeError("When using threshold type ranges, classes need to be made of a list of two values (min, max)")
-                mask = (series >= thres[0]) & (series < thres[1])
-                masks.append(mask)
-                mask_descriptions.append(desc)
+                for t in thres:
+                    if type(t) != list or len(t) != 2:
+                        raise RuntimeError("when using threshold type ranges, classes need to be made of a list of lists, each containing two values (min, max)")
+                    if not t[0] < t[1]:
+                        raise RuntimeError("when using threshold type ranges, the first value (min) must be lower than the second value (max)")
 
+                    mask = (series >= t[0]) & (series < t[1])
+                    masks.append(mask)
+                    mask_descriptions.append(desc)
+
+        # check if any threshold overlap or do not cover the whole space
         all_masks = pd.concat(masks, axis=1)
-
-        # check if any threshold overlap
         if any(all_masks.sum(axis=1) > 1):
-            raise RuntimeError("One or more mutations belong to multiple classes; are your definitions overlapping?")
+            raise RuntimeError("one or more mutations belong to multiple classes; are your definitions overlapping?")
+        if any(all_masks.sum(axis=1) < 1):
+            raise RuntimeError("some mutations could not be classified - does your classification cover the whole range?")
 
         # generate classification
         out_series = series.copy()
@@ -1986,6 +2017,8 @@ class ExperimentalData(MavispModule):
 
         all_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
 
+        module_metadata = []
+
         for yaml_file in yaml_files:
             try:
                 with open(os.path.join(module_path, yaml_file)) as fh:
@@ -1995,6 +2028,15 @@ class ExperimentalData(MavispModule):
                 raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
+            dd_metadata = defaultdict(lambda: str(), metadata)
+            assay_metadata = {'Assay type' : dd_metadata['assay'],
+                              'Class of assay' : dd_metadata['class_of_assay'],
+                              'Reference' : dd_metadata['reference'],
+                              'Score set ID' : dd_metadata['score_set'],
+                              'Is reference peer-reviewed' : dd_metadata['peer-reviewed'],
+                              'License type' : dd_metadata['license'],
+                              'Columns in MAVISp' : []}
+
             for col in metadata['columns'].keys():
 
                 col_metadata = metadata['columns'][col]
@@ -2003,8 +2045,6 @@ class ExperimentalData(MavispModule):
                     this_error = f"Error in {yaml_file}, {col}: threshold_type can either be values or ranges"
                     raise MAVISpMultipleError(warning=warnings,
                                             critical=[MAVISpCriticalError(this_error)])
-
-
                 try:
                     data = pd.read_csv(os.path.join(module_path, col_metadata['data_file']))
                 except Exception as e:
@@ -2018,7 +2058,7 @@ class ExperimentalData(MavispModule):
                     full_data_len = data.shape[0]
                     data = data[   data[col_metadata['mutation_column']].str.contains(self.hgvsp_regexp, regex=True, na=False) ]
                     if data.shape[0] != full_data_len:
-                        warnings.append(MAVISpWarningError("rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
+                        warnings.append(MAVISpWarningError(f"{yaml_file}, {col}: rows with inconsistent HGVSp notation in mutation column were removed from the dataset"))
 
                     data['mutations'] = data[col_metadata['mutation_column']].apply(self._hgvs_to_mavisp, offset=col_metadata['offset'])
 
@@ -2031,7 +2071,14 @@ class ExperimentalData(MavispModule):
                                               critical=[MAVISpCriticalError(this_error)])
 
 
+                # check missing data
+                data_na = pd.isna(data[col])
+                if any(data_na):
+                    warnings.append(MAVISpWarningError(f"{yaml_file}, {col}: rows with missing data removed from the dataset"))
+                    data = data[~ data_na]
+
                 data = data[['mutations', col]].set_index('mutations')
+
                 try:
                     data[f"{col} classification"] = self._get_classification(data[col], col_metadata['thresholds'], col_metadata['threshold_type'])
                 except Exception as e:
@@ -2039,13 +2086,204 @@ class ExperimentalData(MavispModule):
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
-                data = data.rename(columns={col                     : f"Experimental data ({metadata['assay']}, {col_metadata['header']})",
-                                            f"{col} classification" : f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"})
+                colname = f"Experimental data ({metadata['assay']}, {col_metadata['header']})"
+                classification_colname = f"Experimental data classification ({metadata['assay']}, {col_metadata['header']})"
+                data = data.rename(columns={col : colname,
+                                            f"{col} classification" : classification_colname})
+
+                assay_metadata['Columns in MAVISp'].append({})
+                assay_metadata['Columns in MAVISp'][-1]['Data column'] = colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification column'] = classification_colname
+                assay_metadata['Columns in MAVISp'][-1]['Classification strategy'] = col_metadata['thresholds']
 
                 all_data = all_data.join(data)
 
+            module_metadata.append(assay_metadata)
+
+        self.metadata = module_metadata
+
         self.data = all_data
 
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class Pfam(MavispModule):
+
+    module_dir = "pfam"
+    name = "pfam"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        pfam_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(pfam_file) != 1:
+            this_error = f"multiple or no files found in {pfam_file}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        pfam_file = pfam_file[0]
+
+        log.info(f"parsing pfam file {pfam_file}")
+
+        try:
+            pfam = pd.read_csv(os.path.join(self.data_dir, self.module_dir, pfam_file),
+                               sep=';',
+                               dtype={'start': int, 'end': int, 'pfam_domain': str, 'accession': str})
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['start', 'end', 'pfam_domain', 'accession']).issubset(set(pfam.columns)):
+            this_error = f"The input file doesn't have the columns expected for a Pfam output file"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Dictionary of muts + res_numbers
+        mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
+
+        # Map res_numbers to PFAM domains
+        pfam_annotations = {}
+        for mutation, resn in mutation_residues.items():
+            matching_domains = pfam[(pfam['start'] <= resn) & (pfam['end'] >= resn)]
+            pfam_annotations[mutation] = ", ".join(
+                f"{row['pfam_domain']} ({row['accession']})" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
+
+        # Add new column to data
+        self.data = pd.DataFrame.from_dict(pfam_annotations, orient='index', columns=['Pfam domain classification'])
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class TED(MavispModule):
+
+    module_dir = "ted"
+    name = "ted"
+
+    def ingest(self, mutations):
+        warnings = []
+
+        ted_file = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(ted_file) != 1:
+            this_error = f"multiple or no files found in {ted}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ted_file = ted_file[0]
+
+        log.info(f"parsing ted file {ted_file}")
+
+        try:
+            ted = pd.read_csv(os.path.join(self.data_dir, self.module_dir, ted_file),
+                               sep=',', 
+                               dtype={'TED_id': str, 'TED_boundaries': str, 'CATH_label': str})
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        if not set(['TED_id','TED_boundaries','CATH_label']).issubset(set(ted.columns)):
+            this_error = f"The input file doesn't have the columns expected for a TED output file"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Split TED_boundaries into start and end residues
+        multi_boundaries = []
+        for _, row in ted.iterrows():
+            boundaries = str(row['TED_boundaries']).split('_')
+            for b in boundaries:
+                try:
+                    start, end = map(int, b.split('-'))
+                    multi_boundaries.append({
+                        'TED_id': row['TED_id'],
+                        'CATH_label': row['CATH_label'],
+                        'start': start,
+                        'end': end})
+                except Exception as e:
+                    this_error = (f"Could not parse boundary '{b}' in TED_id {row['TED_id']}: {e}")
+                    raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ted_expanded = pd.DataFrame(multi_boundaries)
+        # Dictionary of muts + res_numbers
+        mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
+
+        # Map res_numbers to TED domains
+        ted_annotations = {}
+        for mutation, resn in mutation_residues.items():
+            matching = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
+            if matching.empty:
+                continue
+            else:
+                labels = matching['CATH_label'].dropna().astype(str)
+                labels = labels[labels.str.strip() != ""]
+                if labels.empty:
+                    continue  
+                ted_annotations[mutation] = " | ".join(labels)
+
+        # Add new column to data
+        self.data = pd.DataFrame.from_dict(ted_annotations, orient='index', columns=['TED-CATH domain classification'])
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class DisulfideBridges(MavispModule):
+
+    module_dir = "disulfide_bridges"
+    name = "disulfide_bridges"
+
+    required_files = set(['mutlist_disulfide_disruptions.tsv',
+                          'denovo_summary.csv'])
+
+    def ingest(self, mutations):
+
+        out_df = pd.DataFrame({'mutation' : mutations}).set_index('mutation')
+
+        warnings = []
+
+        ss_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        
+        if not set(self.required_files).issubset(set(ss_files)):
+            this_error = f"the following files are required: {', '.join(self.required_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        
+        try:
+            df_dis = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'mutlist_disulfide_disruptions.tsv'),
+                               sep='\t')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the mutlist_disulfide_disruptions.tsv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            df_denovo = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'denovo_summary.csv'))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the denovo_summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        df_dis['mutation'] = df_dis.wt + df_dis.pos.astype(str) + df_dis.mut
+        df_dis = df_dis.set_index('mutation')
+        df_dis['Loss of disulfide bridge'] = 'damaging'
+        df_dis = df_dis[['Loss of disulfide bridge']]
+
+        df_denovo['mutation'] = df_denovo.wt + df_denovo.pos.astype(str) + df_denovo.mut
+        df_denovo = df_denovo.set_index('mutation')
+        df_denovo = df_denovo[['classification']].replace({'de_novo_disulfide' : 'damaging'})
+        df_denovo = df_denovo.rename(columns={'classification' : 'Predicted de-novo disulfide bridge'})
+        out_df.join(df_denovo)
+
+        out_df = out_df.join(df_dis)
+        out_df = out_df.join(df_denovo)
+
+        out_df = out_df.fillna('neutral')
+
+        self.data = out_df
+    
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
