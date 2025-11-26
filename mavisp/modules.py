@@ -269,13 +269,12 @@ class Stability(MultiMethodMavispModule):
             if fx_meta["unit"] != r_meta["unit"]:
                 raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
             unit = fx_meta["unit"]
-            foldxrasp_mean = f'Stability (Mean of FoldX and RaSP, {unit})'
+            foldxrasp_mean = f'Stability (Foldetta from FoldX and RaSP, {unit})'
             model_data[foldxrasp_mean] = model_data[[foldx_header, rasp_header]].mean(axis=1)
             model_data.loc[~both_valid, foldxrasp_mean] = pd.NA
             if not both_valid.all():
                 warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
             # Add classification column for FoldX-RaSP mean
-            model_data[f"Stability classification (Mean of FoldX and RaSP, {unit})"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
         else:
             warnings.append(MAVISpWarningError("Mean of FoldX and RaSP could not be calculated because FoldX or RaSP column is missing."))
 
@@ -420,12 +419,15 @@ class SimpleStability(Stability):
                 rasp_header = None
 
             # Add mean of FoldX and Rosetta (Foldetta)
+            foldetta_mean = None
             if foldx_header in model_data.columns and rosetta_header in model_data.columns:
                 both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
                 fx_meta = column_meta[foldx_header]
                 r_meta = column_meta[rosetta_header]
                 # Check for structure and unit mismatches
-                if fx_meta["structure"] != r_meta["structure"] or fx_meta["unit"] != r_meta["unit"]:
+                if fx_meta["structure"] != r_meta["structure"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between structure used by FoldX and Rosetta: {fx_meta} vs {r_meta}")])
+                if fx_meta["unit"] != r_meta["unit"]:
                     raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and Rosetta: {fx_meta} vs {r_meta}")])
                 structure = fx_meta["structure"]
                 unit = fx_meta["unit"]
@@ -445,11 +447,13 @@ class SimpleStability(Stability):
                 fx_meta = column_meta[foldx_header]
                 r_meta = column_meta[rasp_header]
                 # Check for structure and unit mismatches
-                if fx_meta["structure"] != r_meta["structure"] or fx_meta["unit"] != r_meta["unit"]:
+                if fx_meta["structure"] != r_meta["structure"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between structures used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
+                if fx_meta["unit"] != r_meta["unit"]:
                     raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
                 structure = fx_meta["structure"]
                 unit = fx_meta["unit"]
-                foldxrasp_mean = f'Stability (Mean of FoldX and RaSP, {structure}, {unit})'
+                foldxrasp_mean = f'Stability (Foldetta from FoldX and RaSP, {structure}, {unit})'
                 model_data[foldxrasp_mean] = model_data[[foldx_header, rasp_header]].mean(axis=1)
                 model_data.loc[~both_valid, foldxrasp_mean] = pd.NA
                 if not both_valid.all():
