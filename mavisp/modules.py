@@ -241,6 +241,7 @@ class Stability(MultiMethodMavispModule):
             rasp_header = None
 
         # Add mean of FoldX and Rosetta (Foldetta)
+        foldetta_mean = None
         if foldx_header in model_data.columns and rosetta_header in model_data.columns:
             both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
             fx_meta = column_meta[foldx_header]
@@ -255,11 +256,11 @@ class Stability(MultiMethodMavispModule):
             if not both_valid.all():
                 warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
             # Add classification column for Foldetta
-            model_data[f"Stability classification (Foldetta from FoldX and Rosetta, {unit})"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
         else:
             warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
 
         # Add mean of FoldX and RaSP
+        foldxrasp_mean = None
         if foldx_header in model_data.columns and rasp_header in model_data.columns:
             both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
             fx_meta = column_meta[foldx_header]
@@ -288,6 +289,12 @@ class Stability(MultiMethodMavispModule):
             model_data[f'Stability classification, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
         else:
             warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+        if foldetta_mean is not None:
+            model_data[f"Stability classification (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
+
+        if foldxrasp_mean is not None:
+            model_data[f"Stability classification (Foldetta from FoldX and RaSP)"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
 
         self.data = self.data.join(model_data)
         if model_data_stds is not None:
@@ -428,11 +435,11 @@ class SimpleStability(Stability):
                 if not both_valid.all():
                     warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
                 # Add classification column for Foldetta
-                model_data[f"Stability classification (Foldetta from FoldX and Rosetta, {structure}, {unit})"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
             else:
                 warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
 
             # Add mean of FoldX and RaSP
+            foldxrasp_mean = None
             if foldx_header in model_data.columns and rasp_header in model_data.columns:
                 both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
                 fx_meta = column_meta[foldx_header]
@@ -448,7 +455,6 @@ class SimpleStability(Stability):
                 if not both_valid.all():
                     warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
                 # Add classification column for FoldX-RaSP mean
-                model_data[f"Stability classification (Mean of FoldX and RaSP, {structure}, {unit})"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
             else:
                 warnings.append(MAVISpWarningError("Mean of FoldX and RaSP could not be calculated because FoldX or RaSP column is missing."))
 
@@ -462,6 +468,12 @@ class SimpleStability(Stability):
                 model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
             else:
                 warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+            if foldetta_mean is not None:
+                model_data[f"Stability classification, {method}, (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
+
+            if foldxrasp_mean is not None:
+                model_data[f"Stability classification, {method}, (Foldetta from FoldX and RaSP)"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
 
             self.data = self.data.join(model_data)
 
