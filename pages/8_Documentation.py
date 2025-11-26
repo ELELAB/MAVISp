@@ -316,7 +316,12 @@ st.subheader("Stability")
 st.write("""The Stability module predicts changes of folding free energy upon mutation, i.e. how the stability
 of the protein changes respect to the reference protein sequence (the wild-type). In this module,
 we use both FoldX and Rosetta or RAsP to calculate changes of free energy of folding associated
-with the mutation and build a consensus from their results.
+with the mutation and build a consensus from their results. Additionally, Foldetta, a mean of
+FoldX and Rosetta changes of folding free energy, as well as a mean of FoldX and RaSP changes 
+of folding free energy, are calculated and used for stability classification. 
+For Foldetta, see Gerasimavicius, L., Livesey, B. J., & Marsh, J. A. (2023).
+Correspondence between functional scores from deep mutational scans and predicted effects
+on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro.4688
 
 A MAVISp dataset will typically have one or more columns named:""")
 
@@ -329,12 +334,24 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          ("Stability (RaSP, alphafold, kcal/mol)",
          "change of folding free energy upon mutation calculated using RaSP",
          "value (kcal/mol)"),
+         ("Stability (Foldetta from FoldX and Rosetta, alphafold, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and Rosetta",
+         "value (kcal/mol)"),
+         ("Stability (Foldetta from FoldX and RaSP, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and RaSP",
+         "value (kcal/mol)"),
          ("Stability classification, alphafold, (Rosetta, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
          "see below"),
          ("Stability classification, alphafold, (RaSP, FoldX)",
-         "Consensus classification using Rosetta and FoldX data",
-         "see below") ]
+         "Consensus classification using RaSP and FoldX data",
+         "see below"),
+         ("Stability classification (Foldetta from Rosetta and FoldX)",
+         "Stability classification using the mean of FoldX and Rosetta",
+         "see below"),
+         ("Stability classification (Foldetta from Rosetta and RaSP)",
+         "Stability classification using the mean of FoldX and RaSP",
+         "see below"), ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
@@ -359,7 +376,7 @@ st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol'
 
 st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
 classify the mutation in the same way), their consensus is the final classification for the mutation; if they do
-not agree, the final classificaiton will be Uncertain. Therefore, the final possible classification values are:""")
+not agree, the final classificaiton will be Uncertain. For Foldetta and the mean of FoldX and RaSP, no consensus method is used, the mean change of folding free energy is classified according to the above table. Therefore, the final possible classification values are:""")
 
 data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein structure'),
          ( 'Stabilizing'  , 'The mutation is stabilizing for the protein structure'),
