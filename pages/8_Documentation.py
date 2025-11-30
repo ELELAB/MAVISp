@@ -95,12 +95,12 @@ data = [
         'Possible values': 'URL link'
     },
     {
-        'Column': 'Distance cut-off used for AlloSigma2',
-        'Description': 'Distance threshold used in AlloSigma2 for filtering out mutation and response sites that are too close by',
+        'Column': 'Distance cut-off used for AlloSigMA 2',
+        'Description': 'Distance threshold used in AlloSigMA 2 for filtering out mutation and response sites that are too close by',
         'Possible values': 'number, in Å'
     },
     {
-        'Column': 'Contact calculation mode for AlloSigma2 filtering',
+        'Column': 'Contact calculation mode for AlloSigMA 2 filtering',
         'Description': 'Mode used to identify contacts between mutation and response sites',
         'Possible values': 'either "CA-CA" (Distance between Cαs) or "atomic_contacts" (minimum distance between residues)'
     },
@@ -316,7 +316,12 @@ st.subheader("Stability")
 st.write("""The Stability module predicts changes of folding free energy upon mutation, i.e. how the stability
 of the protein changes respect to the reference protein sequence (the wild-type). In this module,
 we use both FoldX and Rosetta or RAsP to calculate changes of free energy of folding associated
-with the mutation and build a consensus from their results.
+with the mutation and build a consensus from their results. Additionally, Foldetta, a mean of
+FoldX and Rosetta changes of folding free energy, as well as a mean of FoldX and RaSP changes 
+of folding free energy, are calculated and used for stability classification. 
+For Foldetta, see Gerasimavicius, L., Livesey, B. J., & Marsh, J. A. (2023).
+Correspondence between functional scores from deep mutational scans and predicted effects
+on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro.4688
 
 A MAVISp dataset will typically have one or more columns named:""")
 
@@ -329,12 +334,24 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          ("Stability (RaSP, alphafold, kcal/mol)",
          "change of folding free energy upon mutation calculated using RaSP",
          "value (kcal/mol)"),
+         ("Stability (Foldetta from FoldX and Rosetta, alphafold, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and Rosetta",
+         "value (kcal/mol)"),
+         ("Stability (Foldetta from FoldX and RaSP, kcal/mol)",
+         "mean of change of folding free energies calculated by FoldX and RaSP",
+         "value (kcal/mol)"),
          ("Stability classification, alphafold, (Rosetta, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
          "see below"),
          ("Stability classification, alphafold, (RaSP, FoldX)",
-         "Consensus classification using Rosetta and FoldX data",
-         "see below") ]
+         "Consensus classification using RaSP and FoldX data",
+         "see below"),
+         ("Stability classification (Foldetta from Rosetta and FoldX)",
+         "Stability classification using the mean of FoldX and Rosetta",
+         "see below"),
+         ("Stability classification (Foldetta from Rosetta and RaSP)",
+         "Stability classification using the mean of FoldX and RaSP",
+         "see below"), ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
@@ -359,7 +376,7 @@ st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol'
 
 st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
 classify the mutation in the same way), their consensus is the final classification for the mutation; if they do
-not agree, the final classificaiton will be Uncertain. Therefore, the final possible classification values are:""")
+not agree, the final classificaiton will be Uncertain. For Foldetta and the mean of FoldX and RaSP, no consensus method is used, the mean change of folding free energy is classified according to the above table. Therefore, the final possible classification values are:""")
 
 data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein structure'),
          ( 'Stabilizing'  , 'The mutation is stabilizing for the protein structure'),
@@ -545,16 +562,16 @@ st.subheader("""Long range""")
 
 st.write("""This module predicts the capability of mutations to affect other residues
 long range, through allosteric mechanisms. This module is based on the output of
-the AlloSigma2 web server. The module processes the output of the web server to
+the AlloSigMA 2 web server. The module processes the output of the web server to
 understand whether the mutations are likely to have a long range effect.
 
-Briefly, AlloSigma2 provides with an allosteric free energy value which is a measure
+Briefly, AlloSigMA 2 provides with an allosteric free energy value which is a measure
 of how much a mutation at a certain position is likely to have a long-range effect on
-any other residue of the protein (allosteric signaling map). AlloSigma2 considers two
+any other residue of the protein (allosteric signaling map). AlloSigMA 2 considers two
 possible classes of mutations: smaller to larger residues (UP mutations) or larger to
 smaller residue (DOWN mutations). In MAVISp, we use residue a size cut-off to classify our
 mutations in UP, DOWN or neither; for UP and DOWN mutations, we then identify if
-other residues in the protein are affected by the mutation by using AlloSigma2.
+other residues in the protein are affected by the mutation by using AlloSigMA 2.
 Of these, we only consider residues that are likely to have a functional meaning,
 by filtering them for their belonging to a pocket in the protein surface, identified
 using fPocket. Alternatively, we also occasionally consider residues that are in
@@ -562,10 +579,10 @@ functional sites or active sites.
 
 The dataset columns generated by this module are:""")
 
-data = [ ( "AlloSigma2 mutation type",
-           "Mutation type for Allosigma2",
+data = [ ( "AlloSigMA 2 mutation type",
+           "Mutation type for AlloSigMA 2",
            "DOWN, UP or empty"),
-         ( "AlloSigma2 predicted consequence - pockets and interfaces",
+         ( "AlloSigMA 2 predicted consequence - pockets and interfaces",
            "Classification for long range effects",
            "see below") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
@@ -580,12 +597,12 @@ data = [ ( 'destabilizing'  , 'The mutation has destabilizing long-range effects
          ( 'N.A.'           , 'The mutation site could not be predicted (for instance, because it is located in an unstructured region)') ]
 st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
-st.subheader("""Long range: AlloSigma2-PSN""")
+st.subheader("""Long range: AlloSigMA2-PSN""")
 
 st.write("""This module is available only for ensemble mode.
 
 The module aims to validate the simple mode Long Range module predictions, performed on a single 
-structure using AlloSigma2, by analysing an ensemble of structures using a Protein Structure Network
+structure using AlloSigMA 2, by analysing an ensemble of structures using a Protein Structure Network
 (PSN)-based method.
 
 The module takes as input the predictions of the Long Range module, specifically the mutations 
@@ -603,7 +620,7 @@ As input for constructing the network, an ensemble structure is used (e.g., traj
 Subsequently, the path_analysis tool of PyInteraph2 is used to identify
 shortest paths of communication between the mutation and pocket sites. 
 We retain only paths that are 4 residues in length or more. 
-If such a path is identified, it is considered a validation of the AlloSigma2 predicted allosteric 
+If such a path is identified, it is considered a validation of the AlloSigMA 2 predicted allosteric 
 effect of a mutation on the pocket residue(s).
 
 The module aims to leverage these two methods to validate the predictions and apply a consensus 
@@ -611,8 +628,8 @@ approach to build the final classification of a mutation's long-range effects.
 
 The dataset columns generated by this module are:""")
 
-data = [ ( "AlloSigma2-PSN classification",
-           "Classification of long range AlloSigma2-PSN effects",
+data = [ ( "AlloSigMA2-PSN classification",
+           "Classification of long range AlloSigMA2-PSN effects",
            "see below") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
@@ -620,7 +637,7 @@ st.write("""The classification column can have the following values:""")
 
 data = [ ( 'damaging'       , 'The mutation effect on pocket site(s) was identified by both methods'),
          ( 'neutral'        , 'The mutation was not predicted to have any effect on pocket site(s)'),
-         ( 'uncertain'      , 'The the two methods are not in agreement, or the mutation results in a too small change of side-chain volume to be considered either UP or DOWN in AlloSigma2') ]
+         ( 'uncertain'      , 'The the two methods are not in agreement, or the mutation results in a too small change of side-chain volume to be considered either UP or DOWN in AlloSigMA 2') ]
 st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
 
 st.subheader("AlphaFold Metadata")
