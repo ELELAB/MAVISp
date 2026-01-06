@@ -171,7 +171,10 @@ class MutateXBinding(Method):
         return df.rename(columns={0 : colname}) # rename the sinle column named 0 to the formatted name
 
     def parse(self, dir_path):
-        """ reads the MutateX output files (energies.csv + energies_std.csv) for each interactor, converts them into mutation-indexed dataframes, and returns them to the Local interaction module."""
+        """
+        reads the MutateX output files (energies.csv + energies_std.csv) for each interactor,
+        converts them into mutation-indexed dataframes, and returns them to the Local interaction module.
+        """
         
         warnings = []
         all_data = None
@@ -359,6 +362,30 @@ class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
 
         self.interactors = []
 
+    def _parse_structure_csv(self, csvf, warnings):
+        """Parse the RosettaDDGPrediction binding structure CSV file."""
+        try:
+            df = pd.read_csv(csvf)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} while reading structure CSV: {e.args}"
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(this_error)]
+            )
+
+        #keep only ddg rows
+        df = df[df["state"] == "ddg"]
+
+        #group by mutation and compute stdev of total_score
+        std_series = df.groupby("mutation_label")["total_score"].std()
+        average_series = df.groupby("mutation_label")["total_score"].mean()
+
+        #turn into DataFrame
+        std_df = std_series.to_frame(name ="total_score")
+        average_df = average_series.to_frame(name ="total_score")
+
+        return average_df, std_df
+
     def parse(self, dir_path):
 
         warnings = []
@@ -440,30 +467,6 @@ class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
             
         # return the combined data for all interactors
         return all_data, warnings
-
-    def _parse_structure_csv(self, csvf, warnings):
-        """Parse the RosettaDDGPrediction binding structure CSV file."""
-        try:
-            df = pd.read_csv(csvf)
-        except Exception as e:
-            this_error = f"Exception {type(e).__name__} while reading structure CSV: {e.args}"
-            raise MAVISpMultipleError(
-                warning=warnings,
-                critical=[MAVISpCriticalError(this_error)]
-            )
-
-        #keep only ddg rows
-        df = df[df["state"] == "ddg"]
-
-        #group by mutation and compute stdev of total_score
-        std_series = df.groupby("mutation_label")["total_score"].std()
-        average_series = df.groupby("mutation_label")["total_score"].mean()
-
-        #turn into DataFrame
-        std_df = std_series.to_frame(name ="total_score")
-        average_df = average_series.to_frame(name ="total_score")
-
-        return average_df, std_df
 
 class AlloSigma(Method):
 
