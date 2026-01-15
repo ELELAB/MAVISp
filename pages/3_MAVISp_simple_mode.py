@@ -35,7 +35,7 @@ add_mavisp_logo("static/logo_small.png", image_width='50%')
 
 add_affiliation_logo()
 
-database_dir = get_database_dir()
+database_fs = get_database_filesystem()
 
 st.title('MAVISp simple mode')
 
@@ -51,7 +51,7 @@ st.write('''If you need to download the MAVISp dataset in bulk and/or check the 
 dataset for any of our proteins, please refer to our [OSF repository](https://osf.io/ufpzm/)''')
 
 try:
-    show_table = load_main_table(database_dir, mode)
+    show_table = load_main_table(database_fs, mode)
 except FileNotFoundError:
     st.write('No entries are currently available for simple mode.')
     st.stop()
@@ -82,12 +82,12 @@ if len(protein_table.selection['rows']) == 0:
 
 protein_row = protein_table.selection['rows'][0]
 
-protein = show_table.iloc[protein_row]['Protein']
-upac = show_table.iloc[protein_row]['Uniprot AC']
+protein = filtered_show_table.iloc[protein_row]['Protein']
+upac = filtered_show_table.iloc[protein_row]['Uniprot AC']
 
 st.write(f"Currently viewing: {protein}")
 
-this_dataset = load_dataset(database_dir, protein, mode)
+this_dataset = load_dataset(database_fs, protein, mode)
 
 dataset, dotplots, lolliplots, structure = st.tabs(["Dataset", "Classification", "Damaging mutations", "Damaging mutations on structure"])
 
@@ -173,7 +173,8 @@ with dataset:
                              mime="text/csv",
                              key='download-csv-compact')
 
-    with open(os.path.join(database_dir, mode, 'dataset_tables', f'{protein}-{mode}.csv')) as data:
+    with database_fs.open(os.path.join(mode, 'dataset_tables', f'{protein}-{mode}.csv')) as fh:
+        data = BytesIO(fh.read())
         st.download_button(label="Download original full dataset",
                                  data=data,
                                  file_name=f'{protein}-{mode}.csv',
@@ -274,9 +275,9 @@ with lolliplots:
     st.write(f"""Select one or more mutations below, up to 50, to be included
     in the plot. These are only those mutations that are at the same time
     i) classified as pathogenic for AlphaMissense, ii) classified as loss
-    of function or gain of function for either GEMME or DeMaSk and
-    iii) damaging for the respective module in MAVISp. They are
-    {this_dataset_table_lolliplot.shape[0]} in this dataset.""")
+    of fitness or gain of fitness for DeMaSk and iii) damaging for the respective
+    module in MAVISp. They are {this_dataset_table_lolliplot.shape[0]} in
+    this dataset.""")
 
     mutation_format_lolliplot = st.radio("Mutation column to select on", options=['Mutation', 'HGVSp', 'HGVSg'], key="sel_mut_lolliplots")
 
@@ -288,7 +289,7 @@ with lolliplots:
                                                     default=None,
                                                     placeholder="Type or select a mutation",
                                                     key="mut_select_lolliplots")
-        
+
     else:
         placeholder_text = """Insert one mutation per row according to the selected column, e.g.\n"""
         placeholder_text += f"{'\n'.join(this_dataset_table_lolliplot[mutation_format_lolliplot].dropna().unique().tolist()[0:3])}\n..."
@@ -297,7 +298,7 @@ with lolliplots:
                      height=100,
                      placeholder=placeholder_text,
                      key="text_area_lolliplot")
-        
+
         if selected_mutations_input_lolliplot is None or selected_mutations_input_lolliplot == "":
             selected_mutations_lolliplot = None
         else:
@@ -366,13 +367,13 @@ with structure:
     # download model and stop if it can't be found
     if not disable_structure:
         try:
-            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v4.pdb")
+            response = rq.get(f"https://alphafold.ebi.ac.uk/files/AF-{upac}-F1-model_v6.pdb")
             response.raise_for_status()
         except ConnectionError:
-            st.write("Failed connecting to the AlphaFold Protein Structure Database")
+            st.write("ERROR: Failed connecting to the AlphaFold Protein Structure Database")
             st.stop()
         except HTTPError:
-            st.write("Could not fetch protein structure model from the AlphaFold Protein Structure Database")
+            st.write("ERROR: Could not fetch protein structure model from the AlphaFold Protein Structure Database")
             st.stop()
         else:
             model = response.text

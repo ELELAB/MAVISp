@@ -25,7 +25,7 @@ st.set_page_config(layout="wide",
 add_mavisp_logo("static/logo_small.png", image_width='50%')
 add_affiliation_logo()
 
-database_dir = get_database_dir()
+database_fs = get_database_filesystem()
 
 st.title('Datasets and metadata')
 
@@ -53,7 +53,7 @@ mode = st.selectbox(
 gene_options = []
 if mode is not None:
     try:
-        main_table = load_main_table(database_dir, mode)
+        main_table = load_main_table(database_fs, mode)
         gene_options = main_table['Protein'].to_list()
     except FileNotFoundError:
         st.write(f"No entries are currently available for {mode}.")
@@ -70,7 +70,7 @@ gene = st.selectbox(
 modules_options = []
 if gene is not None:
     try:
-        with open(f'{database_dir}/{mode}/metadata/{gene}.yaml') as fh:
+        with database_fs.open(f'{mode}/metadata/{gene}.yaml') as fh:
             st.session_state.data = yaml.safe_load(fh)
         modules_options = [k for k in st.session_state.data.keys() if st.session_state.data[k] is not None]
     except FileNotFoundError:

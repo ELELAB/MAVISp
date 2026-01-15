@@ -180,6 +180,7 @@ class Stability(MultiMethodMavispModule):
         model_data_stds = None
         model_data_list = []
         model_data_stds_list = []
+        column_meta = {}
     # check that:
         # all methods are supported
         # there are no duplicated methods (possible since they are in different model dirs)
@@ -204,13 +205,15 @@ class Stability(MultiMethodMavispModule):
 
                 warnings += this_warnings
                 model_averages.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
-
+                avg_col_name = model_averages.columns[0]
+                column_meta[avg_col_name] = { "version": self.methods[method_dir].version, "structure": model, "unit": self.methods[method_dir].unit, "std": False, }
                 model_data_list.append(model_averages)
                 model_data = pd.concat(model_data_list, axis=1)
 
                 if model_stds is not None:
                     model_stds.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit}, st. dev.)" ]
-
+                    std_col_name = model_stds.columns[0]
+                    column_meta[std_col_name] = { "version": self.methods[method_dir].version, "structure": model, "unit": self.methods[method_dir].unit, "std": True,}
                     model_data_stds_list.append(model_stds)
                     model_data_stds = pd.concat(model_data_stds_list, axis=1)
 
@@ -237,7 +240,45 @@ class Stability(MultiMethodMavispModule):
         else:
             rasp_header = None
 
-        # check if we have both FoldX and Rosetta/RaSP col
+        # Add mean of FoldX and Rosetta (Foldetta)
+        foldetta_mean = None
+        if foldx_header in model_data.columns and rosetta_header in model_data.columns:
+            both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
+            fx_meta = column_meta[foldx_header]
+            r_meta = column_meta[rosetta_header]
+            # Check for structure and unit mismatches
+            if fx_meta["unit"] != r_meta["unit"]:
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and Rosetta: {fx_meta} vs {r_meta}")])
+            unit = fx_meta["unit"]
+            foldetta_mean = f'Stability (Foldetta from FoldX and Rosetta, {unit})'
+            model_data[foldetta_mean] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
+            model_data.loc[~both_valid, foldetta_mean] = pd.NA
+            if not both_valid.all():
+                warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
+            # Add classification column for Foldetta
+        else:
+            warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
+
+        # Add mean of FoldX and RaSP
+        foldxrasp_mean = None
+        if foldx_header in model_data.columns and rasp_header in model_data.columns:
+            both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
+            fx_meta = column_meta[foldx_header]
+            r_meta = column_meta[rasp_header]
+            # Check for structure and unit mismatches
+            if fx_meta["unit"] != r_meta["unit"]:
+                raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
+            unit = fx_meta["unit"]
+            foldxrasp_mean = f'Stability (Foldetta from FoldX and RaSP, {unit})'
+            model_data[foldxrasp_mean] = model_data[[foldx_header, rasp_header]].mean(axis=1)
+            model_data.loc[~both_valid, foldxrasp_mean] = pd.NA
+            if not both_valid.all():
+                warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
+            # Add classification column for FoldX-RaSP mean
+        else:
+            warnings.append(MAVISpWarningError("Mean of FoldX and RaSP could not be calculated because FoldX or RaSP column is missing."))
+
+        # check if we have both FoldX and Rosetta/RaSP col and add consensus stability classification
         if rosetta_header is not None and foldx_header is not None:
             model_data[f'Stability classification, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
         else:
@@ -247,6 +288,12 @@ class Stability(MultiMethodMavispModule):
             model_data[f'Stability classification, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
         else:
             warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+        if foldetta_mean is not None:
+            model_data[f"Stability classification (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
+
+        if foldxrasp_mean is not None:
+            model_data[f"Stability classification (Foldetta from FoldX and RaSP)"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
 
         self.data = self.data.join(model_data)
         if model_data_stds is not None:
@@ -268,6 +315,21 @@ class Stability(MultiMethodMavispModule):
         if row[foldx_header] <= (- stab_co) and row[rosetta_header] <= (- stab_co):
             return 'Stabilizing'
         if (- neut_co) < row[foldx_header] < neut_co and (- neut_co) < row[rosetta_header] < neut_co:
+            return 'Neutral'
+        return 'Uncertain'
+
+    def _generate_single_stability_classification(self, row, column):
+
+        stab_co = 3.0
+        neut_co = 2.0
+
+        if pd.isna(row[column]):
+            return pd.NA
+        elif row[column] >= stab_co:
+            return 'Destabilizing'
+        elif row[column] <= (-stab_co):
+            return 'Stabilizing'
+        elif (-neut_co) < row[column] < neut_co:
             return 'Neutral'
         return 'Uncertain'
 
@@ -296,6 +358,7 @@ class SimpleStability(Stability):
             models = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method))
             model_data = pd.DataFrame({'mutations' : mutations}).set_index('mutations')
             model_data_list = []
+            column_meta = {}
         # check that:
             # all methods are supported
             # there are no duplicated methods (possible since they are in different model dirs)
@@ -320,10 +383,14 @@ class SimpleStability(Stability):
                     warnings += this_warnings
 
                     model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]
+                    main_col_name = model_data.columns[0]
+                    column_meta[main_col_name] = { "version": self.methods[method_dir].version, "structure": method, "unit": self.methods[method_dir].unit, "std": False, }
                     model_data_list.append(model_data)
 
                     if model_stds is not None:
                         model_stds.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit}, st. dev.)" ]
+                        std_col_name = model_stds.columns[0]
+                        column_meta[std_col_name] = { "version": self.methods[method_dir].version, "structure": method, "unit": self.methods[method_dir].unit, "std": True, }
                         model_data_list.append(model_stds)
 
             model_data = pd.concat(model_data_list, axis=1)
@@ -351,6 +418,50 @@ class SimpleStability(Stability):
             else:
                 rasp_header = None
 
+            # Add mean of FoldX and Rosetta (Foldetta)
+            foldetta_mean = None
+            if foldx_header in model_data.columns and rosetta_header in model_data.columns:
+                both_valid = model_data[[foldx_header, rosetta_header]].notna().all(axis=1)
+                fx_meta = column_meta[foldx_header]
+                r_meta = column_meta[rosetta_header]
+                # Check for structure and unit mismatches
+                if fx_meta["structure"] != r_meta["structure"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between structure used by FoldX and Rosetta: {fx_meta} vs {r_meta}")])
+                if fx_meta["unit"] != r_meta["unit"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and Rosetta: {fx_meta} vs {r_meta}")])
+                structure = fx_meta["structure"]
+                unit = fx_meta["unit"]
+                foldetta_mean = f'Stability (Foldetta from FoldX and Rosetta, {structure}, {unit})'
+                model_data[foldetta_mean] = model_data[[foldx_header, rosetta_header]].mean(axis=1)
+                model_data.loc[~both_valid, foldetta_mean] = pd.NA
+                if not both_valid.all():
+                    warnings.append(MAVISpWarningError("Some rows are missing FoldX or Rosetta values for Foldetta Mean. NA assigned."))
+                # Add classification column for Foldetta
+            else:
+                warnings.append(MAVISpWarningError("Foldetta Mean could not be calculated because FoldX or Rosetta column is missing."))
+
+            # Add mean of FoldX and RaSP
+            foldxrasp_mean = None
+            if foldx_header in model_data.columns and rasp_header in model_data.columns:
+                both_valid = model_data[[foldx_header, rasp_header]].notna().all(axis=1)
+                fx_meta = column_meta[foldx_header]
+                r_meta = column_meta[rasp_header]
+                # Check for structure and unit mismatches
+                if fx_meta["structure"] != r_meta["structure"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between structures used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
+                if fx_meta["unit"] != r_meta["unit"]:
+                    raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError( f"Mismatch between units used by FoldX and RaSP: {fx_meta} vs {r_meta}")])
+                structure = fx_meta["structure"]
+                unit = fx_meta["unit"]
+                foldxrasp_mean = f'Stability (Foldetta from FoldX and RaSP, {structure}, {unit})'
+                model_data[foldxrasp_mean] = model_data[[foldx_header, rasp_header]].mean(axis=1)
+                model_data.loc[~both_valid, foldxrasp_mean] = pd.NA
+                if not both_valid.all():
+                    warnings.append(MAVISpWarningError("Some rows are missing FoldX or RaSP values for Mean (FoldX, RaSP). NA assigned."))
+                # Add classification column for FoldX-RaSP mean
+            else:
+                warnings.append(MAVISpWarningError("Mean of FoldX and RaSP could not be calculated because FoldX or RaSP column is missing."))
+
             # check if we have both FoldX and Rosetta/RaSP col
             if rosetta_header is not None and foldx_header is not None:
                 model_data[f'Stability classification, {method}, (Rosetta, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rosetta_header, axis=1)
@@ -361,6 +472,12 @@ class SimpleStability(Stability):
                 model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
             else:
                 warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+            if foldetta_mean is not None:
+                model_data[f"Stability classification, {method}, (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
+
+            if foldxrasp_mean is not None:
+                model_data[f"Stability classification, {method}, (Foldetta from FoldX and RaSP)"] = model_data.apply(self._generate_single_stability_classification, column=foldxrasp_mean, axis=1)
 
             self.data = self.data.join(model_data)
 
@@ -1557,14 +1674,6 @@ class DeMaSk(MavispModule):
     module_dir = "demask"
     name = "demask"
 
-    def _classify(self, row):
-        if row['score'] > 0:
-            return 'gain_of_function'
-        elif row['score'] < 0:
-            return 'loss_of_function'
-        else:
-            return 'neutral'
-
     def ingest(self, mutations):
 
         warnings = []
@@ -1594,7 +1703,6 @@ class DeMaSk(MavispModule):
         demask['mutations'] = demask['WT'] + demask['pos'].astype(str) + demask['var']
         demask = demask[['mutations', 'score', 'entropy', 'log2f_var']]
         demask = demask.set_index('mutations')
-        demask['DeMaSk predicted consequence'] = demask.apply(self._classify, axis=1)
 
         self.data = demask.rename(columns = {'score'     : 'DeMaSk delta fitness',
                                              'entropy'   : 'DeMaSk Shannon entropy',
@@ -1695,17 +1803,11 @@ class GEMME(MavispModule):
         # reconstruct mutations in the usual format
         gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
 
-        # drop unnecessary columns and rename for pretty
+        # drop unnecessary columns
         gemme = gemme.drop(columns=['wt', 'res', 'mut'])
 
-        # rank-normalize
-        max_s = gemme['score'].max()
-        min_s = gemme['score'].min()
-        gemme['score_rn'] = (gemme['score'] - min_s) / (max_s - min_s)
-
         # rename for pretty
-        gemme = gemme.rename(columns={'score'    : 'GEMME Score',
-                                      'score_rn' : 'GEMME Score (rank-normalized)'})
+        gemme = gemme.rename(columns={'score'    : 'GEMME Score'})
 
         self.data = gemme.set_index('mutations')
 
@@ -1796,34 +1898,28 @@ class FunctionalSites(MavispModule):
                             'active_site_local_aggregate.txt']
     column_headers = {'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
                       'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
-    _site_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+    _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
 
     def _parse_table(self, fname):
 
         df = pd.read_csv(fname, index_col=False, header=None)
 
         if len(df.columns) != 1:
-            this_error = f"Functional Sites table {fname} must have one column (sites)"
+            this_error = f"Functional Sites table {fname} must have one column (mutations)"
             raise TypeError(this_error)
 
-        df[0] = df[0].str.strip()
+        df[0] = df[0].astype(str).str.strip()
 
-        # check if each element of the column is in the format Xn, where X is a
-        # residue type and N is an arbitrary number
-        if df[0].apply(lambda x: self._site_re.match(x) is None).any():
-            this_error = f"Functional Sites table {fname} must have sites in the format Xn, where X is a residue type and N is an arbitrary number"
+        # check if each element of the column is in the format XnY, where X/Y are residue types
+        # and n is an arbitrary number
+        if df[0].apply(lambda x: self._mut_re.match(x) is None).any():
+            this_error = (f"Functional Sites table {fname} must have mutations in the format XnY, "
+                          f"where X and Y are residue types and n is an arbitrary number")
             raise TypeError(this_error)
 
         df = df.drop_duplicates()
-        df['sites_type_table'] = df[0].str[0]
-        df['sites'] = pd.Series(df[0].str[1:].astype(int))
-        df = df.drop(columns=[0])
-
-        if df['sites'].duplicated().any():
-            this_error = f"Functional Sites table {fname} has duplicated sites with different residue types"
-            raise TypeError(this_error)
-
-        df = df.set_index('sites')
+        df = df.rename(columns={0: 'mutation'})
+        df = df.set_index('mutation')
         df['classification'] = pd.Series(index=df.index, data='damaging')
 
         return df
@@ -1837,11 +1933,9 @@ class FunctionalSites(MavispModule):
         if not set(fs_files).issubset(set(self.accepted_filenames)):
             this_error = f"the input files for Functional Sites must be named {', '.join(self.accepted_filenames)}"
             raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                                      critical=[MAVISpCriticalError(this_error)])
 
-        out_df = pd.DataFrame({'mutations' : mutations})
-        out_df['sites'] = out_df['mutations'].str[1:-1].astype(int)
-        out_df['sites_type_mut'] = out_df['mutations'].str[0]
+        out_df = pd.DataFrame({'mutations': mutations})
         out_df = out_df.set_index('mutations')
 
         for fs_file in fs_files:
@@ -1853,22 +1947,19 @@ class FunctionalSites(MavispModule):
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
                 raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
-            out_df = out_df.join(df, on='sites')
+                                          critical=[MAVISpCriticalError(this_error)])
 
-            if not out_df.apply(lambda r: r['sites_type_table'] == r['sites_type_mut'] if not pd.isna(r['classification']) else True, axis=1).all():
-                this_error = f"Functional Sites table {fs_file} has sites with residue type different than in mutations"
-                raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+            # join by mutation (index)
+            out_df = out_df.join(
+                df.rename(columns={'classification': self.column_headers[fs_file]}),
+                how='left'
+            )
 
-            out_df = out_df.rename(columns={'classification' : self.column_headers[fs_file]})
-            out_df = out_df.drop(columns=['sites_type_table'])
-
-        self.data = out_df.drop(columns=['sites_type_mut', 'sites']).fillna('neutral')
+        # final: only keep functional-sites columns; fill missing with neutral
+        self.data = out_df.fillna('neutral')
 
         if len(warnings) > 0:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[])
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class AllosigmaPSNLongRange(MavispModule):
 
@@ -1878,9 +1969,9 @@ class AllosigmaPSNLongRange(MavispModule):
 
     exp_files = ['allosigma_mut.txt']
 
-    datasets = {'results_sub_cat.txt'  : 'AlloSigma2-PSN classification - active sites',
-                'results_cofactor.txt' : 'AlloSigma2-PSN classification - cofactor sites',
-                'results_summary.txt'  : 'AlloSigma2-PSN classification - pockets and interfaces'}
+    datasets = {'results_sub_cat.txt'  : 'AlloSigMA2-PSN classification - active sites',
+                'results_cofactor.txt' : 'AlloSigMA2-PSN classification - cofactor sites',
+                'results_summary.txt'  : 'AlloSigMA2-PSN classification - pockets and interfaces'}
 
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
         allosigma_mode = row['allosigma-mode']
@@ -2282,6 +2373,64 @@ class TED(MavispModule):
         # Add new column to data
         self.data = pd.DataFrame.from_dict(ted_annotations, orient='index', columns=['TED-CATH domain classification'])
 
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
+class DisulfideBridges(MavispModule):
+
+    module_dir = "disulfide_bridges"
+    name = "disulfide_bridges"
+
+    required_files = set(['mutlist_disulfide_disruptions.tsv',
+                          'denovo_summary.csv'])
+
+    def ingest(self, mutations):
+
+        out_df = pd.DataFrame({'mutation' : mutations}).set_index('mutation')
+
+        warnings = []
+
+        ss_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        
+        if not set(self.required_files).issubset(set(ss_files)):
+            this_error = f"the following files are required: {', '.join(self.required_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        
+        try:
+            df_dis = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'mutlist_disulfide_disruptions.tsv'),
+                               sep='\t')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the mutlist_disulfide_disruptions.tsv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        try:
+            df_denovo = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'denovo_summary.csv'))
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the denovo_summary.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
+
+        df_dis['mutation'] = df_dis.wt + df_dis.pos.astype(str) + df_dis.mut
+        df_dis = df_dis.set_index('mutation')
+        df_dis['Loss of disulfide bridge'] = 'damaging'
+        df_dis = df_dis[['Loss of disulfide bridge']]
+
+        df_denovo['mutation'] = df_denovo.wt + df_denovo.pos.astype(str) + df_denovo.mut
+        df_denovo = df_denovo.set_index('mutation')
+        df_denovo = df_denovo[['classification']].replace({'de_novo_disulfide' : 'damaging'})
+        df_denovo = df_denovo.rename(columns={'classification' : 'Predicted de-novo disulfide bridge'})
+        out_df.join(df_denovo)
+
+        out_df = out_df.join(df_dis)
+        out_df = out_df.join(df_denovo)
+
+        out_df = out_df.fillna('neutral')
+
+        self.data = out_df
+    
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])

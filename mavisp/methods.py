@@ -391,9 +391,9 @@ class AlloSigma(Method):
 
     name = "AlloSigma"
 
-    datasets = {'sub_cat'  : 'AlloSigma{version} predicted consequence - active sites',
-                'cofactor' : 'AlloSigma{version} predicted consequence - cofactor sites',
-                'pockets'  : 'AlloSigma{version} predicted consequence - pockets and interfaces'}
+    datasets = {'sub_cat'  : 'AlloSigMA {version} predicted consequence - active sites',
+                'cofactor' : 'AlloSigMA {version} predicted consequence - cofactor sites',
+                'pockets'  : 'AlloSigMA {version} predicted consequence - pockets and interfaces'}
 
     allowed_fnames = [f'filtered_up_{x}.tsv' for x in datasets.keys()] +\
                      [f'filtered_down_{x}.tsv' for x in datasets.keys()] +\
@@ -450,7 +450,7 @@ class AlloSigma(Method):
             if not re.fullmatch(self.mutation_re, c):
                 forbidden_cols.append(c)
         if len(forbidden_cols) > 0:
-            raise KeyError(f"column names {", ".join(forbidden_cols)} are not in the expected residue format")
+            raise KeyError(f"column names {', '.join(forbidden_cols)} are not in the expected residue format")
 
         return filt
 
@@ -543,7 +543,7 @@ class AlloSigma(Method):
         out_data = pd.concat(allosigma2_data, axis=0)
 
         rename_scheme = {k : v.format(version=self.version) for k,v in self.datasets.items()}
-        rename_scheme['allosigma-mode'] = f'AlloSigma{self.version} mutation type'
+        rename_scheme['allosigma-mode'] = f'AlloSigMA {self.version} mutation type'
 
         return out_data.rename(columns=rename_scheme).fillna('-'), warnings
 

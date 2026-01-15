@@ -1,0 +1,20 @@
+curators:
+    Kristine Degn:
+        affiliation:
+            - DTU, Denmark
+    Elena Papaleo:
+        affiliation:
+            - DCI, Denmark
+            - DTU, Denmark
+uniprot_ac: P04637
+refseq_id: NP_000537
+review_status: 3
+ensemble_files_osf: https://osf.io/38khf/ 
+ensemble_sources : [ cabsflex, md ]
+ensemble_size_foldx : [ 20, 25 ]
+ensemble_size_rosetta : [ 3, 3 ]
+simulation_length: [ 1000 ] 
+simulation_force_field: [ CHARMM22* ]
+cofactors_in_structure:
+  md: [ Zn2+ ]
+  cabsflex:
