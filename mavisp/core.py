@@ -242,9 +242,10 @@ class MAVISpFileSystem:
                         all_columns.extend(this_module.get_dataset_view().columns)
                         unique_columns = list(set(all_columns))
                         if len(unique_columns) != len(all_columns):
+                            all_columns = unique_columns
                             mavisp_modules[mod.name] = None
-                            mavisp_errors.append(MAVISpCriticalError("this module provides columns whose name overlap "
-                                                                     "with those provided by another module"))
+                            mavisp_errors[mod.name].append(MAVISpCriticalError("this module provides columns whose name overlap "
+                                                                               "with those provided by another module"))
                             continue
                         all_columns = unique_columns
 

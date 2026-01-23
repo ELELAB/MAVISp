@@ -1456,15 +1456,18 @@ class CancermutsTable(MavispModule):
 
         # data columns from clinvar that might or might not exist
         do_clinvar_warning = False
-        empty_embedded_clinvar = False
 
         intermediate_cols = ["clinvar_variant_id",
                              "clinvar_classification",
                              "clinvar_condition",
                              "clinvar_review_status"]
 
-        if all(c in cancermuts.columns for c in intermediate_cols) and cancermuts[intermediate_cols].isna().all().all():
-            empty_embedded_clinvar = True
+        if all(c in cancermuts.columns for c in intermediate_cols):
+            if not cancermuts[intermediate_cols].isna().all().all():
+                this_error = "Deprecated ClinVar columns with non-empty content were detected in the metatable."
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+            warnings.append(MAVISpWarningError("ClinVar columns were removed as they were empty and in a currently deprecated format."))
         else:
             for col in ['clinvar_variant_id', 'clinvar_germline_classification', 'clinvar_germline_review_status', 'clinvar_oncogenicity_classification', 
                         'clinvar_oncogenicity_review_status','clinvar_clinical_impact_classification', 'clinvar_clinical_impact_review_status']:
@@ -1472,10 +1475,6 @@ class CancermutsTable(MavispModule):
                     data_columns.append(col)
                 else:
                     do_clinvar_warning = True
-        if empty_embedded_clinvar:
-            warnings.append(MAVISpWarningError("This entry was generated with a newer Cancermuts version, but before its implementation"
-                                               "in the automatization pipeline. Embedded ClinVar columns are present but empty and will"
-                                               "be ignored; please double check that the ClinVar module is available (old-style entry)"))
         if do_clinvar_warning:
             warnings.append(MAVISpWarningError(f"not all expected ClinVar columns found in Cancermuts; please double"
                                                "check that the ClinVar module is available (old-style entry)"))
