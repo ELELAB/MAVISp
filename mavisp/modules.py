@@ -1464,10 +1464,10 @@ class CancermutsTable(MavispModule):
 
         if all(c in cancermuts.columns for c in intermediate_cols):
             if not cancermuts[intermediate_cols].isna().all().all():
-                this_error = "Deprecated ClinVar columns with non-empty content were detected in the metatable."
+                this_error = "Deprecated ClinVar columns with non-empty content were detected in the metatable"
                 raise MAVISpMultipleError(warning=warnings,
                                           critical=[MAVISpCriticalError(this_error)])
-            warnings.append(MAVISpWarningError("ClinVar columns were removed as they were empty and in a currently deprecated format."))
+            warnings.append(MAVISpWarningError("ClinVar columns were removed as they were empty and in a currently deprecated format"))
         else:
             for col in ['clinvar_variant_id', 'clinvar_germline_classification', 'clinvar_germline_review_status', 'clinvar_oncogenicity_classification', 
                         'clinvar_oncogenicity_review_status','clinvar_clinical_impact_classification', 'clinvar_clinical_impact_review_status']:
