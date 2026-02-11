@@ -1441,13 +1441,49 @@ class CancermutsTable(MavispModule):
         #     warnings.append(MAVISpWarningError("One or more mutations in the Cancermuts table don't have an associated REVEL score"))
 
         # filter by column and pretty rename column names
-        cancermuts = cancermuts[['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']]
 
-        self.data = cancermuts.rename(columns={ 'genomic_mutation' : 'HGVSg',
-                                                'gnomad_genome_af' : 'gnomAD genome allele frequency',
-                                                'gnomad_exome_af'  : 'gnomAD exome allele frequency',
-                                                'REVEL_score'      : 'REVEL score',
-                                                'sources'          : 'Mutation sources' })
+        # regular data columns - these are mandatory
+        data_columns = ['genomic_mutation', 'gnomad_genome_af', 'gnomad_exome_af', 'REVEL_score', 'sources']
+
+
+        # data columns from clinvar that might or might not exist
+        do_clinvar_warning = False
+
+        intermediate_cols = ["clinvar_variant_id",
+                             "clinvar_classification",
+                             "clinvar_condition",
+                             "clinvar_review_status"]
+
+        if all(c in cancermuts.columns for c in intermediate_cols):
+            if not cancermuts[intermediate_cols].isna().all().all():
+                this_error = "Deprecated ClinVar columns with non-empty content were detected in the metatable"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+            warnings.append(MAVISpWarningError("ClinVar columns were removed as they were empty and in a currently deprecated format"))
+        else:
+            for col in ['clinvar_variant_id', 'clinvar_germline_classification', 'clinvar_germline_review_status', 'clinvar_oncogenicity_classification', 
+                        'clinvar_oncogenicity_review_status','clinvar_clinical_impact_classification', 'clinvar_clinical_impact_review_status']:
+                if col in cancermuts.columns:
+                    data_columns.append(col)
+                else:
+                    do_clinvar_warning = True
+        if do_clinvar_warning:
+            warnings.append(MAVISpWarningError(f"not all expected ClinVar columns found in Cancermuts; please double"
+                                               "check that the ClinVar module is available (old-style entry)"))
+        cancermuts = cancermuts.reindex(columns=data_columns)
+
+        self.data = cancermuts.rename(columns={ 'genomic_mutation'       : 'HGVSg',
+                                                'gnomad_genome_af'       : 'gnomAD genome allele frequency',
+                                                'gnomad_exome_af'        : 'gnomAD exome allele frequency',
+                                                'REVEL_score'            : 'REVEL score',
+                                                'sources'                : 'Mutation sources',
+                                                'clinvar_variant_id'     : 'ClinVar Variation ID',
+                                                'clinvar_germline_classification' : 'ClinVar Germline Interpretation',
+                                                'clinvar_germline_review_status'  : 'ClinVar Germline Review Status',
+                                                'clinvar_oncogenicity_classification' : 'ClinVar Oncogenicity Interpretation',
+                                                'clinvar_oncogenicity_review_status'  : 'ClinVar Oncogenicity Review Status',
+                                                'clinvar_clinical_impact_classification' : 'ClinVar Clinical Impact Interpretation',
+                                                'clinvar_clinical_impact_review_status'  : 'ClinVar Clinical Impact Review Status'})
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
