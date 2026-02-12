@@ -92,13 +92,14 @@ class MutateXStability(Method):
         return averages_df, stds_df, warnings
 
 class MutateXBinding(Method):
-
     unit = "kcal/mol"
     type = "Local Int."
     heterodimer_chains = set(['A'])
     homodimer_chains   = set(['AB'])
     target_chain       = 'A'
     measure = "Binding with"
+    averages_filename = 'energies.csv'
+    stds_filename = 'energies_std.csv'
     complex_status = "heterodimer"
 
     def __init__(self, version, complex_status=None):
@@ -110,82 +111,115 @@ class MutateXBinding(Method):
 
         self.interactors = []
 
+    # data_type is either '' or 'st. dev.'
+    def _parse_mutatex_binding_energy_file(self, fname, interactor, data_type):
+        """Parse a single MutateX binding energy file (average or std)."""
+
+        try:
+            df = pd.read_csv(fname)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        # Create residue column
+        df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
+
+        # Detect and handle homodimer case
+        chains = set(df['chain ID'].unique())
+
+        # If chain A exists, KEEP ONLY rows where chain ID == 'A'.
+        if self.target_chain in chains:
+            df = df[ df['chain ID'] == self.target_chain ]
+        # If chain A does NOT exist, the ONLY valid alternative is homodimer AB.
+        elif set(df['chain ID'].unique()) != self.homodimer_chains:
+            message = "chain ID in FoldX energy file must be either A or B (heterodimer case) or AB (homodimer case)"
+            raise MAVISpMultipleError(critical=[MAVISpCriticalError(message)],
+                                      warning=[])
+
+        # Drop unnecessary columns
+        df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
+
+        # Stack remaining columns
+        df = df.set_index('residue') # set 'residue' column as index
+        df = df.stack() # rotates columns downward and makes the dataframe long-format (level_1 contains the original column names and 0 contains the values)
+        df = df.reset_index() # reset index to turn the index into a column
+
+        # Create mutation column
+        df['mutations'] = df['residue'] + df['level_1'] # concatenate 'residue' and 'level_1' columns to create 'mutations' column
+        df = df.set_index('mutations') # set 'mutations' column as index
+
+        # Drop now useless columns, rename
+        df = df.drop(['residue', 'level_1'], axis=1)
+
+        # handle space around measure
+        if self.measure == "":
+            measure = ""
+        else:
+            measure = f"{self.measure} "
+
+        # rename column Local Int. (Binding with B, heterodimer, FoldX5, kcal/mol)
+        if data_type is None or data_type == '':
+            data_type = ""
+        else:
+            data_type = f", {data_type}"
+
+        colname = f"{self.type} ({measure}{interactor}, {self.complex_status}, {self.version}, {self.unit}{data_type})"
+
+        return df.rename(columns={0 : colname}) # rename the sinle column named 0 to the formatted name
+
     def parse(self, dir_path):
+        """
+        reads the MutateX output files (energies.csv + energies_std.csv) for each interactor,
+        converts them into mutation-indexed dataframes, and returns them to the Local interaction module.
+        """
 
         warnings = []
+        all_data = None
 
-        interactors = os.listdir(dir_path)
-        self.interactors = interactors
+        interactors = os.listdir(dir_path) # list of subfolders in dir_path
+        self.interactors = interactors # store interactors in the instance variable
 
         if len(interactors) == 0:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("no interactor folders found")],
                                       warning=warnings)
 
-        all_data = None
-
         for interactor in interactors:
 
             interactor_dir = os.path.join(dir_path, interactor)
-
             mutatex_files = os.listdir(interactor_dir)
 
-            if len(mutatex_files) != 1:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"zero or multiple files found in {interactor_dir}; exactly one expected")],
-                                        warning=warnings)
-
-            mutatex_file = mutatex_files[0]
-
-            try:
-                df = pd.read_csv(os.path.join(interactor_dir, mutatex_file))
-            except Exception as e:
-                this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX csv file. Arguments:{e.args}"
+            # expect energies.csv file per interactor
+            if self.averages_filename not in mutatex_files:
+                this_error = f"energies.csv file not found in {interactor_dir}"
                 raise MAVISpMultipleError(warning=warnings,
-                                        critical=[MAVISpCriticalError(this_error)])
+                                          critical=[MAVISpCriticalError(this_error)])
 
-            # create residue column
-            df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
+            # Parse averages file
+            averages_df = self._parse_mutatex_binding_energy_file(os.path.join(interactor_dir, self.averages_filename), interactor, '')
 
-            # detect and handle homodimer case
-            chains = set(df['chain ID'].unique())
-
-            if self.target_chain in chains:
-                df = df[ df['chain ID'] == self.target_chain ]
-
-            elif set(df['chain ID'].unique()) != self.homodimer_chains:
-                message = "chain ID in FoldX energy file must be either A or B (heterodimer case) or AB (homodimer case)"
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(message)],
-                                          warning=[])
-
-            df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
-
-            # stack remaining columns
-            df = df.set_index('residue')
-            df = df.stack()
-            df = df.reset_index()
-
-            # create mutation column
-            df['mutations'] = df['residue'] + df['level_1']
-            df = df.set_index('mutations')
-
-            # drop now useless columns, rename
-            df = df.drop(['residue', 'level_1'], axis=1)
-
-            # handle space around measure
-            if self.measure == "":
-                measure = ""
+            # Parse stds file if it exists
+            if self.stds_filename in mutatex_files:
+                stds_df = self._parse_mutatex_binding_energy_file(os.path.join(interactor_dir, self.stds_filename), interactor, 'st. dev.')
             else:
-                measure = f"{self.measure} "
+                warnings.append(MAVISpWarningError("standard deviation file not found for MutateX binding energy data"))
+                stds_df = None
 
-            df = df.rename(columns={0 : f"{self.type} ({measure}{interactor}, {self.complex_status}, {self.version}, {self.unit})"})
+            # Combine averages and stds data
+            if stds_df is not None:
+                interactor_data = averages_df.join(stds_df, how='outer')
+            else:
+                interactor_data = averages_df
 
+            # Combine data across interactors
             if all_data is None:
-                all_data = df
+                all_data = interactor_data
             else:
-                all_data = all_data.join(df, how='outer')
+                all_data = all_data.join(interactor_data, how='outer')
 
         return all_data, warnings
 
-class MutateXDNABinding(Method):
+class MutateXDNABinding(MutateXBinding):
 
     unit = "kcal/mol"
     type = "Local Int. With DNA"
@@ -194,8 +228,6 @@ class MutateXDNABinding(Method):
     target_chain       = 'A'
     measure = ""
     complex_status = "heterodimer"
-
-    parse = MutateXBinding.parse
 
 class RosettaDDGPredictionStability(Method):
 
@@ -310,14 +342,14 @@ class RosettaDDGPredictionStability(Method):
 
         return avg_mutation_data, std_mutation_data, warnings
 
-class RosettaDDGPredictionBinding(Method):
+class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
 
     unit = "kcal/mol"
     type = "Local Int."
     chain = 'A'
     complex_status = 'heterodimer'
-
-    _parse_aggregate_csv = RosettaDDGPredictionStability._parse_aggregate_csv
+    aggregate_fname = 'ddg_mutations_aggregate.csv'
+    structures_fname = 'ddg_mutations_structures.csv'
 
     def __init__(self, version, complex_status=None):
 
@@ -328,6 +360,30 @@ class RosettaDDGPredictionBinding(Method):
 
         self.interactors = []
 
+    def _parse_structure_csv(self, csvf, warnings):
+        """Parse the RosettaDDGPrediction binding structure CSV file."""
+        try:
+            df = pd.read_csv(csvf)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} while reading structure CSV: {e.args}"
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(this_error)]
+            )
+
+        #keep only ddg rows
+        df = df[df["state"] == "ddg"]
+
+        #group by mutation and compute stdev of total_score
+        std_series = df.groupby("mutation_label")["total_score"].std()
+        average_series = df.groupby("mutation_label")["total_score"].mean()
+
+        #turn into DataFrame
+        std_df = std_series.to_frame(name ="total_score")
+        average_df = average_series.to_frame(name ="total_score")
+
+        return average_df, std_df
+
     def parse(self, dir_path):
 
         warnings = []
@@ -337,7 +393,7 @@ class RosettaDDGPredictionBinding(Method):
 
         if len(interactors) == 0:
             raise MAVISpMultipleError(critical=[MAVISpCriticalError("no interactor folders found")],
-                                        warning=[])
+                                      warning=[])
 
         all_data = None
 
@@ -346,11 +402,36 @@ class RosettaDDGPredictionBinding(Method):
             interactor_dir = os.path.join(dir_path, interactor)
             rosetta_files = os.listdir(interactor_dir)
 
-            if len(rosetta_files) == 1 and os.path.isfile(os.path.join(interactor_dir, rosetta_files[0])):
+            # Identify the correct files
+            agg_file = None
+            struct_file = None
 
+            # Expect either a single file or multiple directories containing one file each
+            if len(rosetta_files) == 1 and os.path.isfile(os.path.join(interactor_dir, rosetta_files[0])) and rosetta_files[0] == self.aggregate_fname:
                 rosetta_file = rosetta_files[0]
+                # Parse single aggregate CSV file
                 mutation_data = self._parse_aggregate_csv(os.path.join(interactor_dir, rosetta_file), warnings)
+                mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
+            # or structures file (which we can use to calculate average and stdev)
+            elif (len(rosetta_files) == 1 and\
+                    os.path.isfile(os.path.join(interactor_dir, rosetta_files[0])) and \
+                    rosetta_files[0] == self.structures_fname)    or\
+                 (set(rosetta_files) == set([self.aggregate_fname, self.structures_fname]) and\
+                    os.path.isfile(os.path.join(interactor_dir, rosetta_files[0])) and\
+                    os.path.isfile(os.path.join(interactor_dir, rosetta_files[1]))):
+
+                if len(rosetta_files) == 2:
+                    warnings.append(MAVISpWarningError(f"for {interactor}, both Rosetta aggregate and structures file were found; the aggregate file will be ignored"))
+
+                mutation_data, std_df = self._parse_structure_csv(os.path.join(interactor_dir, self.structures_fname), warnings)
+
+                mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
+                std_df = std_df.rename(columns={'total_score' : f"{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit}, st. dev.)"})
+
+                mutation_data = mutation_data.join(std_df, how="outer")
+
+            # Multiple directories containing one file each
             elif len(rosetta_files) > 1 and all( [ os.path.isdir(os.path.join(interactor_dir, f)) for f in rosetta_files] ):
                 mutation_data = None
                 for c, conformer_dir in enumerate(rosetta_files):
@@ -363,7 +444,6 @@ class RosettaDDGPredictionBinding(Method):
                                                   warning=warnings)
 
                     conformer_data = self._parse_aggregate_csv(os.path.join(interactor_dir, conformer_dir, conformer_files[0]), warnings)
-
                     conformer_data = conformer_data.rename(columns={'total_score' : f'total_score_{c}'})
 
                     if mutation_data is None:
@@ -371,20 +451,22 @@ class RosettaDDGPredictionBinding(Method):
                     else:
                         mutation_data = mutation_data.join(conformer_data)
 
-                mutation_data = pd.DataFrame(mutation_data.mean(axis=1), columns=['total_score'])
+                # Average total_score across conformers
+
+                mutation_data = pd.DataFrame({f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})' : mutation_data.mean(axis=1),
+                                              f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit}, st. dev.)' : mutation_data.std(axis=1)})
 
             else:
-                text = f"dataset {interactor_dir} was not either a single files, or multiple directories containing one file"
+                text = f"dataset {interactor_dir} did not contain an expected folder structure"
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(text)],
                                             warning=warnings)
-
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
             if all_data is None:
                 all_data = mutation_data
             else:
                 all_data = all_data.join(mutation_data, how='outer')
 
+        # return the combined data for all interactors
         return all_data, warnings
 
 class AlloSigma(Method):

@@ -398,23 +398,21 @@ The module generates multiple columns, and several of them might be present
 depending on the system and on other factors. Typical columns look like:""")
 
 data = [ ("Local Int. (Binding with MAP1LC3B_AFmulti, heterodimer, FoldX5, kcal/mol)",
-          "change of binding free energy upon mutation calculated using FoldX",
+          "change of binding free energy upon mutation calculated using FoldX, average",
+          "value (kcal/mol)"),
+("Local Int. (Binding with MAP1LC3B_AFmulti, heterodimer, FoldX5, kcal/mol, st. dev.)",
+          "change of binding free energy upon mutation calculated using FoldX, standard deviation",
           "value (kcal/mol)"),
 ("Local Int. (Binding with MAP1LC3B_AFmulti, heterodimer, Rosetta Talaris 2014, kcal/mol)",
-          "change of binding free energy upon mutation calculated using FoldX",
+          "change of binding free energy upon mutation calculated using Rosetta, average",
+          "value (kcal/mol)"),
+("Local Int. (Binding with MAP1LC3B_AFmulti, heterodimer, Rosetta Talaris 2014, kcal/mol, st. dev.)",
+          "change of binding free energy upon mutation calculated using Rosetta, standard deviation",
           "value (kcal/mol)"),
 ("Local Int. classification (MAP1LC3B_AFmulti)",
-          "change of binding free energy upon mutation calculated using FoldX",
-          "see below"),
-("Local Int. (Binding with OPTN_AFmulti, homodimer, FoldX5, kcal/mol)",
-          "change of binding free energy upon mutation calculated using FoldX",
-          "value (kcal/mol)"),
-("Local Int. (Binding with OPTN_AFmulti, homodimer, Rosetta Talaris 2014, kcal/mol)",
-          "change of binding free energy upon mutation calculated using FoldX",
-          "value (kcal/mol)"),
-("Local Int. classification (OPTN_AFmulti)",
-          "change of binding free energy upon mutation calculated using FoldX",
+          "classification of changes in binding free energy",
           "see below")]
+          
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The column names will have information on the protein that forms a complex with our
@@ -429,13 +427,22 @@ the relative solvent accessible surface area for the side chain of the wild-type
 (see SAS module) in the considered structure or ensemble to classify cases for
 which free energy information is not available.
 
+Notice that both FoldX and Rosetta values can have averages and standard deviation values.
+These have a different meaning in simple and ensemble mode:
+
+  - in simple mode, when appropriate, the standard deviation is calculated among the DDG
+  values obtained by single runs that were performed by the tool under consideration on 
+  a single structure
+  - in ensemble mode, the standard deviation is calculated between the average DDG values
+  each calculated on a different conformation
+
 As for the Stability module, first, Rosetta and FoldX are considered
 independently, and a implicit classification is performed for each, according to the following
 table:""")
 
-data = [ ( 'DDG > 1',        'Destabilizing'),
-         ( 'DDG < -1',       'Stabilizing'),
-         ( '-1 <= DDG <= 1', 'Neutral') ]
+data = [ ( 'average DDG > 1',        'Destabilizing'),
+         ( 'average DDG < -1',       'Stabilizing'),
+         ( '-1 <= average DDG <= 1', 'Neutral') ]
 st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Preliminary classification']))
 
 st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
