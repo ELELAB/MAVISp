@@ -91,9 +91,7 @@ class MutateXStability(Method):
 
         return averages_df, stds_df, warnings
 
-class MutateXBinding(Method): 
-    #a parsing class; produces binding ΔΔG data
-    
+class MutateXBinding(Method):     
     unit = "kcal/mol"
     type = "Local Int."
     heterodimer_chains = set(['A'])
@@ -413,6 +411,7 @@ class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
                 rosetta_file = rosetta_files[0]
                 # Parse single aggregate CSV file
                 mutation_data = self._parse_aggregate_csv(os.path.join(interactor_dir, rosetta_file), warnings)
+                mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
             # or structures file (which we can use to calculate average and stdev)
             elif (len(rosetta_files) == 1 and\
@@ -427,7 +426,9 @@ class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
 
                 mutation_data, std_df = self._parse_structure_csv(os.path.join(interactor_dir, self.structures_fname), warnings)
 
+                mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
                 std_df = std_df.rename(columns={'total_score' : f"{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit}, st. dev.)"})
+
                 mutation_data = mutation_data.join(std_df, how="outer")
 
             # Multiple directories containing one file each
@@ -451,14 +452,14 @@ class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
                         mutation_data = mutation_data.join(conformer_data)
                         
                 # Average total_score across conformers
-                mutation_data = pd.DataFrame(mutation_data.mean(axis=1), columns=['total_score'])
+
+                mutation_data = pd.DataFrame({f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})' : mutation_data.mean(axis=1),
+                                              f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit}, st. dev.)' : mutation_data.std(axis=1)})
 
             else:
                 text = f"dataset {interactor_dir} did not contain an expected folder structure"
                 raise MAVISpMultipleError(critical=[MAVISpCriticalError(text)],
                                             warning=warnings)
-
-            mutation_data = mutation_data.rename(columns={'total_score':f'{self.type} (Binding with {interactor}, {self.complex_status}, {self.version}, {self.unit})'})
 
             if all_data is None:
                 all_data = mutation_data
