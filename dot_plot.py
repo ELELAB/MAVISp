@@ -157,14 +157,16 @@ def color_yticklabels(labels):
     # an effect on stability, function or other
     stability = ['Stability classification',
                  'PTM effect in stability',
-                 'EFoldMine - part of early folding region']
+                 'EFoldMine - part of early folding region',
+                 'Loss of disulfide bridge',
+                 'Predicted de-novo disulfide bridge']
+
 
     function = ['Local Int.',
                 'Functional sites (cofactor)',
                 'Functional sites (active site)',
                 'PTM',
-                'AlloSigma2']
-
+                'AlloSigMA']
     # Iterate over the labels and append to the color list
     # the color based on the effect
     for l in labels:
@@ -311,16 +313,18 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
         log.error("ClinVar Interpretation column is missing from the input data.")
         raise TypeError("ClinVar Interpretation column is missing from the input data.")
 
-    f = lambda x: '(Rosetta, FoldX)' in x or \
+    f = lambda x: '(Foldetta from FoldX and Rosetta)' in x or \
+                    '(Foldetta from FoldX and RaSP)' in x or \
+                    '(Rosetta, FoldX)' in x or \
                     '(RaSP, FoldX)' in x or \
                     'Local Int. classification' in x or \
                     'Local Int. With DNA classification' in x or \
                     'Functional sites (cofactor)' in x or \
                     'Functional sites (active site)' in x or \
-                    'AlloSigma2 predicted consequence - active sites' in x or \
-                    'AlloSigma2 predicted consequence - cofactor sites' in x or \
-                    'AlloSigma2 predicted consequence - pockets and interfaces' in x or \
-                    ('AlloSigma2-PSN classification' in x and not 'AlloSigma2 mutation type' in x) or\
+                    'AlloSigMA 2 predicted consequence - active sites' in x or \
+                    'AlloSigMA 2 predicted consequence - cofactor sites' in x or \
+                    'AlloSigMA 2 predicted consequence - pockets and interfaces' in x or \
+                    ('AlloSigMA2-PSN classification' in x and not 'AlloSigMA 2 mutation type' in x) or\
                     'PTM effect in ' in x or 'REVEL score' in x or \
                     'EVE classification (25% Uncertain)' in x or \
                     'DeMaSk delta fitness' in x or \
@@ -329,11 +333,18 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
                     'AlphaMissense classification' in x or \
                     ('Mutation' in x and not 'Mutation sources' in x and not 'Mutation predicted to' in x) or \
                     'EFoldMine - part of early folding region' in x or \
-                    'Experimental data classification' in x
+                    'Experimental data classification' in x or \
+                    'Loss of disulfide bridge' in x or \
+                    'Predicted de-novo disulfide bridge' in x
 
     df = full_df.copy()
     filter_columns = [col for col in full_df.columns if f(col)]
     df = df[filter_columns]
+
+    # if both these columns are not present or absent, exit immediately
+    if ('Loss of disulfide bridge' in filter_columns) ^ ('Predicted de-novo disulfide bridge' in filter_columns):
+        raise TypeError ('Columns produced by the disulfide bridges module should either be both '
+                         'available or both unavailable')
 
     # If pltRevel is True then convert REVEL score column to float
     # In case multiple REVEL scores are present it returns the average
@@ -373,13 +384,55 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
     # Sort columns based on broad effect categories
     functional_cols = [col for col in df.columns if 'functional' in col.lower() and 'experimental data classification' not in col.lower()]
+    disulfide_cols = [col for col in df.columns if 'disulfide bridge' in col.lower()]
     stability_cols = [col for col in df.columns if 'stability' in col.lower() and 'experimental data classification' not in col.lower()]
+    stability_cols += disulfide_cols
     efold_col = [col for col in df.columns if 'efoldmine' in col.lower()]
-    other_cols = [col for col in df.columns if 'functional' not in col.lower() and 'stability' not in col.lower() and 'experimental data classification' not in col.lower() and 'efoldmine' not in col.lower()]
+    other_cols = [col for col in df.columns if 'functional' not in col.lower()
+                  and 'stability' not in col.lower()
+                  and 'disulfide bridge' not in col.lower()
+                  and 'experimental data classification' not in col.lower()
+                  and 'efoldmine' not in col.lower()]
     experimental_cols = []
     for col in df.columns:
         if 'Experimental data classification' in col and col not in experimental_cols:
             experimental_cols.append(col)
+
+    # Get ensemble labels only from stability columns
+    ensembles = []
+    for col in stability_cols:
+        m = re.search(r"\[(.*?)\]", col)
+        ensemble = m.group(1).lower() if m else "simple"
+        if ensemble not in ensembles:
+            ensembles.append(ensemble)
+
+    # Reorder stability columns by ensemble label, Foldetta last
+    ordered_stability_cols = []
+
+    for ensemble in ensembles:
+        if ensemble == "simple":
+            ensemble_cols = [
+                col for col in stability_cols
+                if "[" not in col
+            ]
+        else:
+            ensemble_cols = [
+                col for col in stability_cols
+                if f"[{ensemble}]" in col.lower()
+            ]
+
+        foldetta_cols = [
+            col for col in ensemble_cols
+            if 'foldetta' in col.lower()
+        ]
+        other_stability_cols = [
+            col for col in ensemble_cols
+            if 'foldetta' not in col.lower()
+        ]
+
+        ordered_stability_cols += foldetta_cols + other_stability_cols
+
+    stability_cols = ordered_stability_cols
 
     # Combine lists in order
     df = df[stability_cols + efold_col + functional_cols + other_cols + experimental_cols]
@@ -519,10 +572,9 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
         # Raise error if filtering leaves df empty
         if source_idx.empty:
-            log.warning(f"No mutations found matching the mutation source: {plot_Source}. Exiting...")
-            raise TypeError(f"No mutations found matching the mutation source: {plot_Source}.")
-
-        log.info(f"Found {len(source_idx)} mutations matching the source filter: {plot_Source}")
+            log.warning(f"No mutations found matching the mutation source: {plot_Source}")
+        else:
+            log.info(f"Found {len(source_idx)} mutations matching the source filter: {plot_Source}")
 
     # Define an empty df if flags -pltC/-colC are not used
     clinvar_mapped_df = None
@@ -565,10 +617,9 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
         # Raise error if filtering leaves df empty
         if len(clinvar_idx) == 0:
-            log.warning(f"No mutations found matching the ClinVar filter {plot_Clinvar}. Exiting...")
-            raise TypeError(f"No mutations found matching the ClinVar filter {plot_Clinvar}.")
-
-        log.info(f"Found {len(clinvar_idx)} mutations matching the ClinVar filter {plot_Clinvar}")
+            log.warning(f"No mutations found matching the ClinVar filter {plot_Clinvar}")
+        else:
+            log.info(f"Found {len(clinvar_idx)} mutations matching the ClinVar filter {plot_Clinvar}")
 
 
     # Additively filter if -pltS -pltC
@@ -580,8 +631,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
         log.info(f"Found {len(df)} mutations matching filters.")
         # Raise error if filtering leaves df empty
         if df.empty:
-            log.warning("No mutations remain after filtering. Exiting...")
-            raise TypeError("No mutations remain after filtering. Exiting...")
+            log.warning("No mutations remain after filtering")
 
     # Create plotting dataframe and drop columns only used for visualization
     plot_df = df.copy()
@@ -633,6 +683,10 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
 
     # List axes label colors
     yticklabel_color = color_yticklabels(labels = df.columns.values)
+
+    # Override display label for GEMME row
+    display_yticklabels = ['GEMME classification' if lbl == 'GEMME predicted consequence' else lbl
+                           for lbl in df.columns.values]
 
     # Lower and upper limits
     l = 0
@@ -694,7 +748,7 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
         _ = ax.set_xticks(x)
         _ = ax.set_yticks(y)
         _ = ax.set_xticklabels(filtered_df.index, rotation=90)
-        _ = ax.set_yticklabels(df.columns.values, fontweight = 'bold')
+        _ = ax.set_yticklabels(display_yticklabels, fontweight = 'bold')
         _ = ax.set_xlabel('Mutations')
 
         # Color ytick labels
@@ -805,14 +859,15 @@ def generate_summary(data,d_cutoff,r_cutoff):
 
     # Colnames ptm and allosigma
 
-    filter_col_stability = [col for col in data if '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
+    filter_col_stability = [col for col in data if '(Foldetta from FoldX and Rosetta)' in col or '(Foldetta from FoldX and RaSP)' in col or '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
     filter_col_local = [col for col in data if 'Local Int. classification' in col or 'Local Int. With DNA classification' in col]
     ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
     ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
     ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
-    allosigma_clmn = [col for col in data if 'AlloSigma2 predicted consequence' in col]
-    long_range_psn_clmn = [col for col in data if 'AlloSigma2-PSN classification' in col]
+    allosigma_clmn = [col for col in data if 'AlloSigMA 2 predicted consequence' in col]
+    long_range_psn_clmn = [col for col in data if 'AlloSigMA2-PSN classification' in col]
     cofactor_active = [col for col in data if 'Functional sites' in col]
+    disulfide_clmn = [col for col in data if 'disulfide bridge' in col]
     # # Check if columns with well-defined names are in the dataframe
     # for col in [ptm_stab_clmn, ptm_reg_clmn, ptm_funct_clmn, allosigma_clmn]:
     #     if col not in data.columns:
@@ -1307,6 +1362,20 @@ def generate_summary(data,d_cutoff,r_cutoff):
             multiple.append([])
     multiple = [item for sublist in multiple if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
 
+    ### Damaging disulfide bridges ###
+    all_disulfide = []
+    for col in disulfide_clmn:
+        try:
+            disulfide_d = str(len(data[data[col] == 'damaging']))
+            disulfide_d_list = data.index[data[col] == 'damaging'].to_list()
+            all_disulfide.extend(disulfide_d_list)
+            out += f'- {disulfide_d} variants are damaging for {col} '
+            out += out_list(disulfide_d_list)
+        except KeyError:
+            out += f'- {col} not found in MAVISp csv.\n'
+            all_disulfide.append([])
+    all_disulfide = [item for sublist in all_disulfide if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+
     ### Damaging for functional sites ###
     multiple_1 = []
     for col in cofactor_active:
@@ -1363,6 +1432,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     lists = [("stability", all_stability),
              ("local_interactions", all_local),
              ("long_range", all_long_range),
+             ("disulfide", all_disulfide),
              ("functional site",multiple_1),
              ("ptm", all_ptm)]
 
@@ -1429,11 +1499,11 @@ def generate_summary(data,d_cutoff,r_cutoff):
         out += "- No variants with multiple effects have been found.\n"
 
     ### DAMAGING ###
-    damaging_all = set(all_stability + all_local + ptm_s_d_list + ptm_r_d_list + all_long_range)
+    damaging_all = set(all_stability + all_local + ptm_s_d_list + ptm_r_d_list + all_long_range + all_disulfide)
     data_d = data.query('index in @damaging_all')
 
     # For alphamissense output include ptm_f as well in set and df
-    damaging_full = set(all_stability + all_local + all_ptm + multiple_1 + all_long_range)
+    damaging_full = set(all_stability + all_local + all_ptm + multiple_1 + all_long_range + all_disulfide)
     full_data_d = data.query('index in @damaging_full')
 
     # REVEL score > 0.5 (default)
@@ -1644,13 +1714,20 @@ def effect_summary(df):
     # Replace values with 0/1s
     temp_df = df.replace(mechanism_code, regex=True)
 
+    # Wrangle disulfide module columns to make just one
+    if 'Loss of disulfide bridge' and 'Predicted de-novo disulfide bridge' in temp_df.columns:
+        temp_df['Disulfide bridges'] = temp_df['Loss of disulfide bridge'] + temp_df['Predicted de-novo disulfide bridge']
+        temp_df['Disulfide bridges'] = temp_df['Disulfide bridges'].clip(upper=1)
+        temp_df = temp_df.drop(columns=['Loss of disulfide bridge', 'Predicted de-novo disulfide bridge'])
+
     # Define broad effect categories + corresponding regex patterns
     effect_categories = {
         'Stability': 'Stability classification',
         'Local Int.': 'Local Int.',
         'PTM': 'PTM effect',
-        'Long Range': 'AlloSigma2',
-        'Functional': 'Functional sites'}
+        'Long Range': 'AlloSigMA',
+        'Functional': 'Functional sites',
+        'Disulfide bridges': 'Disulfide bridges'}
 
     # Initialise series for storing results
     effects_summary = pd.Series(index=df.index, dtype='object')
@@ -1719,7 +1796,6 @@ def map_clinvar_categories(dataframe, clinvar_dict):
         axis=1)
     return dataframe
 
-
 def filter_vep_summary(summary, df, vep_filter, glof_filter):
     """Filter the AlphafoldMissense summary dataframe
 
@@ -1746,10 +1822,12 @@ def filter_vep_summary(summary, df, vep_filter, glof_filter):
     f = lambda x: 'Stability classification' in x or \
               'Local Int. classification' in x or \
               'Local Int. With DNA classification' in x or \
-              'AlloSigma2 predicted consequence' in x or \
-              'AlloSigma2-PSN classification' in x or \
+              'AlloSigMA 2 predicted consequence' in x or \
+              'AlloSigMA2-PSN classification' in x or \
               'PTM effect' in x or \
               'Functional sites' in x or \
+              'Loss of disulfide bridge' in x or \
+              'Predicted de-novo disulfide bridge' in x or \
               ('Mutation' in x and 'Mutation sources' not in x)
 
     # Filter the columns to keep only classification info
@@ -2056,12 +2134,15 @@ def main():
                    clinvar_flag = bool(args.plot_Clinvar),
                    clinvar_col = bool(args.color_Clinvar))
 
-    with PdfPages(f"{args.output}.pdf") as pdf:
-        for i, figure in enumerate(figures):
-            figure.savefig(pdf, format='pdf', dpi=300)
 
-            if save_png:
-                figure.savefig(f'{args.output}_{i}.png', dpi=300)
+    if len(figures) > 0:
+        with PdfPages(f"{args.output}.pdf") as pdf:
+            for i, figure in enumerate(figures):
+                figure.savefig(pdf, format='pdf', dpi=300)
+                if save_png:
+                    figure.savefig(f'{args.output}_{i}.png', dpi=300)
+    else:
+        log.warning("No figures available to produce; figure output will not be written")
 
 ################################# AM CSV #################################
     filtered_am = filter_vep_summary(summary_df, classification_df, args.AMx, args.adf)
