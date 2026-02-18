@@ -81,9 +81,10 @@ def process_input(df):
     # Define columns with effect classification
     f = lambda x: 'Stability classification' in x or \
                         'Local Int. ' in x or \
-                        'AlloSigma2 predicted consequence' in x or \
-                        'AlloSigma2-PSN classification' in x or \
+                        'AlloSigMA 2 predicted consequence' in x or \
+                        'AlloSigMA2-PSN classification' in x or \
                         'PTM effect' in x or \
+                        'disulfide bridge' in x or \
                         'Functional sites' in x or \
                         'Mutation' in x and not 'Mutation sources' in x
 
@@ -93,7 +94,8 @@ def process_input(df):
     # has been identified
     regex_patterns = {
         'Stability classification': 'Stability',
-        'AlloSigma2': 'Long Range',
+        'disulfide bridge' : 'Disulfide bridges',
+        'AlloSigMA': 'Long Range',
         'Local Int. ': 'Local Int.',
         'PTM effect': 'PTM',
         'Functional sites' : 'Functional'
@@ -122,13 +124,14 @@ def process_input(df):
 
     # Group columns by broad effect
     df['Stability']  = df.filter(regex='Stability classification').apply(pd.to_numeric, errors="coerce").max(axis=1)
-    df['Long Range'] = df.filter(regex='AlloSigma2').apply(pd.to_numeric, errors="coerce").max(axis=1)
+    df['Disulfide bridges'] = df.filter(regex='disulfide bridge').apply(pd.to_numeric, errors="coerce").max(axis=1)
+    df['Long Range'] = df.filter(regex='AlloSigMA').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['Local Int.'] = df.filter(regex='Local Int.').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['PTM']        = df.filter(regex='PTM effect').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['Functional'] = df.filter(regex='Functional sites').apply(pd.to_numeric, errors="coerce").max(axis=1)
 
     # Filter df for relevant columns
-    df = df[['Stability', 'Long Range', 'Local Int.', 'PTM', 'Functional']]
+    df = df[['Stability', 'Disulfide bridges', 'Long Range', 'Local Int.', 'PTM', 'Functional']]
 
     return df
 
@@ -161,6 +164,7 @@ def plot(df, xlim):
     # Define the colors for each effect
     effect_colors = {
             'Stability': '#E34A6F',
+            'Disulfide bridges': '#781CAD',
             'Local Int.': '#3E5965',
             'PTM': '#FF8B1F',
             'Long Range': '#F6CE3C',
