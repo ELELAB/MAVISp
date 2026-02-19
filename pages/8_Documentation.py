@@ -767,10 +767,10 @@ data = [
       "Consequence that the mutation can have on the active site of the protein (manual annotation, per-mutation).",
       "`neutral` or `damaging`" ),
     ( "Active site",
-      "Whether the wild-type residue at this position is part of the catalytic/active site residue list (manual annotation, per-site).",
+      "Whether the wild-type residue at this position is part of a catalytic/active site residue list (manual annotation, per-site).",
       "`True` or `False`" ),
     ( "Cofactor binding site",
-      "Whether the wild-type residue at this position is part of the cofactor-binding residue list (manual annotation, per-site).",
+      "Whether the wild-type residue at this position is part of a cofactor-binding residue list (manual annotation, per-site).",
       "`True` or `False`" )]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 

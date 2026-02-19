@@ -1919,12 +1919,6 @@ class FunctionalSites(MavispModule):
 
     _res3pos_re = re.compile(r'^(?P<aa3>[A-Za-z]{3})(?P<pos>[0-9]+)$')
 
-    _aa3_to_aa1 = {
-        "Ala": "A", "Arg": "R", "Asn": "N", "Asp": "D", "Cys": "C",
-        "Gln": "Q", "Glu": "E", "Gly": "G", "His": "H", "Ile": "I",
-        "Leu": "L", "Lys": "K", "Met": "M", "Phe": "F", "Pro": "P",
-        "Ser": "S", "Thr": "T", "Trp": "W", "Tyr": "Y", "Val": "V",}
-
     def _parse_table(self, fname):
 
         df = pd.read_csv(fname, index_col=False, header=None)
@@ -1955,13 +1949,11 @@ class FunctionalSites(MavispModule):
         residues = df["catalytic_residue"].astype(str).str.strip()
 
         out = set()
-        for r in residues:
-            m = self._res3pos_re.match(r)
-            aa3 = m.group("aa3")
-            pos = int(m.group("pos"))
 
-            aa3 = aa3[0].upper() + aa3[1:].lower()  
-            aa1 = self._aa3_to_aa1[aa3]
+        for r in residues:
+            aa3 = r[:3]          
+            pos = int(r[3:])     
+            aa1 = three_to_one_hgvsp[aa3] 
             out.add((aa1, pos))
 
         return out
