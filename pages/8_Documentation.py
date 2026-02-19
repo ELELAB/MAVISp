@@ -759,16 +759,23 @@ solvent accessible surface - only those mutations with SAS > 25% will be kept"""
 
 st.subheader("Functional Sites module")
 
-st.write("""This module annotates whether mutations have a known effect on functional
-aspects of the protein, starting from manualy annotated data. The module produces
-the following columns:""")
+st.write("""This module annotates functional aspects of the protein using manually curated data.
+It includes both mutation-level annotations (neutral/damaging) and wild-type residue-level flags
+(True/False) derived from curated residue lists. The module produces the following columns:""")
 
-data = [ ( "Functional sites (cofactor)",
-           "Consequence that the mutation can have on the binding of a cofactor",
-           "`neutral` or `damaging`"),
-         ( "Functional sites (active site)",
-           "Consequence that the mutation can have on the active site of the protein",
-           "`neutral` or `damaging`") ]
+data = [
+    ( "Functional sites (cofactor)",
+      "Consequence that the mutation can have on the binding of a cofactor (manual annotation, per-mutation).",
+      "`neutral` or `damaging`" ),
+    ( "Functional sites (active site)",
+      "Consequence that the mutation can have on the active site of the protein (manual annotation, per-mutation).",
+      "`neutral` or `damaging`" ),
+    ( "Active site",
+      "Whether the wild-type residue at this position is part of a catalytic/active site residue list (manual annotation, per-site).",
+      "`True` or `False`" ),
+    ( "Cofactor binding site",
+      "Whether the wild-type residue at this position is part of a cofactor-binding residue list (manual annotation, per-site).",
+      "`True` or `False`" )]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader("Disulfide Bridges module")
