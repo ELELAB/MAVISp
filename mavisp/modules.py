@@ -1900,11 +1900,30 @@ class FunctionalSites(MavispModule):
 
     module_dir = "functional_sites"
     name = "functional_sites"
-    accepted_filenames = ['cofactor_local_aggregate.txt',
-                            'active_site_local_aggregate.txt']
-    column_headers = {'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
-                      'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
+
+    accepted_filenames = [
+        'cofactor_local_aggregate.txt',
+        'active_site_local_aggregate.txt',
+        'catalytic_residues.csv',
+        'cofactor_binding.csv']
+
+    column_headers = {
+        'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
+        'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
+    
+    boolean_headers = {
+        'catalytic_residues.csv' : 'Active site',
+        'cofactor_binding.csv'   : 'Cofactor binding site'}
+    
     _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
+
+    _res3pos_re = re.compile(r'^(?P<aa3>[A-Za-z]{3})(?P<pos>[0-9]+)$')
+
+    _aa3_to_aa1 = {
+        "Ala": "A", "Arg": "R", "Asn": "N", "Asp": "D", "Cys": "C",
+        "Gln": "Q", "Glu": "E", "Gly": "G", "His": "H", "Ile": "I",
+        "Leu": "L", "Lys": "K", "Met": "M", "Phe": "F", "Pro": "P",
+        "Ser": "S", "Thr": "T", "Trp": "W", "Tyr": "Y", "Val": "V",}
 
     def _parse_table(self, fname):
 
@@ -1929,12 +1948,30 @@ class FunctionalSites(MavispModule):
         df['classification'] = pd.Series(index=df.index, data='damaging')
 
         return df
+    
+    def _load_residue_set(self, csv_path):
+
+        df = pd.read_csv(csv_path)
+        residues = df["catalytic_residue"].astype(str).str.strip()
+
+        out = set()
+        for r in residues:
+            m = self._res3pos_re.match(r)
+            aa3 = m.group("aa3")
+            pos = int(m.group("pos"))
+
+            aa3 = aa3[0].upper() + aa3[1:].lower()  
+            aa1 = self._aa3_to_aa1[aa3]
+            out.add((aa1, pos))
+
+        return out
 
     def ingest(self, mutations):
 
         warnings = []
 
-        fs_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        fs_dir = os.path.join(self.data_dir, self.module_dir)
+        fs_files = os.listdir(fs_dir)
 
         if not set(fs_files).issubset(set(self.accepted_filenames)):
             this_error = f"the input files for Functional Sites must be named {', '.join(self.accepted_filenames)}"
@@ -1945,6 +1982,9 @@ class FunctionalSites(MavispModule):
         out_df = out_df.set_index('mutations')
 
         for fs_file in fs_files:
+            
+            if fs_file in self.boolean_headers:
+                continue
 
             log.info(f"parsing Functional Sites data file {fs_file}")
 
@@ -1960,6 +2000,21 @@ class FunctionalSites(MavispModule):
                 df.rename(columns={'classification': self.column_headers[fs_file]}),
                 how='left'
             )
+
+        cat_path = os.path.join(fs_dir, "catalytic_residues.csv")
+        cof_path = os.path.join(fs_dir, "cofactor_binding.csv")
+
+        if os.path.exists(cat_path):
+            catalytic_set = self._load_residue_set(cat_path)
+            out_df[self.boolean_headers['catalytic_residues.csv']] = [
+                ((mm := self._mut_re.match(m)).group("ref"), int(mm.group("pos"))) in catalytic_set
+                for m in out_df.index]
+
+        if os.path.exists(cof_path):
+            cofactor_set = self._load_residue_set(cof_path)
+            out_df[self.boolean_headers['cofactor_binding.csv']] = [
+                ((mm := self._mut_re.match(m)).group("ref"), int(mm.group("pos"))) in cofactor_set
+                for m in out_df.index]
 
         # final: only keep functional-sites columns; fill missing with neutral
         self.data = out_df.fillna('neutral')
