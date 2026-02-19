@@ -324,7 +324,8 @@ Correspondence between functional scores from deep mutational scans and predicte
 on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro.4688
 
 We are still in the process of benchmarking Foldetta, its support should be considered
-provisional at time being.
+provisional at time being. A publication including benchmarking of the Foldetta method
+is under preparation.
 
 A MAVISp dataset will typically have one or more columns named:""")
 
