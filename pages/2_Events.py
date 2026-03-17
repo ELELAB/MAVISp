@@ -39,9 +39,9 @@ We are organizing the second MAVISp BioCurator Training Workshop for 2026!
 This is the most important event of the year for becoming a MAVISp biocurator,
 and to understand MAVISp more in-depth.
 
-The workshop will be held fully online in Autumn 2026.
+The workshop will be held in early Autumn 2026.
 
-More details on the event will be available closer to date
+More details on the event will be available closer to date.
 """)
 
 st.divider()
