@@ -29,9 +29,26 @@ add_affiliation_logo()
 
 st.title("Events")
 
-st.header("MAVISp BioCurator Training Workshop 2025")
+st.header("Current events")
 
-st.subheader("Event details")
+st.subheader("MAVISp BioCurator Training Workshop 2026")
+
+st.markdown("""
+We are organizing the second MAVISp BioCurator Training Workshop for 2026!
+
+This is the most important event of the year for becoming a MAVISp biocurator,
+and to understand MAVISp more in-depth.
+
+The workshop will be held fully online in Autumn 2026.
+
+More details on the event will be available closer to date
+""")
+
+st.divider()
+
+st.header("Past events")
+
+st.subheader("MAVISp BioCurator Training Workshop 2025")
 
 st.markdown("""
 - When: 3rd to 5th of September 2025
