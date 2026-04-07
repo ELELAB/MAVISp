@@ -93,6 +93,8 @@ class MAVISpSimpleMode(MAVISpMode):
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
+    supported_foldx_versions = {'foldx5', 'foldx5.1'}
+
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
         mavisp_criticals = []
@@ -123,7 +125,9 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['allosigma_distance_cutoff'] = ''
 
         if 'foldx_version' in metadata.keys():
-            out_metadata['foldx_version'] = str(metadata['foldx_version'])
+            if not metadata['foldx_version'] in self.supported_foldx_versions:
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, foldx_version can be one of: {', '.join(list(self.supported_foldx_versions))}"))
+            out_metadata['foldx_version'] = metadata['foldx_version']
         else:
             out_metadata['foldx_version'] = ''
 
@@ -262,6 +266,8 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+"}
 
+    supported_foldx_versions = {'foldx5', 'foldx5.1'}
+
     ensemble_names = {"md", "cabsflex", "bioemu", "nmr", "metad"}
 
     def parse_metadata(self, data_dir, system):
@@ -307,11 +313,18 @@ class MAVISpEnsembleMode(MAVISpMode):
         except (KeyError, TypeError): #TypeError is raised when the Key is present in metadata, but the value is None
             pass
 
-        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics', 'foldx_version']:
+        for k in ['sampling_functional_dynamics', 'interfaces_functional_dynamics']:
             try:
                 out_metadata[k] = str(metadata[k])
             except KeyError:
                 out_metadata[k] = ""
+
+        if 'foldx_version' in metadata.keys():
+            if not metadata['foldx_version'] in self.supported_foldx_versions:
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, foldx_version can be one of: {', '.join(list(self.supported_foldx_versions))}"))
+            out_metadata['foldx_version'] = metadata['foldx_version']
+        else:
+            out_metadata['foldx_version'] = ''
 
         try:
             curators = ', '.join(
