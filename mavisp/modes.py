@@ -91,7 +91,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     allosigma_modes = { "CA-CA", "atomic_contacts"}
 
-    supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
+    supported_cofactors = {"Zn2+", "Mg2+", "ADP", "ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
     supported_foldx_versions = {'foldx5', 'foldx5.1'}
 
@@ -264,7 +264,7 @@ class MAVISpEnsembleMode(MAVISpMode):
         "PDB": "Experimental PDB structure",
         "Mod": "Homology model (PDB template, reconstruction)"}
 
-    supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+"}
+    supported_cofactors = {"Zn2+", "Mg2+", "ADP", "ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
     supported_foldx_versions = {'foldx5', 'foldx5.1'}
 
