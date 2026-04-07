@@ -95,6 +95,11 @@ data = [
         'Possible values': 'URL link'
     },
     {
+        'Column': 'FoldX version',
+        'Description': 'Version of FoldX used to perform FoldX runs',
+        'Possible values': 'foldx5 or foldx5.1'
+    },
+    {
         'Column': 'Distance cut-off used for AlloSigMA 2',
         'Description': 'Distance threshold used in AlloSigMA 2 for filtering out mutation and response sites that are too close by',
         'Possible values': 'number, in Å'
@@ -152,6 +157,11 @@ data = [
         'Column': 'RefSeq ID',
         'Description': 'NCBI RefSeq identifier for the protein sequence, without version number',
         'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
+    },
+    {
+        'Column': 'FoldX version',
+        'Description': 'Version of FoldX used to perform FoldX runs',
+        'Possible values': '5 or 5.1'
     },
     {
         'Column': 'Ensemble sources',
@@ -326,6 +336,14 @@ on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro
 We are still in the process of benchmarking Foldetta, its support should be considered
 provisional at time being. A publication including benchmarking of the Foldetta method
 is under preparation.
+
+Notice that, while the MAVISp tables always include "FoldX5" in the header for stability
+for FoldX calculations, these might actually have been performed used either FoldX 5
+or FoldX 5.1. We currently include runs performed with either and annotate them under the
+same header in the MAVISp tables. What version has actually been used for each entry is
+specified in the main protein lists under the "FoldX version" column. For a comparison
+between results obtained using FoldX 5 and 5.1 in the MAVISp dataset please see
+[our preprint](https://www.biorxiv.org/content/10.64898/2026.03.31.715598v1) on the matter.
 
 A MAVISp dataset will typically have one or more columns named:""")
 

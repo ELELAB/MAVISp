@@ -62,10 +62,10 @@ class MAVISpSimpleMode(MAVISpMode):
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
-                          'allosigma_distance_cutoff', 'allosigma_distance_mode', 
+                          'foldx_version', 'allosigma_distance_cutoff', 'allosigma_distance_mode',
                           'structure_source', 'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
-                  'allosigma_distance_cutoff', 'allosigma_distance_mode', 'structure_source',
+                  'foldx_version', 'allosigma_distance_cutoff', 'allosigma_distance_mode', 'structure_source',
                   'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_col_labels = {'system': "Protein",
                         'uniprot_ac': 'Uniprot AC',
@@ -79,7 +79,8 @@ class MAVISpSimpleMode(MAVISpMode):
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
                         'pdb_id': 'PDB ID',
-                        'cofactors_in_structure' : 'Cofactors in starting structure'}
+                        'cofactors_in_structure' : 'Cofactors in starting structure',
+                        'foldx_version' : 'FoldX version'}
     
     structure_sources = {
         "AFDB": "AlphaFold database",
@@ -91,6 +92,8 @@ class MAVISpSimpleMode(MAVISpMode):
     allosigma_modes = { "CA-CA", "atomic_contacts"}
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
+
+    supported_foldx_versions = {'foldx5', 'foldx5.1'}
 
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
@@ -120,6 +123,13 @@ class MAVISpSimpleMode(MAVISpMode):
             out_metadata['allosigma_distance_cutoff'] = ', '.join(map(str, metadata['allosigma_distance_cutoff']))
         else:
             out_metadata['allosigma_distance_cutoff'] = ''
+
+        if 'foldx_version' in metadata.keys():
+            if not metadata['foldx_version'] in self.supported_foldx_versions:
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, foldx_version can be one of: {', '.join(list(self.supported_foldx_versions))}"))
+            out_metadata['foldx_version'] = metadata['foldx_version']
+        else:
+            out_metadata['foldx_version'] = ''
 
         if 'allosigma_distance_mode' in metadata.keys():
 
@@ -219,11 +229,11 @@ class MAVISpEnsembleMode(MAVISpMode):
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'experimental_data']
     name = 'ensemble_mode'
-    supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'foldx_version', 'ensemble_size_foldx',
     'ensemble_size_rosetta', 'sampling_functional_dynamics', 'interfaces_functional_dynamics',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
     'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
-    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'ensemble_size_foldx',
+    index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'foldx_version', 'ensemble_size_foldx',
     'ensemble_size_rosetta',  'sampling_functional_dynamics', 'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field',
     'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source',
     'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
@@ -245,7 +255,8 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'structure_description': 'Description of structure source',
                         'linker_design': 'Linker design included',
                         'pdb_id' : 'PDB ID',
-                        'cofactors_in_structure': 'Cofactors in starting structures'}
+                        'cofactors_in_structure': 'Cofactors in starting structures',
+                        'foldx_version' : 'FoldX version'}
     structure_sources = {
         "AFDB": "AlphaFold database",
         "AF3": "AlphaFold3 webserver",
@@ -254,6 +265,8 @@ class MAVISpEnsembleMode(MAVISpMode):
         "Mod": "Homology model (PDB template, reconstruction)"}
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", " ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+"}
+
+    supported_foldx_versions = {'foldx5', 'foldx5.1'}
 
     ensemble_names = {"md", "cabsflex", "bioemu", "nmr", "metad"}
 
@@ -305,6 +318,13 @@ class MAVISpEnsembleMode(MAVISpMode):
                 out_metadata[k] = str(metadata[k])
             except KeyError:
                 out_metadata[k] = ""
+
+        if 'foldx_version' in metadata.keys():
+            if not metadata['foldx_version'] in self.supported_foldx_versions:
+                mavisp_criticals.append(MAVISpCriticalError(f"in metadata, foldx_version can be one of: {', '.join(list(self.supported_foldx_versions))}"))
+            out_metadata['foldx_version'] = metadata['foldx_version']
+        else:
+            out_metadata['foldx_version'] = ''
 
         try:
             curators = ', '.join(

@@ -10,6 +10,7 @@ uniprot_ac: P04637
 refseq_id: NP_000537
 gitbook_entry: https://elelab.gitbook.io/mavisp/proteins/tp53/
 review_status: 3
+foldx_version: foldx5
 allosigma_distance_cutoff: [ 5.5 ]
 allosigma_distance_mode: [ atomic_contacts ]
 structure_source: AFDB
