@@ -97,7 +97,7 @@ data = [
     {
         'Column': 'FoldX version',
         'Description': 'Version of FoldX used to perform FoldX runs',
-        'Possible values': '5 or 5.1'
+        'Possible values': 'foldx5 or foldx5.1'
     },
     {
         'Column': 'Distance cut-off used for AlloSigMA 2',
