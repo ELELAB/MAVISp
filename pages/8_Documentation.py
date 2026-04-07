@@ -95,8 +95,13 @@ data = [
         'Possible values': 'URL link'
     },
     {
-        'Column': 'FoldX version',
-        'Description': 'Version of FoldX used to perform FoldX runs',
+        'Column': 'FoldX version for STABILITY module',
+        'Description': 'Version of FoldX used to perform FoldX runs for the STABILITY module',
+        'Possible values': 'foldx5 or foldx5.1'
+    },
+    {
+        'Column': 'FoldX version for LOCAL_INTERACTIONS module',
+        'Description': 'Version of FoldX used to perform FoldX runs for the LOCAL_INTERACTIONS module',
         'Possible values': 'foldx5 or foldx5.1'
     },
     {
@@ -159,9 +164,14 @@ data = [
         'Possible values': 'Refseq identifiers, e.g., "NP_000537"'
     },
     {
-        'Column': 'FoldX version',
-        'Description': 'Version of FoldX used to perform FoldX runs',
-        'Possible values': '5 or 5.1'
+        'Column': 'FoldX version for STABILITY module',
+        'Description': 'Version of FoldX used to perform FoldX runs for the STABILITY module',
+        'Possible values': 'foldx5 or foldx5.1'
+    },
+    {
+        'Column': 'FoldX version for LOCAL_INTERACTIONS module',
+        'Description': 'Version of FoldX used to perform FoldX runs for the LOCAL_INTERACTIONS module',
+        'Possible values': 'foldx5 or foldx5.1'
     },
     {
         'Column': 'Ensemble sources',
@@ -341,8 +351,8 @@ Notice that, while the MAVISp tables always include "FoldX5" in the header for s
 for FoldX calculations, these might actually have been performed used either FoldX 5
 or FoldX 5.1. We currently include runs performed with either and annotate them under the
 same header in the MAVISp tables. What version has actually been used for each entry is
-specified in the main protein lists under the "FoldX version" column. For a comparison
-between results obtained using FoldX 5 and 5.1 in the MAVISp dataset please see
+specified in the main protein lists under the "FoldX version for STABILITY module" column.
+For a comparison between results obtained using FoldX 5 and 5.1 in the MAVISp dataset please see
 [our preprint](https://www.biorxiv.org/content/10.64898/2026.03.31.715598v1) on the matter.
 
 A MAVISp dataset will typically have one or more columns named:""")
@@ -442,6 +452,12 @@ protein of interest and on the origin of such complex structure, whether they ar
 in a hetero- or homodimer, the method used to perform the calculation and the unit in which
 the changes in binding free energy are expressed. Positive value indicate a less strong
 binding upon mutation, while negative values indicate a stronger binding.
+
+Notice that, while the MAVISp tables always include "FoldX5" in the header for local interactions
+for FoldX calculations, these might actually have been performed used either FoldX 5
+or FoldX 5.1. We currently include runs performed with either and annotate them under the
+same header in the MAVISp tables. What version has actually been used for each entry is
+specified in the main protein lists under the "FoldX version for LOCAL_INTERACTIONS module" column.
 
 Similarly as for the `Stability` module, MAVISp uses a consensus approach between FoldX
 and Rosetta to calculate the final classification. Additionally, the module also consider
