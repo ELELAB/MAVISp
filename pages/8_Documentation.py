@@ -341,7 +341,7 @@ Notice that, while the MAVISp tables always include "FoldX5" in the header for s
 for FoldX calculations, these might actually have been performed used either FoldX 5
 or FoldX 5.1. We currently include runs performed with either and annotate them under the
 same header in the MAVISp tables. What version has actually been used for each entry is
-specified in the main protein lists under the "FoldX version" header. For a comparison
+specified in the main protein lists under the "FoldX version" column. For a comparison
 between results obtained using FoldX 5 and 5.1 in the MAVISp dataset please see
 [our preprint](https://www.biorxiv.org/content/10.64898/2026.03.31.715598v1) on the matter.
 
