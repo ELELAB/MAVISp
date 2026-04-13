@@ -96,7 +96,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", "ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
-    supported_foldx_versions = {'foldx5', 'foldx5.1'}
+    supported_foldx_versions = {'foldx5', 'foldx5.1', None}
 
     def parse_metadata(self, data_dir, system):
         out_metadata = {k: None for k in self.supported_metadata}
@@ -130,8 +130,12 @@ class MAVISpSimpleMode(MAVISpMode):
         for k in ['stability_foldx_version', 'local_int_foldx_version']:
             if k in metadata.keys():
                 if not metadata[k] in self.supported_foldx_versions:
-                    mavisp_criticals.append(MAVISpCriticalError(f"in metadata, {k} must be one of: {', '.join(list(self.supported_foldx_versions))}"))
-                out_metadata[k] = metadata[k]
+                    supported_foldx_str = ', '.join([x for x in self.supported_foldx_versions if x is not None])
+                    mavisp_criticals.append(MAVISpCriticalError(f"in metadata, {k} must be one of: {supported_foldx_str}, null, empty string"))
+                if metadata[k] is None:
+                    out_metadata[k] = ''
+                else:
+                    out_metadata[k] = metadata[k]
             else:
                 out_metadata[k] = ''
 
@@ -273,7 +277,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", "ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
-    supported_foldx_versions = {'foldx5', 'foldx5.1'}
+    supported_foldx_versions = {'foldx5', 'foldx5.1', None}
 
     ensemble_names = {"md", "cabsflex", "bioemu", "nmr", "metad"}
 
@@ -329,7 +333,12 @@ class MAVISpEnsembleMode(MAVISpMode):
         for k in ['stability_foldx_version', 'local_int_foldx_version']:
             if k in metadata.keys():
                 if not metadata[k] in self.supported_foldx_versions:
-                    mavisp_criticals.append(MAVISpCriticalError(f"in metadata, {k} must be one of: {', '.join(list(self.supported_foldx_versions))}"))
+                    supported_foldx_str = ', '.join([x for x in self.supported_foldx_versions if x is not None])
+                    mavisp_criticals.append(MAVISpCriticalError(f"in metadata, {k} must be one of: {supported_foldx_str}, null, empty string"))
+                if metadata[k] is None:
+                    out_metadata[k] = ''
+                else:
+                    out_metadata[k] = metadata[k]
                 out_metadata[k] = metadata[k]
             else:
                 out_metadata[k] = ''
