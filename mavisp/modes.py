@@ -277,7 +277,7 @@ class MAVISpEnsembleMode(MAVISpMode):
 
     supported_cofactors = {"Zn2+", "Mg2+", "ADP", "ATP", "GDP", "GTP", "NADH", "NAD+", "FADH", "FAD+", "Ca2+", "Mn2+", "Fe2+", "Fe3+"}
 
-    supported_foldx_versions = {'foldx5', 'foldx5.1'}
+    supported_foldx_versions = {'foldx5', 'foldx5.1', None}
 
     ensemble_names = {"md", "cabsflex", "bioemu", "nmr", "metad"}
 
