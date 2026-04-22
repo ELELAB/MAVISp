@@ -4,6 +4,7 @@
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 #           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
+#           (C) 2026 Eszter Toldi, Technical University of Denmark (DTU)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -153,7 +154,8 @@ class Stability(MultiMethodMavispModule):
     methods = {'foldx5'                      : MutateXStability(version="FoldX5"),
                'rosetta_cartddg2020_ref2015' : RosettaDDGPredictionStability(version='Rosetta Cartddg2020'),
                'rosetta_ref2015'             : RosettaDDGPredictionStability(version='Rosetta Cartddg'),
-               'rasp'                        : RaSP(version='RaSP')}
+               'rasp'                        : RaSP(version='RaSP'),
+               'thermompnn': ThermoMPNN(version='ThermoMPNN')}
 
     def ingest(self, mutations):
 
@@ -240,6 +242,13 @@ class Stability(MultiMethodMavispModule):
         else:
             rasp_header = None
 
+        if any(['ThermoMPNN' in k for k in keys]):
+            thermompnn_col = [k for k in keys if 'ThermoMPNN' in k and 'st. dev.' not in k]
+            assert thermompnn_col is not None
+            thermompnn_header = thermompnn_col[0]
+        else:
+            thermompnn_header = None
+
         # Add mean of FoldX and Rosetta (Foldetta)
         foldetta_mean = None
         if foldx_header in model_data.columns and rosetta_header in model_data.columns:
@@ -289,6 +298,11 @@ class Stability(MultiMethodMavispModule):
         else:
             warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) can only be calculated if exactly one RaSP and one MutateX datasets are available"))
 
+        if thermompnn_header is not None:
+            model_data[f'Stability classification (ThermoMPNN)'] = model_data.apply(self._generate_thermompnn_stability_classification, column=thermompnn_header, axis=1)
+        else:
+            warnings.append(MAVISpWarningError("Stability classification (ThermoMPNN) could not be calculated because ThermoMPNN column is missing."))
+
         if foldetta_mean is not None:
             model_data[f"Stability classification (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
 
@@ -330,6 +344,21 @@ class Stability(MultiMethodMavispModule):
         elif row[column] <= (-stab_co):
             return 'Stabilizing'
         elif (-neut_co) < row[column] < neut_co:
+            return 'Neutral'
+        return 'Uncertain'
+
+    def _generate_thermompnn_stability_classification(self, row, column):
+
+        stab_co = 2.0
+        neut_co = 1.0
+
+        if pd.isna(row[column]):
+            return pd.NA
+        elif row[column] >= stab_co:
+            return 'Destabilizing'
+        elif row[column] <= (-stab_co):
+            return 'Stabilizing'
+        elif (-neut_co) <= row[column] <= neut_co:
             return 'Neutral'
         return 'Uncertain'
 
@@ -418,6 +447,13 @@ class SimpleStability(Stability):
             else:
                 rasp_header = None
 
+            if any(['ThermoMPNN' in k for k in keys]):
+                thermompnn_col = [k for k in keys if 'ThermoMPNN' in k]
+                assert thermompnn_col is not None
+                thermompnn_header = thermompnn_col[0]
+            else:
+                thermompnn_header = None
+
             # Add mean of FoldX and Rosetta (Foldetta)
             foldetta_mean = None
             if foldx_header in model_data.columns and rosetta_header in model_data.columns:
@@ -472,6 +508,11 @@ class SimpleStability(Stability):
                 model_data[f'Stability classification, {method}, (RaSP, FoldX)'] = model_data.apply(self._generate_stability_classification, foldx_header=foldx_header, rosetta_header=rasp_header, axis=1)
             else:
                 warnings.append(MAVISpWarningError(f"Stability classification (RaSP, FoldX) for {method} method can only be calculated if exactly one RaSP and one MutateX datasets are available"))
+
+            if thermompnn_header is not None:
+                model_data[f'Stability classification, {method}, (ThermoMPNN)'] = model_data.apply(self._generate_thermompnn_stability_classification, column=thermompnn_header, axis=1)
+            else:
+                warnings.append(MAVISpWarningError(f"Stability classification (ThermoMPNN) for {method} could not be calculated because ThermoMPNN column is missing."))
 
             if foldetta_mean is not None:
                 model_data[f"Stability classification, {method}, (Foldetta from FoldX and Rosetta)"] = model_data.apply(self._generate_single_stability_classification, column=foldetta_mean, axis=1)
