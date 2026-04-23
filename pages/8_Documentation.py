@@ -335,13 +335,18 @@ st.subheader("Stability")
 
 st.write("""The Stability module predicts changes of folding free energy upon mutation, i.e. how the stability
 of the protein changes respect to the reference protein sequence (the wild-type). In this module,
-we use both FoldX and Rosetta or RAsP to calculate changes of free energy of folding associated
+we use both FoldX and Rosetta or RaSP to calculate changes of free energy of folding associated
 with the mutation and build a consensus from their results. Additionally, Foldetta, a mean of
 FoldX and Rosetta changes of folding free energy, as well as a mean of FoldX and RaSP changes 
 of folding free energy, are calculated and used for stability classification. 
 For Foldetta, see Gerasimavicius, L., Livesey, B. J., & Marsh, J. A. (2023).
 Correspondence between functional scores from deep mutational scans and predicted effects
-on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro.4688
+on protein stability. Protein science, 32(7), e4688. https://doi.org/10.1002/pro.4688,
+Further, ThermoMPNN was used to predict changes of folding free energy in simple and ensemble mode
+including a stability classification according to a ThermoMPNN-specific classification scheme (see below). 
+For ThermoMPNN, see H. Dieckhaus,M. Brocidiacono,N.Z. Randolph, & B. Kuhlman,  
+Transfer learning to leverage larger datasets for improved prediction of protein stability changes, 
+Proc. Natl. Acad. Sci. U.S.A. 121 (6) e2314853121, https://doi.org/10.1073/pnas.2314853121 (2024).
 
 We are still in the process of benchmarking Foldetta, its support should be considered
 provisional at time being. A publication including benchmarking of the Foldetta method
@@ -372,6 +377,9 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          ("Stability (Foldetta from FoldX and RaSP, kcal/mol)",
          "mean of change of folding free energies calculated by FoldX and RaSP",
          "value (kcal/mol)"),
+         ("Stability (ThermoMPNN, alphafold, kcal/mol)",
+         "change of folding free energy upon mutation calculated using ThermoMPNN",
+         "value (kcal/mol)"),
          ("Stability classification, alphafold, (Rosetta, FoldX)",
          "Consensus classification using Rosetta and FoldX data",
          "see below"),
@@ -383,7 +391,10 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          "see below"),
          ("Stability classification (Foldetta from Rosetta and RaSP)",
          "Stability classification using the mean of FoldX and RaSP",
-         "see below"), ]
+         "see below"), 
+         ("Stability classification, alphafold, (ThermoMPNN)",
+         "Stability classification using ThermoMPNN",
+         "see below")]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
@@ -400,7 +411,7 @@ The classification procedure works as follows. First, Rosetta/RaSP and FoldX are
 independently, and an implicit classification, unavailable to the final user, is performed
 for each, according to the following table:""")
 
-data = [ ( 'DDG >= 3',                       'Detabilizing'),
+data = [ ( 'DDG >= 3',                       'Destabilizing'),
          ( 'DDG <= -3',                      'Stabilizing'),
          ( '-2 < DDG < 2',                   'Neutral'),
          ( '-3 < DDG <= -2 or 2 <= DDG < 3', 'Uncertain') ]
@@ -409,6 +420,14 @@ st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol'
 st.write("""Each mutation is therefore classified for both methods. If the methods agree (i.e. if they
 classify the mutation in the same way), their consensus is the final classification for the mutation; if they do
 not agree, the final classificaiton will be Uncertain. For Foldetta and the mean of FoldX and RaSP, no consensus method is used, the mean change of folding free energy is classified according to the above table. Therefore, the final possible classification values are:""")
+
+st.write("""The classification procedure for ThermoMPNN is as follows:""")
+
+data = [ ( 'DDG >= 2',                       'Destabilizing'),
+         ( 'DDG <= -2',                      'Stabilizing'),
+         ( '-1 < DDG < 1',                   'Neutral'),
+         ( '-2 < DDG <= -1 or 1 <= DDG < 1', 'Uncertain') ]
+st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Preliminary classification']))
 
 data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein structure'),
          ( 'Stabilizing'  , 'The mutation is stabilizing for the protein structure'),
