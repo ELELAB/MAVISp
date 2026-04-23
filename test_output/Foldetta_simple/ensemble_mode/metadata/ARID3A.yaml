@@ -1,0 +1,26 @@
+cancermuts: null
+pfam: null
+stability: null
+local_interactions_DNA: null
+sas: null
+ptms: null
+long_range: null
+clinvar: null
+demask: null
+gemme: null
+eve: null
+alphamissense: null
+experimental_data:
+- Assay type: FACS_analysis
+  Class of assay: stability
+  Reference: Nan
+  Score set ID: ARID3A_VAMP-seq_lowthrougput_stability_validation
+  Is reference peer-reviewed: false
+  License type: CC0
+  Columns in MAVISp:
+  - Data column: Experimental data (FACS_analysis, Stability)
+    Classification column: Experimental data classification (FACS_analysis, Stability)
+    Classification strategy:
+      damaging: Damaging
+      uncertain: Uncertain
+      neutral: Neutral
