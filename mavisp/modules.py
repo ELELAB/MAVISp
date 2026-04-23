@@ -970,17 +970,145 @@ class DenovoPhospho(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
 
-class TaccDenovoPhospho(DenovoPhospho):
+class TaccDenovoPhospho(MavispModule):
 
-    expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
+    expected_files = ['acc_REL.csv',
+                      'variant_site_best_netphos.csv']
     sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
 
-        sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
+        sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average', 'acc_std'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
         return sas_data
+
+    def _parse_netphos_best_site(self, fname, warnings):
+
+        try:
+            netphos = pd.read_csv(fname)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the variant_site_best_netphos.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        required_columns = ['variant', 'best_score', 'best_kinase']
+        if not set(required_columns).issubset(netphos.columns):
+            this_error = f"variant_site_best_netphos.csv must contain the columns {', '.join(required_columns)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        netphos = netphos[required_columns].drop_duplicates(subset='variant')
+        return netphos.set_index('variant').rename(columns={'best_score'  : 'NetPhos score',
+                                                            'best_kinase' : 'NetPhos predicted kinase'})
+
+    def _parse_summary_ddg(self, fname, column_name, warnings, value_column='ddg_avg'):
+
+        try:
+            ddg = pd.read_csv(fname,
+                sep=r'\s+',
+                header=None,
+                names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the {os.path.basename(fname)} file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        return ddg[['mutation', value_column]].set_index('mutation').rename(columns={value_column : column_name})
+
+    def _get_mutation_sas(self, mutations, warnings):
+
+        sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
+        sas_data = sas_data.rename(columns={'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type (average)',
+                                            'acc_std'    : 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'})
+        sas_data.index = sas_data.index.astype(str)
+
+        result = pd.DataFrame({'mutation' : mutations,
+                               'resn'     : [mut[1:-1] for mut in mutations]}).set_index('mutation')
+        result = result.join(sas_data, on='resn').drop(columns=['resn'])
+
+        sas_avg_col = 'Relative Side Chain Solvent Accessibility in wild-type (average)'
+        sas_std_col = 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'
+        low_accessibility = result[sas_avg_col].notna() & result[sas_std_col].notna() & ((result[sas_avg_col] + result[sas_std_col]) < 25.0)
+        if low_accessibility.any():
+            low_accessibility_mutations = ', '.join(result.index[low_accessibility])
+            warnings.append(MAVISpWarningError(f"Some mutations have average accessibility plus standard deviation below 25%: {low_accessibility_mutations}"))
+
+        return result
+
+    def _generate_free_energy_classification(self, row, column):
+
+        return Stability._generate_single_stability_classification(self, row, column)
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        mf_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if not set(self.expected_files).issubset(set(mf_files)):
+            this_error = f"the input files for Muts On Phospho must be named {', '.join(self.expected_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        netphos = self._parse_netphos_best_site(os.path.join(self.data_dir, self.module_dir, 'variant_site_best_netphos.csv'), warnings)
+        mutation_sas = self._get_mutation_sas(mutations, warnings)
+
+        final_data = pd.DataFrame({'mutation': mutations}).set_index('mutation')
+        final_data = final_data.join(netphos, how='left').join(mutation_sas, how='left')
+        final_data['Potential novel phosphosite found'] = final_data.index.isin(netphos.index)
+
+        stability_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt')
+        stability_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability_std.txt')
+        if os.path.exists(stability_std_fname) and not os.path.exists(stability_fname):
+            this_error = "summary_stability_std.txt found but summary_stability.txt is missing"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        if os.path.exists(stability_fname):
+            stability_col = 'Change in stability free energy (kcal/mol)'
+            stability_ddg = self._parse_summary_ddg(stability_fname,
+                                                    stability_col,
+                                                    warnings)
+            final_data = final_data.join(stability_ddg, how='left')
+            final_data['Stability classification (change in stability free energy)'] = final_data.apply(self._generate_free_energy_classification,
+                                                                                                        column=stability_col,
+                                                                                                        axis=1)
+            if os.path.exists(stability_std_fname):
+                stability_std_col = 'Change in stability free energy (kcal/mol, st. dev.)'
+                stability_ddg_std = self._parse_summary_ddg(stability_std_fname,
+                                                            stability_std_col,
+                                                            warnings)
+                final_data = final_data.join(stability_ddg_std, how='left')
+        else:
+            warnings.append(MAVISpWarningError("summary_stability.txt not found - change in free energy values will not be reported"))
+
+        binding_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding.txt')
+        binding_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding_std.txt')
+        if os.path.exists(binding_std_fname) and not os.path.exists(binding_fname):
+            this_error = "summary_binding_std.txt found but summary_binding.txt is missing"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        if os.path.exists(binding_fname):
+            binding_col = 'Change in binding free energy (kcal/mol)'
+            binding_ddg = self._parse_summary_ddg(binding_fname,
+                                                  binding_col,
+                                                  warnings)
+            final_data = final_data.join(binding_ddg, how='left')
+            final_data['Stability classification (change in binding free energy)'] = final_data.apply(self._generate_free_energy_classification,
+                                                                                                      column=binding_col,
+                                                                                                      axis=1)
+            if os.path.exists(binding_std_fname):
+                binding_std_col = 'Change in binding free energy (kcal/mol, st. dev.)'
+                binding_ddg_std = self._parse_summary_ddg(binding_std_fname,
+                                                          binding_std_col,
+                                                          warnings)
+                final_data = final_data.join(binding_ddg_std, how='left')
+        else:
+            warnings.append(MAVISpWarningError("summary_binding.txt not found - change in free energy values will not be reported"))
+
+        self.data = final_data
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPhospho):
     module_dir = "denovo_phospho"
