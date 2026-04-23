@@ -440,7 +440,7 @@ data = [ ( 'DDG >= 2',                       'Destabilizing'),
          ( 'DDG <= -2',                      'Stabilizing'),
          ( '-1 < DDG < 1',                   'Neutral'),
          ( '-2 < DDG <= -1 or 1 <= DDG < 1', 'Uncertain') ]
-st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Preliminary classification']))
+st.dataframe(pd.DataFrame(data, columns=['Change in free energy (DDG), kcal/mol', 'Classification']))
 
 st.write("""The final classification values for any method are therefore the following:""")
 
