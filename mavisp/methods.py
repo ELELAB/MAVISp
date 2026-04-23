@@ -806,11 +806,14 @@ class ThermoMPNN(Method):
                 else:
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-            avg_ddg_colname = f'{self.type} ({self.unit})'
-            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
-
             std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
-            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
+            avg_ddg_colname = f'{self.type} ({self.unit})'
+
+            mutation_data_mean = mutation_data.mean(axis=1)
+            mutation_data_std  = mutation_data.std(axis=1)
+
+            mutation_data[avg_ddg_colname] = mutation_data_mean
+            mutation_data[std_ddg_colname] = mutation_data_std
 
             mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
 
