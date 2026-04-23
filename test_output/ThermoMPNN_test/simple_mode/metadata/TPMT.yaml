@@ -1,0 +1,42 @@
+cancermuts: null
+pfam: null
+stability: null
+efoldmine: null
+sas: null
+ptms: null
+clinvar: null
+alphafold: null
+demask: null
+alphamissense: null
+experimental_data:
+- Assay type: VAMP-seq
+  Class of assay: stability
+  Reference: 10.1038/s41588-018-0122-z
+  Score set ID: 00000013-b-1
+  Is reference peer-reviewed: true
+  License type: CC0
+  Columns in MAVISp:
+  - Data column: Experimental data (VAMP-seq, Stability (MAVEdb,GMM))
+    Classification column: Experimental data classification (VAMP-seq, Stability (MAVEdb,GMM))
+    Classification strategy:
+      damaging:
+      - - -9999
+        - 0.489
+      neutral:
+      - - 0.489
+        - 9999
+- Assay type: VAMP-seq
+  Class of assay: stability
+  Reference: 10.1038/s41588-018-0122-z
+  Score set ID: 00000013-b-1
+  Is reference peer-reviewed: true
+  License type: CC0
+  Columns in MAVISp:
+  - Data column: Experimental data (VAMP-seq, Stability (MAVEdb))
+    Classification column: Experimental data classification (VAMP-seq, Stability (MAVEdb))
+    Classification strategy:
+      damaging: 1
+      uncertain:
+      - 2
+      - 3
+      neutral: 4

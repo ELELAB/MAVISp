@@ -1,0 +1,18 @@
+score_set: 00000013-b-1
+class_of_assay: stability
+assay: VAMP-seq
+columns: 
+    abundance_class:
+        data_file: score_set.csv
+        mutation_column: hgvs_pro
+        mutation_format: hgvsp
+        header: Stability (MAVEdb)
+        thresholds:
+            damaging: 1
+            uncertain: [2, 3]
+            neutral: 4
+        threshold_type: values
+        offset: 0
+reference: 10.1038/s41588-018-0122-z
+peer-reviewed: True
+license: CC0

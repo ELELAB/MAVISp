@@ -1,0 +1,13 @@
+curators:
+  Eszter Toldi:
+    affiliation:
+    - DTU, Denmark
+    - DCI, Denmark
+uniprot_ac: P51580
+refseq_id: NP_000358
+review_status: 0
+structure_source: AFDB
+linker_design: false
+pdb_id: ''
+stability_foldx_version: foldx5
+local_int_foldx_version: foldx5
