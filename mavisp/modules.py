@@ -1016,29 +1016,32 @@ class TaccDenovoPhospho(MavispModule):
 
         return ddg[['mutation', value_column]].set_index('mutation').rename(columns={value_column : column_name})
 
-    def _get_mutation_sas(self, mutations, warnings):
+    def _get_mutation_sas(self, mutations):
 
         sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
-        sas_data = sas_data.rename(columns={'sas_sc_rel' : 'Relative Side Chain Solvent Accessibility in wild-type (average)',
-                                            'acc_std'    : 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'})
         sas_data.index = sas_data.index.astype(str)
 
         result = pd.DataFrame({'mutation' : mutations,
                                'resn'     : [mut[1:-1] for mut in mutations]}).set_index('mutation')
         result = result.join(sas_data, on='resn').drop(columns=['resn'])
 
-        sas_avg_col = 'Relative Side Chain Solvent Accessibility in wild-type (average)'
-        sas_std_col = 'Relative Side Chain Solvent Accessibility in wild-type (standard deviation)'
-        low_accessibility = result[sas_avg_col].notna() & result[sas_std_col].notna() & ((result[sas_avg_col] + result[sas_std_col]) < 25.0)
-        if low_accessibility.any():
-            low_accessibility_mutations = ', '.join(result.index[low_accessibility])
-            warnings.append(MAVISpWarningError(f"Some mutations have average accessibility plus standard deviation below 25%: {low_accessibility_mutations}"))
-
         return result
 
     def _generate_free_energy_classification(self, row, column):
 
         return Stability._generate_single_stability_classification(self, row, column)
+
+    def _generate_binding_free_energy_classification(self, row, column, stab_co=1.0):
+
+        if pd.isna(row[column]):
+            if row['sas_sc_rel'] >= 25.0:
+                return 'Uncertain'
+            return pd.NA
+        if row[column] > stab_co:
+            return 'Destabilizing'
+        if row[column] < (-stab_co):
+            return 'Stabilizing'
+        return 'Neutral'
 
     def ingest(self, mutations):
 
@@ -1051,10 +1054,16 @@ class TaccDenovoPhospho(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         netphos = self._parse_netphos_best_site(os.path.join(self.data_dir, self.module_dir, 'variant_site_best_netphos.csv'), warnings)
-        mutation_sas = self._get_mutation_sas(mutations, warnings)
+        netphos_mutations = [mutation for mutation in mutations if mutation in netphos.index]
+        mutation_sas = self._get_mutation_sas(netphos_mutations)
+        low_accessibility = (mutation_sas['sas_sc_rel'] + mutation_sas['acc_std']) < 25.0
+        if low_accessibility.any():
+            low_accessibility_mutations = ', '.join(mutation_sas.index[low_accessibility])
+            warnings.append(MAVISpWarningError(f"Some mutations have average accessibility plus standard deviation below 25%: {low_accessibility_mutations}"))
 
         final_data = pd.DataFrame({'mutation': mutations}).set_index('mutation')
-        final_data = final_data.join(netphos, how='left').join(mutation_sas, how='left')
+        final_data = final_data.join(netphos, how='left')
+        final_data = final_data.join(mutation_sas, how='left')
         final_data['Potential novel phosphosite found'] = final_data.index.isin(netphos.index)
 
         stability_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt')
@@ -1064,19 +1073,21 @@ class TaccDenovoPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         if os.path.exists(stability_fname):
-            stability_col = 'Change in stability free energy (kcal/mol)'
+            stability_col = 'Change in folding free energy with phosphorylation (kcal/mol)'
             stability_ddg = self._parse_summary_ddg(stability_fname,
                                                     stability_col,
                                                     warnings)
+            stability_ddg = stability_ddg[stability_ddg.index.isin(netphos.index)]
             final_data = final_data.join(stability_ddg, how='left')
-            final_data['Stability classification (change in stability free energy)'] = final_data.apply(self._generate_free_energy_classification,
+            final_data['Classification of change in folding free energy with phosphorylation (kcal/mol)'] = final_data.apply(self._generate_free_energy_classification,
                                                                                                         column=stability_col,
                                                                                                         axis=1)
             if os.path.exists(stability_std_fname):
-                stability_std_col = 'Change in stability free energy (kcal/mol, st. dev.)'
+                stability_std_col = 'Change in folding free energy with phosphorylation (kcal/mol, st. dev.)'
                 stability_ddg_std = self._parse_summary_ddg(stability_std_fname,
                                                             stability_std_col,
                                                             warnings)
+                stability_ddg_std = stability_ddg_std[stability_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(stability_ddg_std, how='left')
         else:
             warnings.append(MAVISpWarningError("summary_stability.txt not found - change in free energy values will not be reported"))
@@ -1088,24 +1099,26 @@ class TaccDenovoPhospho(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         if os.path.exists(binding_fname):
-            binding_col = 'Change in binding free energy (kcal/mol)'
+            binding_col = 'Change in binding free energy with phosphorylation (kcal/mol)'
             binding_ddg = self._parse_summary_ddg(binding_fname,
                                                   binding_col,
                                                   warnings)
+            binding_ddg = binding_ddg[binding_ddg.index.isin(netphos.index)]
             final_data = final_data.join(binding_ddg, how='left')
-            final_data['Stability classification (change in binding free energy)'] = final_data.apply(self._generate_free_energy_classification,
+            final_data['Classification of change in binding free energy with phosphorylation'] = final_data.apply(self._generate_binding_free_energy_classification,
                                                                                                       column=binding_col,
                                                                                                       axis=1)
             if os.path.exists(binding_std_fname):
-                binding_std_col = 'Change in binding free energy (kcal/mol, st. dev.)'
+                binding_std_col = 'Change in binding free energy with phosphorylation (kcal/mol, st. dev.)'
                 binding_ddg_std = self._parse_summary_ddg(binding_std_fname,
                                                           binding_std_col,
                                                           warnings)
+                binding_ddg_std = binding_ddg_std[binding_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(binding_ddg_std, how='left')
         else:
             warnings.append(MAVISpWarningError("summary_binding.txt not found - change in free energy values will not be reported"))
 
-        self.data = final_data
+        self.data = final_data.drop(columns=['sas_sc_rel', 'acc_std'], errors='ignore')
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
