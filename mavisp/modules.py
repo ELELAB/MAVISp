@@ -1002,7 +1002,45 @@ class TaccDenovoPhospho(MavispModule):
         return netphos.set_index('variant').rename(columns={'best_score'  : 'NetPhos score',
                                                             'best_kinase' : 'NetPhos predicted kinase'})
 
-    def _parse_summary_ddg(self, fname, column_name, warnings, value_column='ddg_avg'):
+    def _parse_summary_ddg(self, fname, column_name, warnings, value_column='ddg_avg', netphos_variants=None):
+
+        try:
+            ddg = pd.read_csv(fname)
+        except Exception:
+            ddg = None
+
+        matrix_columns = ['WT residue type', 'Residue #']
+        if ddg is not None and set(matrix_columns).issubset(ddg.columns):
+            if netphos_variants is None:
+                this_error = f"NetPhos variants are required to parse matrix-style {os.path.basename(fname)} files"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ptm_columns = [c for c in ddg.columns if c not in ['WT residue type', 'chain ID', 'Residue #']]
+            ptm_by_residue = {'S' : 's', 'T' : 'p', 'Y' : 'y'}
+            records = []
+            for variant in netphos_variants:
+                match = re.fullmatch(r'([A-Z])([0-9]+)([A-Z])', variant)
+                if match is None:
+                    continue
+
+                _, resn, alt = match.groups()
+                row = ddg[(ddg['Residue #'].astype(str) == resn) & (ddg['WT residue type'] == alt)]
+                if row.empty:
+                    continue
+
+                ptm_col = ptm_by_residue.get(alt)
+                if ptm_col not in ptm_columns:
+                    available_values = row.iloc[0][ptm_columns].dropna()
+                    if available_values.empty:
+                        continue
+                    value = available_values.iloc[0]
+                else:
+                    value = row.iloc[0][ptm_col]
+
+                records.append((variant, value))
+
+            return pd.DataFrame(records, columns=['mutation', column_name]).set_index('mutation')
 
         try:
             ddg = pd.read_csv(fname,
@@ -1076,7 +1114,8 @@ class TaccDenovoPhospho(MavispModule):
             stability_col = 'Change in folding free energy with phosphorylation (kcal/mol)'
             stability_ddg = self._parse_summary_ddg(stability_fname,
                                                     stability_col,
-                                                    warnings)
+                                                    warnings,
+                                                    netphos_variants=netphos.index)
             stability_ddg = stability_ddg[stability_ddg.index.isin(netphos.index)]
             final_data = final_data.join(stability_ddg, how='left')
             final_data['Classification of change in folding free energy with phosphorylation (kcal/mol)'] = final_data.apply(self._generate_free_energy_classification,
@@ -1086,7 +1125,8 @@ class TaccDenovoPhospho(MavispModule):
                 stability_std_col = 'Change in folding free energy with phosphorylation (kcal/mol, st. dev.)'
                 stability_ddg_std = self._parse_summary_ddg(stability_std_fname,
                                                             stability_std_col,
-                                                            warnings)
+                                                            warnings,
+                                                            netphos_variants=netphos.index)
                 stability_ddg_std = stability_ddg_std[stability_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(stability_ddg_std, how='left')
         else:
@@ -1102,7 +1142,8 @@ class TaccDenovoPhospho(MavispModule):
             binding_col = 'Change in binding free energy with phosphorylation (kcal/mol)'
             binding_ddg = self._parse_summary_ddg(binding_fname,
                                                   binding_col,
-                                                  warnings)
+                                                  warnings,
+                                                  netphos_variants=netphos.index)
             binding_ddg = binding_ddg[binding_ddg.index.isin(netphos.index)]
             final_data = final_data.join(binding_ddg, how='left')
             final_data['Classification of change in binding free energy with phosphorylation'] = final_data.apply(self._generate_binding_free_energy_classification,
@@ -1112,7 +1153,8 @@ class TaccDenovoPhospho(MavispModule):
                 binding_std_col = 'Change in binding free energy with phosphorylation (kcal/mol, st. dev.)'
                 binding_ddg_std = self._parse_summary_ddg(binding_std_fname,
                                                           binding_std_col,
-                                                          warnings)
+                                                          warnings,
+                                                          netphos_variants=netphos.index)
                 binding_ddg_std = binding_ddg_std[binding_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(binding_ddg_std, how='left')
         else:
