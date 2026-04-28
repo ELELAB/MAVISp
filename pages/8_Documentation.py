@@ -360,6 +360,11 @@ specified in the main protein lists under the "FoldX version for STABILITY modul
 For a comparison between results obtained using FoldX 5 and 5.1 in the MAVISp dataset please see
 [our preprint](https://www.biorxiv.org/content/10.64898/2026.03.31.715598v1) on the matter.
 
+
+For stability predictions in the ensemble mode, additional columns may be reported describing the 
+proportion of conformations in which a mutation is predicted to be damaging. 
+This is currently supported for RaSP and FoldX.
+
 A MAVISp dataset will typically have one or more columns named:""")
 
 data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
@@ -394,7 +399,15 @@ data = [ ("Stability (FoldX5, alphafold, kcal/mol)",
          "see below"), 
          ("Stability classification, alphafold, (ThermoMPNN)",
          "Stability classification using ThermoMPNN",
-         "see below")]
+         "see below"),
+         ("FoldX5 proportion of damaging conformations",
+         "Proportion of conformations predicted to be damaging by FoldX across the ensemble",
+         "values (0–1)"),
+         ("RaSP proportion of damaging conformations",
+         "Proportion of conformations predicted to be damaging by RaSP across the ensemble",
+         "values (0–1)")]
+
+
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""The row name includes the method with which the calculation has been performed, the
@@ -450,6 +463,8 @@ data = [ ( 'Destabilizing', 'The mutation is destabilizing for the protein struc
          ( 'Uncertain'    , 'The mutation has a borderline effect on stability, or the two methods are not in agreement'),
          ( 'N.A'          , 'No data available to perform the classification') ]
 st.dataframe(pd.DataFrame(data, columns=['Value', 'Meaning']))
+
+st.write("""In addition, for RaSP and FoldX5 stability calculations performed in the ensemble mode, we support the calculation of proportion of """)
 
 st.subheader("Local interactions")
 
