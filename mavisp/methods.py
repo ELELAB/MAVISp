@@ -350,12 +350,14 @@ class RosettaDDGPredictionStability(Method):
                 else:
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-            # merge the data from the different cl folders and keep average
             avg_ddg_colname = f'{self.type} ({self.version}, {self.unit})'
-            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
-
             std_ddg_colname = f'{self.type} ({self.version}, {self.unit}, st. dev.)'
-            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
+
+            mutation_data_mean = mutation_data.mean(axis=1)
+            mutation_data_std = mutation_data.std(axis=1)
+
+            mutation_data[avg_ddg_colname] = mutation_data_mean
+            mutation_data[std_ddg_colname] = mutation_data_std
 
             mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
 
@@ -761,12 +763,14 @@ class RaSP(Method):
                 else:
                     mutation_data = mutation_data.join(tmp, rsuffix="_")
 
-            # merge the data from the different cl folders and keep average
             avg_ddg_colname = f'{self.type} ({self.unit}'
-            mutation_data[avg_ddg_colname] = mutation_data.mean(axis=1)
-
             std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
-            mutation_data[std_ddg_colname] = mutation_data.std(axis=1)
+
+            mutation_data_mean = mutation_data.mean(axis=1)
+            mutation_data_std = mutation_data.std(axis=1)
+
+            mutation_data[avg_ddg_colname] = mutation_data_mean
+            mutation_data[std_ddg_colname] = mutation_data_std
 
             mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
 
