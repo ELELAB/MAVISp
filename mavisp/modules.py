@@ -1798,6 +1798,44 @@ class AlphaMissense(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
 
+class popEVE(MavispModule):
+
+    module_dir = "popeve"
+    name = "popeve"
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        popeve_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if len(popeve_files) != 1:
+            this_error = f"multiple or no files found in {popeve_files}; only one expected"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        popeve_file = popeve_files[0]
+
+        log.info(f"parsing popEVE data file {popeve_file}")
+
+        try:
+
+            popeve_df = pd.read_csv(os.path.join(self.data_dir, self.module_dir, popeve_file),
+                             usecols=['mutant', 'popEVE'],
+                             dtype={ 'mutant' :  'string',
+                                     'popEVE' : 'float32'},
+                             sep='\t',
+                             index_col='mutant')
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'})
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[])
+
 class GEMME(MavispModule):
 
     module_dir = "gemme"

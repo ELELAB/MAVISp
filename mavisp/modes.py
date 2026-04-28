@@ -55,12 +55,13 @@ class MAVISpSimpleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
+                          popEVE,
                           EFoldMine,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
-    'demask', 'gemme', 'eve', 'alphamissense', 'experimental_data']
+    'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
                           'stability_foldx_version',  'local_int_foldx_version', 'allosigma_distance_cutoff',
                           'allosigma_distance_mode', 'structure_source', 'structure_description', 'linker_design',
@@ -230,12 +231,13 @@ class MAVISpEnsembleMode(MAVISpMode):
                           GEMME,
                           EVE,
                           AlphaMissense,
+                          popEVE,
                           EFoldMine,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense', 'experimental_data']
+    'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'stability_foldx_version',
     'local_int_foldx_version', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'sampling_functional_dynamics',
