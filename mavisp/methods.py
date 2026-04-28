@@ -1,5 +1,6 @@
 # MAVISp - classes for handling different methods
 # Copyright (C) 2022 Matteo Tiberti, Danish Cancer Society
+#           (C) 2026 Eszter Toldi, Technical University of Denmark (DTU)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -775,3 +776,101 @@ class RaSP(Method):
             std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
 
         return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
+
+
+class ThermoMPNN(Method):
+
+    unit = "kcal/mol"
+    type = "Stability"
+
+    def _parse_postprocessed_csv(self, fname, warnings):
+
+        try:
+            mutation_data = pd.read_csv(fname,
+                                        usecols=['variant', 'ThermoMPNN_ddG'],
+                                        index_col='variant')
+        except Exception as e:
+            this_error = (
+                f"Exception {type(e).__name__} occurred when parsing the "
+                f"ThermoMPNN csv file. Arguments: {e.args}"
+            )
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(this_error)]
+            )
+
+        return mutation_data
+
+    def parse(self, dir_path):
+
+        warnings = []
+
+        thermompnn_files = os.listdir(dir_path)
+
+        if len(thermompnn_files) == 1 and os.path.isfile(os.path.join(dir_path, thermompnn_files[0])):
+
+            thermompnn_file = thermompnn_files[0]
+
+            avg_mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, thermompnn_file), warnings)
+            std_mutation_data = None
+
+        else:
+            csv_files = []
+            thermompnn_folder = os.listdir(dir_path)
+
+            for folder in thermompnn_folder:
+                if not os.path.isdir(os.path.join(dir_path, folder)):
+                    this_error = f"{folder} in {dir_path} is not a directory"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                ddg_files = os.listdir(os.path.join(dir_path, folder))
+                if len(ddg_files) != 1:
+                    this_error = f"Zero or multiple files found in {os.path.join(dir_path, folder)}; only one expected"
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                ddg_file = ddg_files[0]
+
+                if not os.path.splitext(ddg_file)[-1] == '.csv':
+                    this_error = f"File {ddg_file} in {dir_path}/{folder} is not a CSV file."
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                csv_files.append(os.path.join(dir_path, folder, ddg_file))
+
+            list_mutation_label = None
+            mutation_data = None
+
+            for fname in csv_files:
+                tmp = self._parse_postprocessed_csv(fname, warnings)
+
+                if list_mutation_label is None:
+                    list_mutation_label = set(tmp.index)
+                elif list_mutation_label != set(tmp.index):
+                    this_error = "The mutation labels are not the same in the different csv files."
+                    raise MAVISpMultipleError(warning=warnings,
+                                              critical=[MAVISpCriticalError(this_error)])
+
+                if mutation_data is None:
+                    mutation_data = tmp
+                else:
+                    mutation_data = mutation_data.join(tmp, rsuffix="_")
+
+            std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
+            avg_ddg_colname = f'{self.type} ({self.unit})'
+
+            mutation_data_mean = mutation_data.mean(axis=1)
+            mutation_data_std  = mutation_data.std(axis=1)
+
+            mutation_data[avg_ddg_colname] = mutation_data_mean
+            mutation_data[std_ddg_colname] = mutation_data_std
+
+            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+
+            mutation_data = mutation_data.sort_index()
+
+            avg_mutation_data = mutation_data[[c for c in mutation_data.columns if 'st. dev.' not in c]]
+            std_mutation_data = mutation_data[[c for c in mutation_data.columns if ', st. dev.)' in c]]
+
+        return avg_mutation_data, std_mutation_data, warnings
