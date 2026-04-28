@@ -409,9 +409,7 @@ class SimpleStability(Stability):
                                                         critical=[MAVISpCriticalError(this_error)])
             for model in models:
                 method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
-
                 for method_dir in method_dirs:
-
                     model_data, model_stds, _, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
                     warnings += this_warnings
 
