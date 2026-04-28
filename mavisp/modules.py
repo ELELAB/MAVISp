@@ -1823,7 +1823,6 @@ class popEVE(MavispModule):
                              usecols=['mutant', 'popEVE'],
                              dtype={ 'mutant' :  'string',
                                      'popEVE' : 'float32'},
-                             sep='\t',
                              index_col='mutant')
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
