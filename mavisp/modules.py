@@ -1011,17 +1011,203 @@ class DenovoPhospho(MavispModule):
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
 
-class TaccDenovoPhospho(DenovoPhospho):
+class TaccDenovoPhospho(MavispModule):
 
-    expected_files = ['aggregated_filtered_output.csv', 'acc_REL.csv']
+    expected_files = ['acc_REL.csv',
+                      'variant_site_best_netphos.csv']
     sasa_fname = 'acc_REL.csv'
 
     def _parse_sas(self, fname):
 
-        sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average'])
+        sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average', 'acc_std'])
         sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
         sas_data.set_index('resn', inplace=True)
         return sas_data
+
+    def _parse_netphos_best_site(self, fname, warnings):
+
+        try:
+            netphos = pd.read_csv(fname)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the variant_site_best_netphos.csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        required_columns = ['variant', 'best_score', 'best_kinase']
+        if not set(required_columns).issubset(netphos.columns):
+            this_error = f"variant_site_best_netphos.csv must contain the columns {', '.join(required_columns)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        netphos = netphos[required_columns].drop_duplicates(subset='variant')
+        return netphos.set_index('variant').rename(columns={'best_score'  : 'NetPhos score',
+                                                            'best_kinase' : 'NetPhos predicted kinase'})
+
+    def _parse_summary_ddg(self, fname, column_name, warnings, netphos_variants):
+
+        try:
+            ddg = pd.read_csv(fname)
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the {os.path.basename(fname)} file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        matrix_columns = ['WT residue type', 'Residue #']
+        if not set(matrix_columns).issubset(ddg.columns):
+            this_error = f"{os.path.basename(fname)} must contain the columns {', '.join(matrix_columns)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ptm_columns = [c for c in ddg.columns if c not in ['WT residue type', 'chain ID', 'Residue #']]
+        ptm_by_residue = {'S' : 's', 'T' : 'p', 'Y' : 'y'}
+        records = []
+        for variant in netphos_variants:
+            if len(variant) < 3 or variant[1:-1] == '':
+                this_error = f"NetPhos variant {variant} cannot be mapped to {os.path.basename(fname)}"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ref = variant[0]
+            resn = variant[1:-1]
+            alt = variant[-1]
+            row = ddg[(ddg['Residue #'].astype(str) == resn) & (ddg['WT residue type'] == alt)]
+            if row.empty:
+                this_error = f"{os.path.basename(fname)} has no entry for NetPhos residue {alt}{resn} from variant {variant} ({ref} to {alt})"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            if alt not in ptm_by_residue:
+                this_error = f"NetPhos variant {variant} introduces {alt}, but only S, T, and Y phosphorylation energies are supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ptm_col = ptm_by_residue[alt]
+            if ptm_col not in ptm_columns:
+                this_error = f"{os.path.basename(fname)} has no {ptm_col} column for NetPhos residue {alt}{resn} from variant {variant}"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            value = row.iloc[0][ptm_col]
+
+            records.append((variant, value))
+
+        return pd.DataFrame(records, columns=['mutation', column_name]).set_index('mutation')
+
+    def _get_mutation_sas(self, mutations):
+
+        sas_data = self._parse_sas(os.path.join(self.data_dir, self.module_dir, self.sasa_fname))
+        sas_data.index = sas_data.index.astype(str)
+
+        result = pd.DataFrame({'mutation' : mutations,
+                               'resn'     : [mut[1:-1] for mut in mutations]}).set_index('mutation')
+        result = result.join(sas_data, on='resn').drop(columns=['resn'])
+
+        return result
+
+    def _generate_free_energy_classification(self, row, column):
+
+        return Stability._generate_single_stability_classification(self, row, column)
+
+    def _generate_binding_free_energy_classification(self, row, column, stab_co=1.0):
+
+        if pd.isna(row[column]):
+            if row['sas_sc_rel'] >= 25.0:
+                return 'Uncertain'
+            return pd.NA
+        if row[column] > stab_co:
+            return 'Destabilizing'
+        if row[column] < (-stab_co):
+            return 'Stabilizing'
+        return 'Neutral'
+
+    def ingest(self, mutations):
+
+        warnings = []
+
+        mf_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
+        if not set(self.expected_files).issubset(set(mf_files)):
+            this_error = f"the input files for Muts On Phospho must be named {', '.join(self.expected_files)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        netphos = self._parse_netphos_best_site(os.path.join(self.data_dir, self.module_dir, 'variant_site_best_netphos.csv'), warnings)
+        if netphos.empty:
+            this_error = "variant_site_best_netphos.csv did not contain any NetPhos variants"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        netphos_mutations = [mutation for mutation in mutations if mutation in netphos.index]
+        mutation_sas = self._get_mutation_sas(netphos_mutations)
+        low_accessibility = (mutation_sas['sas_sc_rel'] + mutation_sas['acc_std']) < 25.0
+        if low_accessibility.any():
+            low_accessibility_mutations = ', '.join(mutation_sas.index[low_accessibility])
+            warnings.append(MAVISpWarningError(f"Some mutations have average accessibility plus standard deviation below 25%: {low_accessibility_mutations}"))
+
+        final_data = pd.DataFrame({'mutation': mutations}).set_index('mutation')
+        final_data = final_data.join(netphos, how='left')
+        final_data = final_data.join(mutation_sas, how='left')
+        final_data['Potential novel phosphosite found'] = final_data.index.isin(netphos.index)
+
+        stability_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt')
+        stability_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability_std.txt')
+        if os.path.exists(stability_std_fname) and not os.path.exists(stability_fname):
+            this_error = "summary_stability_std.txt found but summary_stability.txt is missing"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        if os.path.exists(stability_fname):
+            stability_col = 'Change in folding free energy with phosphorylation (kcal/mol)'
+            stability_ddg = self._parse_summary_ddg(stability_fname,
+                                                    stability_col,
+                                                    warnings,
+                                                    netphos_variants=netphos.index)
+            stability_ddg = stability_ddg[stability_ddg.index.isin(netphos.index)]
+            final_data = final_data.join(stability_ddg, how='left')
+            final_data['Classification of change in folding free energy with phosphorylation (kcal/mol)'] = final_data.apply(self._generate_free_energy_classification,
+                                                                                                        column=stability_col,
+                                                                                                        axis=1)
+            if os.path.exists(stability_std_fname):
+                stability_std_col = 'Change in folding free energy with phosphorylation (kcal/mol, st. dev.)'
+                stability_ddg_std = self._parse_summary_ddg(stability_std_fname,
+                                                            stability_std_col,
+                                                            warnings,
+                                                            netphos_variants=netphos.index)
+                stability_ddg_std = stability_ddg_std[stability_ddg_std.index.isin(netphos.index)]
+                final_data = final_data.join(stability_ddg_std, how='left')
+        else:
+            warnings.append(MAVISpWarningError("summary_stability.txt not found - change in free energy values will not be reported"))
+
+        binding_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding.txt')
+        binding_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding_std.txt')
+        if os.path.exists(binding_std_fname) and not os.path.exists(binding_fname):
+            this_error = "summary_binding_std.txt found but summary_binding.txt is missing"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+        if os.path.exists(binding_fname):
+            binding_col = 'Change in binding free energy with phosphorylation (kcal/mol)'
+            binding_ddg = self._parse_summary_ddg(binding_fname,
+                                                  binding_col,
+                                                  warnings,
+                                                  netphos_variants=netphos.index)
+            binding_ddg = binding_ddg[binding_ddg.index.isin(netphos.index)]
+            final_data = final_data.join(binding_ddg, how='left')
+            final_data['Classification of change in binding free energy with phosphorylation'] = final_data.apply(self._generate_binding_free_energy_classification,
+                                                                                                      column=binding_col,
+                                                                                                      axis=1)
+            if os.path.exists(binding_std_fname):
+                binding_std_col = 'Change in binding free energy with phosphorylation (kcal/mol, st. dev.)'
+                binding_ddg_std = self._parse_summary_ddg(binding_std_fname,
+                                                          binding_std_col,
+                                                          warnings,
+                                                          netphos_variants=netphos.index)
+                binding_ddg_std = binding_ddg_std[binding_ddg_std.index.isin(netphos.index)]
+                final_data = final_data.join(binding_ddg_std, how='left')
+        else:
+            warnings.append(MAVISpWarningError("summary_binding.txt not found - change in free energy values will not be reported"))
+
+        self.data = final_data.drop(columns=['sas_sc_rel', 'acc_std'], errors='ignore')
+
+        if len(warnings) > 0:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPhospho):
     module_dir = "denovo_phospho"

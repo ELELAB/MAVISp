@@ -799,11 +799,13 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 st.subheader("De novo Phosphosites module")
 
 st.write("""this module was designed to identify whether each mutation has the
-potential of adding a new phosphorylation site to the protein. It uses the Netphos
-method to predict phosphorylation sites in both the wild-type and each mutant, and
-compares the results to identify novel phosphorylation sites. Information about
-solvent accessibility is also included in the prediction. It generates the
-following columns:""")
+potential of adding a new phosphorylation site to the protein. It works differently
+in simple or ensemble mode.
+
+In simple mode, It uses the Netphos method to predict phosphorylation sites in both
+the wild-type and each mutant, and compares the results to identify novel phosphorylation
+sites. Information about solvent accessibility is also included in the prediction.
+It generates the following columns:""")
 
 data = [ ( "Phosphorylation - gain of function",
            "New phosphorylation sites that are predicted to be available upon mutation",
@@ -824,6 +826,57 @@ regard; if the mutation had an effect, the column will contain the phosphorylati
 site(s) together with the kinase that would phosphorylate the site.
 If a mutation is classified as gain of function, it will also be filtered by its
 solvent accessible surface - only those mutations with SAS > 25% will be kept""")
+
+st.write("""In ensemble mode, the De novo Phosphosites module reports NetPhos
+predictions directly for variants predicted to introduce a potential novel
+phosphorylation site. The module also reports the predicted change in folding and,
+when available, binding free energy upon phosphorylation of the newly introduced
+site. This means that free energies changes are calculated as the difference between
+the free energy of the phosphorylated mutant and of the wild-type. Solvent
+accessibility is used internally for warnings and for the binding classification
+when binding free energy is unavailable, but the SAS values themselves are
+reported by the SAS module rather than repeated here.
+
+The ensemble-mode module generates the following columns for each ensemble:""")
+
+data = [ ( "NetPhos score",
+           "Best NetPhos score for the potential novel phosphorylation site introduced by the variant",
+           "value in range [0;1]"),
+         ( "NetPhos predicted kinase",
+           "Kinase predicted by NetPhos for the potential novel phosphorylation site",
+           "kinase name"),
+         ( "Potential novel phosphosite found",
+           "Whether NetPhos predicted that the variant introduces a potential novel phosphorylation site",
+           "`True` if it does, `False` if it does not"),
+         ( "Change in folding free energy with phosphorylation (kcal/mol)",
+           "Change in folding free energy predicted for phosphorylation of the introduced site",
+           "value (kcal/mol)"),
+         ( "Change in folding free energy with phosphorylation (kcal/mol, st. dev.)",
+           "Standard deviation of the change in folding free energy predicted for phosphorylation of the introduced site, when available",
+           "value (kcal/mol)"),
+         ( "Classification of change in folding free energy with phosphorylation (kcal/mol)",
+           "Classification of the folding free-energy effect of phosphorylation",
+           "`Destabilizing`, `Stabilizing`, `Neutral`, `Uncertain`, or N.A."),
+         ( "Change in binding free energy with phosphorylation (kcal/mol)",
+           "Change in binding free energy predicted for phosphorylation of the introduced site",
+           "value (kcal/mol)"),
+         ( "Change in binding free energy with phosphorylation (kcal/mol, st. dev.)",
+           "Standard deviation of the change in binding free energy predicted for phosphorylation of the introduced site, when available",
+           "value (kcal/mol)"),
+         ( "Classification of change in binding free energy with phosphorylation",
+           "Classification of the binding free-energy effect of phosphorylation",
+           "`Destabilizing`, `Stabilizing`, `Neutral`, `Uncertain`, or N.A.") ]
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
+st.write("""The free-energy columns are only populated for variants present in a
+custom file containing predictions performed with NetPhos. The folding free-energy
+classification uses the same thresholds as the Stability module. The binding
+free-energy classification uses the same thresholds as the Local interactions
+module: values greater than 1 kcal/mol are classified as Destabilizing,
+values lower than -1 kcal/mol are classified as Stabilizing, and values between -1
+and 1 kcal/mol are classified as Neutral. If binding free energy is unavailable
+for a NetPhos variant, an exposed residue (SAS >= 25%) is classified as Uncertain,
+whereas a buried residue is not classified.""")
 
 st.subheader("Functional Sites module")
 
@@ -906,4 +959,3 @@ data = [ ( "TED-CATH domain classification",
            "TED domains and their associated CATH-assigned labels for the given residue in the protein",
            "single string reporting the CATH-label code") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
-
