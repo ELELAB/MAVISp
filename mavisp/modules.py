@@ -201,8 +201,7 @@ class Stability(MultiMethodMavispModule):
             method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model))
 
             for method_dir in method_dirs:
-                model_averages, model_stds, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
-
+                model_averages, model_stds, model_data_conf, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', model, method_dir))
                 warnings += this_warnings
                 model_averages.columns = [ f"Stability ({self.methods[method_dir].version}, {self.methods[method_dir].unit})" ]
                 avg_col_name = model_averages.columns[0]
@@ -217,7 +216,12 @@ class Stability(MultiMethodMavispModule):
                     model_data_stds_list.append(model_stds)
                     model_data_stds = pd.concat(model_data_stds_list, axis=1)
 
-        keys = [ k for k in model_data.columns if k.startswith('Stability') and not 'st. dev.' in k ]
+                if model_data_conf is not None:
+                    model_data_conf = model_data_conf.reindex(model_averages.index)
+                    model_data_list.append(model_data_conf)
+                    model_data = pd.concat(model_data_list, axis=1)
+
+        keys = [ k for k in model_data.columns if k.startswith('Stability') and not 'st. dev.' in k and 'damaging proportion' not in k]
 
         if any(['FoldX' in k for k in keys]):
             foldx_col = [k for k in keys if 'FoldX' in k and 'st. dev.' not in k]
@@ -379,7 +383,7 @@ class SimpleStability(Stability):
 
                 for method_dir in method_dirs:
 
-                    model_data, model_stds, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    model_data, model_stds, _, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
                     warnings += this_warnings
 
                     model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]

@@ -1,0 +1,2 @@
+file,n_total,n_damaging,proportion_damaging,threshold,inclusive,damaging_models
+D281_heatmap_ranking_P.csv,26,9,0.34615384615384615,3.0,False,model1;model21;model23;model7;model17;model20;model5;model2;model14
