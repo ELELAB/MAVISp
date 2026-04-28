@@ -748,7 +748,7 @@ data = [ ( "ClinVar Variation ID",
            "comma-separated number, which is the number of stars associated with the variant") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
-st.subheader("DeMaSk, GEMME, EVE and AlphaMissense modules")
+st.subheader("DeMaSk, GEMME, EVE, AlphaMissense and popEVE modules")
 
 st.write("""Each of this modules is named after a different predictor of
 pathogenicity for mutations, and it adds the results of the predictions of the
@@ -766,7 +766,6 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 st.write("""  - GEMME module:""")
 
 data = [ ( "GEMME Score", "score from GEMME", "value") ]
-
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.write("""  - EVE module:""")
@@ -777,8 +776,13 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible valu
 
 st.write("""  - AlphaMissense module:""")
 
-data = [ ( "AlphaMissense pathogenicity score", "pathogenicity sore from AlphaMissense", "value"),
+data = [ ( "AlphaMissense pathogenicity score", "pathogenicity score from AlphaMissense", "value"),
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
+st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
+st.write("""  - popEVE module:""")
+
+data = [ ( "popEVE score", "score from popEVE", "value")]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader('EFoldMine module')
