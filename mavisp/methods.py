@@ -33,9 +33,9 @@ class MutateXStability(Method):
     type = "Stability"
     averages_filename = 'energies.csv'
     stds_filename = 'energies_std.csv'
+    conf_filename = 'damaging_proportion.csv'
 
     def _parse_mutatex_energy_file(self, fname, data_type):
-
         try:
             df = pd.read_csv(fname)
         except Exception as e:
@@ -71,6 +71,24 @@ class MutateXStability(Method):
 
         return df.rename(columns={0 : colname})
 
+    def _parse_conformations_file(self, fname):
+        try:
+            df = pd.read_csv(fname, usecols=['file', 'proportion_damaging'])
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the MutateX conformation-dependentfile. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        pattern = r'^([A-Za-z])(\d+)_heatmap_ranking_([A-Za-z])\.csv$'
+
+        df['mutations'] = df['file'].str.extract(pattern).apply(lambda x: f"{x[0]}{x[1]}{x[2]}", axis=1)
+        df = df.set_index('mutations')
+        df = df[['proportion_damaging']]
+        df['proportion_damaging'] = df['proportion_damaging'].round(2)
+        df.columns = [f"{self.version} proportion of damaging conformations"]
+
+        return df
+
     def parse(self, dir_path):
 
         warnings = []
@@ -90,7 +108,13 @@ class MutateXStability(Method):
             warnings.append(MAVISpWarningError("standard deviation file not found for MutateX data"))
             stds_df = None
 
-        return averages_df, stds_df, warnings
+        if self.conf_filename in mutatex_files:
+            conf_mutation_data = self._parse_conformations_file(os.path.join(dir_path, self.conf_filename))
+        else:
+            warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for MutateX data"))
+            conf_mutation_data = None
+
+        return averages_df, stds_df, conf_mutation_data, warnings
 
 class MutateXBinding(Method):
     unit = "kcal/mol"
@@ -341,7 +365,7 @@ class RosettaDDGPredictionStability(Method):
             avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
             std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
 
-        return avg_mutation_data, std_mutation_data, warnings
+        return avg_mutation_data, std_mutation_data, None, warnings
 
 class RosettaDDGPredictionBinding(RosettaDDGPredictionStability):
 
@@ -634,6 +658,7 @@ class RaSP(Method):
 
     unit = "kcal/mol"
     type = "Stability"
+    conf_filename = 'damaging_proportion.csv'
 
     def _parse_postprocessed_csv(self, fname, warnings):
 
@@ -650,6 +675,22 @@ class RaSP(Method):
 
         return mutation_data
 
+    def _parse_conformation_csv(self, fname, warnings):
+
+        warnings = []
+
+        try:
+            df = pd.read_csv(fname, usecols= ['mutation_interest', 'fraction_destabilizing'])
+            df.rename(columns={'mutation_interest': 'variant'}, inplace=True)
+            df = df.set_index('variant')
+            df.columns = [f"{self.version} proportion of damaging conformations"]
+        except Exception as e:
+            this_error = f"Exception {type(e).__name__} occurred when parsing the RaSP conformation csv file. Arguments:{e.args}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        return df
+
     def parse(self, dir_path):
 
         warnings = []
@@ -662,19 +703,29 @@ class RaSP(Method):
 
             avg_mutation_data = self._parse_postprocessed_csv(os.path.join(dir_path, rasp_file), warnings)
             std_mutation_data = None
+            conf_mutation_data = None 
+
 
         else:
             csv_files = []
             rasp_folder = os.listdir(dir_path)
 
+            if self.conf_filename not in rasp_folder:
+                                warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for RaSP data"))
+                                conf_mutation_data = None
+
             # Check if all available files are directories
-            for folder in rasp_folder:
-                if not os.path.isdir(os.path.join(dir_path, folder)):
-                    this_error = f"{folder} in {dir_path} is not a directory"
+            for item in rasp_folder:
+                if item == self.conf_filename:
+                    conf_mutation_data = self._parse_conformation_csv(os.path.join(dir_path, self.conf_filename), warnings)
+                    continue
+
+                if not os.path.isdir(os.path.join(dir_path, item)):
+                    this_error = f"{item} in {dir_path} is not a directory"
                     raise MAVISpMultipleError(warning=warnings,
                                                 critical=[MAVISpCriticalError(this_error)])
 
-                ddg_files = os.listdir(os.path.join(dir_path, folder))
+                ddg_files = os.listdir(os.path.join(dir_path, item))
                 # check one file per directory is available
                 if len(ddg_files) != 1:
                     this_error = f"zero or multiples files found in {dir_path}; only one expected"
@@ -684,11 +735,11 @@ class RaSP(Method):
                 ddg_file = ddg_files[0]
 
                 if not os.path.splitext(ddg_file)[-1] == '.csv':
-                    this_error = f"file {ddg_file} in {dir_path}/{folder} doesn't have csv as extension"
+                    this_error = f"file {ddg_file} in {dir_path}/{item} doesn't have csv as extension"
                     raise MAVISpMultipleError(warning=warnings,
                                               critical=[MAVISpCriticalError(this_error)])
 
-                csv_files.append(os.path.join(dir_path, folder, ddg_file))
+                csv_files.append(os.path.join(dir_path, item, ddg_file))
 
             list_mutation_label = None
             mutation_data = None
@@ -724,7 +775,7 @@ class RaSP(Method):
             avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
             std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
 
-        return avg_mutation_data, std_mutation_data, warnings
+        return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
 
 
 class ThermoMPNN(Method):
@@ -755,7 +806,8 @@ class ThermoMPNN(Method):
         warnings = []
 
         thermompnn_files = os.listdir(dir_path)
-
+        conf_mutation_data = None 
+        
         if len(thermompnn_files) == 1 and os.path.isfile(os.path.join(dir_path, thermompnn_files[0])):
 
             thermompnn_file = thermompnn_files[0]
@@ -822,4 +874,4 @@ class ThermoMPNN(Method):
             avg_mutation_data = mutation_data[[c for c in mutation_data.columns if 'st. dev.' not in c]]
             std_mutation_data = mutation_data[[c for c in mutation_data.columns if ', st. dev.)' in c]]
 
-        return avg_mutation_data, std_mutation_data, warnings
+        return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
