@@ -806,7 +806,8 @@ class ThermoMPNN(Method):
         warnings = []
 
         thermompnn_files = os.listdir(dir_path)
-
+        conf_mutation_data = None 
+        
         if len(thermompnn_files) == 1 and os.path.isfile(os.path.join(dir_path, thermompnn_files[0])):
 
             thermompnn_file = thermompnn_files[0]
@@ -873,4 +874,4 @@ class ThermoMPNN(Method):
             avg_mutation_data = mutation_data[[c for c in mutation_data.columns if 'st. dev.' not in c]]
             std_mutation_data = mutation_data[[c for c in mutation_data.columns if ', st. dev.)' in c]]
 
-        return avg_mutation_data, std_mutation_data, warnings
+        return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
