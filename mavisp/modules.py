@@ -1002,57 +1002,55 @@ class TaccDenovoPhospho(MavispModule):
         return netphos.set_index('variant').rename(columns={'best_score'  : 'NetPhos score',
                                                             'best_kinase' : 'NetPhos predicted kinase'})
 
-    def _parse_summary_ddg(self, fname, column_name, warnings, value_column='ddg_avg', netphos_variants=None):
+    def _parse_summary_ddg(self, fname, column_name, warnings, netphos_variants):
 
         try:
             ddg = pd.read_csv(fname)
-        except Exception:
-            ddg = None
-
-        matrix_columns = ['WT residue type', 'Residue #']
-        if ddg is not None and set(matrix_columns).issubset(ddg.columns):
-            if netphos_variants is None:
-                this_error = f"NetPhos variants are required to parse matrix-style {os.path.basename(fname)} files"
-                raise MAVISpMultipleError(warning=warnings,
-                                          critical=[MAVISpCriticalError(this_error)])
-
-            ptm_columns = [c for c in ddg.columns if c not in ['WT residue type', 'chain ID', 'Residue #']]
-            ptm_by_residue = {'S' : 's', 'T' : 'p', 'Y' : 'y'}
-            records = []
-            for variant in netphos_variants:
-                match = re.fullmatch(r'([A-Z])([0-9]+)([A-Z])', variant)
-                if match is None:
-                    continue
-
-                _, resn, alt = match.groups()
-                row = ddg[(ddg['Residue #'].astype(str) == resn) & (ddg['WT residue type'] == alt)]
-                if row.empty:
-                    continue
-
-                ptm_col = ptm_by_residue.get(alt)
-                if ptm_col not in ptm_columns:
-                    available_values = row.iloc[0][ptm_columns].dropna()
-                    if available_values.empty:
-                        continue
-                    value = available_values.iloc[0]
-                else:
-                    value = row.iloc[0][ptm_col]
-
-                records.append((variant, value))
-
-            return pd.DataFrame(records, columns=['mutation', column_name]).set_index('mutation')
-
-        try:
-            ddg = pd.read_csv(fname,
-                sep=r'\s+',
-                header=None,
-                names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the {os.path.basename(fname)} file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        return ddg[['mutation', value_column]].set_index('mutation').rename(columns={value_column : column_name})
+        matrix_columns = ['WT residue type', 'Residue #']
+        if not set(matrix_columns).issubset(ddg.columns):
+            this_error = f"{os.path.basename(fname)} must contain the columns {', '.join(matrix_columns)}"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
+        ptm_columns = [c for c in ddg.columns if c not in ['WT residue type', 'chain ID', 'Residue #']]
+        ptm_by_residue = {'S' : 's', 'T' : 'p', 'Y' : 'y'}
+        records = []
+        for variant in netphos_variants:
+            if len(variant) < 3 or variant[1:-1] == '':
+                this_error = f"NetPhos variant {variant} cannot be mapped to {os.path.basename(fname)}"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ref = variant[0]
+            resn = variant[1:-1]
+            alt = variant[-1]
+            row = ddg[(ddg['Residue #'].astype(str) == resn) & (ddg['WT residue type'] == alt)]
+            if row.empty:
+                this_error = f"{os.path.basename(fname)} has no entry for NetPhos residue {alt}{resn} from variant {variant} ({ref} to {alt})"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            if alt not in ptm_by_residue:
+                this_error = f"NetPhos variant {variant} introduces {alt}, but only S, T, and Y phosphorylation energies are supported"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            ptm_col = ptm_by_residue[alt]
+            if ptm_col not in ptm_columns:
+                this_error = f"{os.path.basename(fname)} has no {ptm_col} column for NetPhos residue {alt}{resn} from variant {variant}"
+                raise MAVISpMultipleError(warning=warnings,
+                                          critical=[MAVISpCriticalError(this_error)])
+
+            value = row.iloc[0][ptm_col]
+
+            records.append((variant, value))
+
+        return pd.DataFrame(records, columns=['mutation', column_name]).set_index('mutation')
 
     def _get_mutation_sas(self, mutations):
 
@@ -1092,6 +1090,11 @@ class TaccDenovoPhospho(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         netphos = self._parse_netphos_best_site(os.path.join(self.data_dir, self.module_dir, 'variant_site_best_netphos.csv'), warnings)
+        if netphos.empty:
+            this_error = "variant_site_best_netphos.csv did not contain any NetPhos variants"
+            raise MAVISpMultipleError(warning=warnings,
+                                      critical=[MAVISpCriticalError(this_error)])
+
         netphos_mutations = [mutation for mutation in mutations if mutation in netphos.index]
         mutation_sas = self._get_mutation_sas(netphos_mutations)
         low_accessibility = (mutation_sas['sas_sc_rel'] + mutation_sas['acc_std']) < 25.0
