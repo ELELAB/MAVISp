@@ -972,9 +972,9 @@ class DenovoPhospho(MavispModule):
 
 class TaccDenovoPhospho(MavispModule):
 
-    expected_files = ['acc_REL.csv',
+    expected_files = ['acc_summary.csv',
                       'variant_site_best_netphos.csv']
-    sasa_fname = 'acc_REL.csv'
+    sasa_fname = 'acc_summary.csv'
 
     def _parse_sas(self, fname):
 
@@ -1002,7 +1002,7 @@ class TaccDenovoPhospho(MavispModule):
         return netphos.set_index('variant').rename(columns={'best_score'  : 'NetPhos score',
                                                             'best_kinase' : 'NetPhos predicted kinase'})
 
-    def _parse_summary_ddg(self, fname, column_name, warnings, netphos_variants):
+    def _parse_energy_file(self, fname, column_name, warnings, netphos_variants):
 
         try:
             ddg = pd.read_csv(fname)
@@ -1067,10 +1067,10 @@ class TaccDenovoPhospho(MavispModule):
 
         return Stability._generate_single_stability_classification(self, row, column)
 
-    def _generate_binding_free_energy_classification(self, row, column, stab_co=1.0):
+    def _generate_binding_free_energy_classification(self, row, column, sas_col='sas_sc_rel', stab_co=1.0):
 
         if pd.isna(row[column]):
-            if row['sas_sc_rel'] >= 25.0:
+            if row[sas_col] >= 25.0:
                 return 'Uncertain'
             return pd.NA
         if row[column] > stab_co:
@@ -1105,17 +1105,18 @@ class TaccDenovoPhospho(MavispModule):
         final_data = pd.DataFrame({'mutation': mutations}).set_index('mutation')
         final_data = final_data.join(netphos, how='left')
         final_data = final_data.join(mutation_sas, how='left')
+        final_data = final_data.rename(columns={'sas_sc_rel' : 'Mutant residue SASA (%)'})
         final_data['Potential novel phosphosite found'] = final_data.index.isin(netphos.index)
 
-        stability_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt')
-        stability_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_stability_std.txt')
+        stability_fname = os.path.join(self.data_dir, self.module_dir, 'energies_stability.csv')
+        stability_std_fname = os.path.join(self.data_dir, self.module_dir, 'energies_stability_std.csv')
         if os.path.exists(stability_std_fname) and not os.path.exists(stability_fname):
-            this_error = "summary_stability_std.txt found but summary_stability.txt is missing"
+            this_error = "energies_stability_std.csv found but energies_stability.csv is missing"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         if os.path.exists(stability_fname):
             stability_col = 'Change in folding free energy with phosphorylation (kcal/mol)'
-            stability_ddg = self._parse_summary_ddg(stability_fname,
+            stability_ddg = self._parse_energy_file(stability_fname,
                                                     stability_col,
                                                     warnings,
                                                     netphos_variants=netphos.index)
@@ -1126,44 +1127,45 @@ class TaccDenovoPhospho(MavispModule):
                                                                                                         axis=1)
             if os.path.exists(stability_std_fname):
                 stability_std_col = 'Change in folding free energy with phosphorylation (kcal/mol, st. dev.)'
-                stability_ddg_std = self._parse_summary_ddg(stability_std_fname,
+                stability_ddg_std = self._parse_energy_file(stability_std_fname,
                                                             stability_std_col,
                                                             warnings,
                                                             netphos_variants=netphos.index)
                 stability_ddg_std = stability_ddg_std[stability_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(stability_ddg_std, how='left')
         else:
-            warnings.append(MAVISpWarningError("summary_stability.txt not found - change in free energy values will not be reported"))
+            warnings.append(MAVISpWarningError("energies_stability.csv not found - change in free energy values will not be reported"))
 
-        binding_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding.txt')
-        binding_std_fname = os.path.join(self.data_dir, self.module_dir, 'summary_binding_std.txt')
+        binding_fname = os.path.join(self.data_dir, self.module_dir, 'energies_binding.csv')
+        binding_std_fname = os.path.join(self.data_dir, self.module_dir, 'energies_binding_std.csv')
         if os.path.exists(binding_std_fname) and not os.path.exists(binding_fname):
-            this_error = "summary_binding_std.txt found but summary_binding.txt is missing"
+            this_error = "energies_binding_std.csv found but energies_binding.csv is missing"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
         if os.path.exists(binding_fname):
             binding_col = 'Change in binding free energy with phosphorylation (kcal/mol)'
-            binding_ddg = self._parse_summary_ddg(binding_fname,
+            binding_ddg = self._parse_energy_file(binding_fname,
                                                   binding_col,
                                                   warnings,
                                                   netphos_variants=netphos.index)
             binding_ddg = binding_ddg[binding_ddg.index.isin(netphos.index)]
             final_data = final_data.join(binding_ddg, how='left')
             final_data['Classification of change in binding free energy with phosphorylation'] = final_data.apply(self._generate_binding_free_energy_classification,
-                                                                                                      column=binding_col,
-                                                                                                      axis=1)
+                                                                                                                  column=binding_col,
+                                                                                                                  sas_col='Mutant residue SASA (%)',
+                                                                                                                  axis=1)
             if os.path.exists(binding_std_fname):
                 binding_std_col = 'Change in binding free energy with phosphorylation (kcal/mol, st. dev.)'
-                binding_ddg_std = self._parse_summary_ddg(binding_std_fname,
+                binding_ddg_std = self._parse_energy_file(binding_std_fname,
                                                           binding_std_col,
                                                           warnings,
                                                           netphos_variants=netphos.index)
                 binding_ddg_std = binding_ddg_std[binding_ddg_std.index.isin(netphos.index)]
                 final_data = final_data.join(binding_ddg_std, how='left')
         else:
-            warnings.append(MAVISpWarningError("summary_binding.txt not found - change in free energy values will not be reported"))
+            warnings.append(MAVISpWarningError("energies_binding.csv not found - change in free energy values will not be reported"))
 
-        self.data = final_data.drop(columns=['sas_sc_rel', 'acc_std'], errors='ignore')
+        self.data = final_data.drop(columns=['acc_std'], errors='ignore')
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings, critical=[])
