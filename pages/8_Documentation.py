@@ -798,10 +798,10 @@ predictions directly for variants predicted to introduce a potential novel
 phosphorylation site. The module also reports the predicted change in folding and,
 when available, binding free energy upon phosphorylation of the newly introduced
 site. This means that free energies changes are calculated as the difference between
-the free energy of the phosphorylated mutant and of the wild-type. Solvent
-accessibility is used internally for warnings and for the binding classification
-when binding free energy is unavailable, but the SAS values themselves are
-reported by the SAS module rather than repeated here.
+the free energy of the phosphorylated mutant and of the unphosphorylated mutant. Solvent
+accessibility of the corresponding mutant variant from the MD simulation is also
+reported by the module and used for warnings and for the binding classification
+when binding free energy is unavailable.
 
 The ensemble-mode module generates the following columns for each ensemble:""")
 
@@ -814,6 +814,9 @@ data = [ ( "NetPhos score",
          ( "Potential novel phosphosite found",
            "Whether NetPhos predicted that the variant introduces a potential novel phosphorylation site",
            "`True` if it does, `False` if it does not"),
+         ( "Mutant residue SASA (%)",
+           "Solvent accessibility of the corresponding mutant variant from the MD simulation",
+           "value (%)"),
          ( "Change in folding free energy with phosphorylation (kcal/mol)",
            "Change in folding free energy predicted for phosphorylation of the introduced site",
            "value (kcal/mol)"),
