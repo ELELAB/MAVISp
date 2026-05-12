@@ -1820,16 +1820,22 @@ class popEVE(MavispModule):
         try:
 
             popeve_df = pd.read_csv(os.path.join(self.data_dir, self.module_dir, popeve_file),
-                             usecols=['mutant', 'popEVE'],
+                             usecols=['mutant', 'popEVE', 'gap frequency'],
                              dtype={ 'mutant' :  'string',
-                                     'popEVE' : 'float32'},
+                                     'popEVE' : 'float32',
+                                     'gap frequency' :'float32'},
                              index_col='mutant')
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
+                                    
+        popeve_df.loc[
+            popeve_df['gap frequency'] >= 0.5,
+            'popEVE'
+        ] = pd.NA
 
-        self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'})
+        self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'}).drop(columns = ['gap frequency'])
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
