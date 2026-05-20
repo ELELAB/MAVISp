@@ -780,7 +780,12 @@ data = [ ( "AlphaMissense pathogenicity score", "pathogenicity score from AlphaM
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
-st.write("""  - popEVE module:""")
+st.write("""  - popEVE module:
+
+The popEVE score is only reported for variants passing the gap frequency filter.
+Variants at positions with a gap frequency of 0.5 or above are filtered out.
+This filtering is done to avoid reporting less reliable predictions for
+positions that are poorly represented in the multiple sequence alignment.""")
 
 data = [ ( "popEVE score", "score from popEVE", "value")]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
