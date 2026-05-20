@@ -1830,10 +1830,17 @@ class popEVE(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
                                     
+        popeve_df['popEVE status'] = 'available'
+
         popeve_df.loc[
-            popeve_df['gap frequency'] >= 0.5,
-            'popEVE'
-        ] = pd.NA
+            popeve_df['popEVE'].isna(),
+             'popEVE status'
+        ] = 'not available'
+
+        gap_filter = popeve_df['gap frequency'] >= 0.5
+
+        popeve_df.loc[gap_filter, 'popEVE status'] = 'filtered out'
+        popeve_df.loc[gap_filter, 'popEVE'] = pd.NA
 
         self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'}).drop(columns = ['gap frequency'])
 
