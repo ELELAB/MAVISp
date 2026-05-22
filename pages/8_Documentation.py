@@ -795,9 +795,18 @@ data = [ ( "AlphaMissense pathogenicity score", "pathogenicity score from AlphaM
          ( "AlphaMissense classification", "Classification of mutation by AlphaMissense", "benign, pathogenic or ambiguous") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
-st.write("""  - popEVE module:""")
+st.write("""  - popEVE module:
 
-data = [ ( "popEVE score", "score from popEVE", "value")]
+The popEVE score is only reported for variants passing the gap frequency filter.
+Variants at positions with a gap frequency of 0.5 or above are filtered out.
+This filtering is done to avoid reporting less reliable predictions for
+positions that are poorly represented in the multiple sequence alignment.
+
+The popEVE status column indicates whether the score is available, not available
+in the input data, or filtered out due to the gap frequency filter.""")
+
+data = [ ( "popEVE score", "score from popEVE", "value"),
+        ("popEVE status", "availability status of popEVE score", "available, not available, filtered out")]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
 st.subheader('EFoldMine module')

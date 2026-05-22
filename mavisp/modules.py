@@ -5,6 +5,7 @@
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 #           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
 #           (C) 2026 Eszter Toldi, Technical University of Denmark (DTU)
+#           (C) 2026 Laura Jense, Technical University of Denmark (DTU)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1692,7 +1693,7 @@ class CancermutsTable(MavispModule):
                                           critical=[MAVISpCriticalError(this_error)])
             warnings.append(MAVISpWarningError("ClinVar columns were removed as they were empty and in a currently deprecated format"))
         else:
-            for col in ['clinvar_variant_id', 'clinvar_germline_classification', 'clinvar_germline_review_status', 'clinvar_oncogenicity_classification', 
+            for col in ['clinvar_variant_id', 'clinvar_germline_classification', 'clinvar_germline_review_status', 'clinvar_oncogenicity_classification',
                         'clinvar_oncogenicity_review_status','clinvar_clinical_impact_classification', 'clinvar_clinical_impact_review_status']:
                 if col in cancermuts.columns:
                     data_columns.append(col)
@@ -2010,16 +2011,29 @@ class popEVE(MavispModule):
         try:
 
             popeve_df = pd.read_csv(os.path.join(self.data_dir, self.module_dir, popeve_file),
-                             usecols=['mutant', 'popEVE'],
+                             usecols=['mutant', 'popEVE', 'gap frequency'],
                              dtype={ 'mutant' :  'string',
-                                     'popEVE' : 'float32'},
+                                     'popEVE' : 'float32',
+                                     'gap frequency' :'float32'},
                              index_col='mutant')
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'})
+        popeve_df['popEVE status'] = 'available'
+
+        popeve_df.loc[
+            popeve_df['popEVE'].isna(),
+             'popEVE status'
+        ] = 'not available'
+
+        gap_filter = popeve_df['gap frequency'] >= 0.5
+
+        popeve_df.loc[gap_filter, 'popEVE status'] = 'filtered out'
+        popeve_df.loc[gap_filter, 'popEVE'] = pd.NA
+
+        self.data = popeve_df.rename(columns = {'popEVE'     : 'popEVE score'}).drop(columns = ['gap frequency'])
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -2178,11 +2192,11 @@ class FunctionalSites(MavispModule):
     column_headers = {
         'cofactor_local_aggregate.txt'    : 'Functional sites (cofactor)',
         'active_site_local_aggregate.txt' : 'Functional sites (active site)'}
-    
+
     boolean_headers = {
         'catalytic_residues.csv' : 'Active site',
         'cofactor_binding.csv'   : 'Cofactor binding site'}
-    
+
     _mut_re = re.compile(r'^(?P<ref>[ACDEFGHIKLMNPQRSTVWY])(?P<pos>[0-9]+)(?P<alt>[ACDEFGHIKLMNPQRSTVWY])$')
 
     _res3pos_re = re.compile(r'^(?P<aa3>[A-Za-z]{3})(?P<pos>[0-9]+)$')
@@ -2210,7 +2224,7 @@ class FunctionalSites(MavispModule):
         df['classification'] = pd.Series(index=df.index, data='damaging')
 
         return df
-    
+
     def _load_residue_set(self, csv_path):
 
         df = pd.read_csv(csv_path)
@@ -2219,9 +2233,9 @@ class FunctionalSites(MavispModule):
         out = set()
 
         for r in residues:
-            aa3 = r[:3]          
-            pos = int(r[3:])     
-            aa1 = three_to_one_hgvsp[aa3] 
+            aa3 = r[:3]
+            pos = int(r[3:])
+            aa1 = three_to_one_hgvsp[aa3]
             out.add((aa1, pos))
 
         return out
@@ -2242,7 +2256,7 @@ class FunctionalSites(MavispModule):
         out_df = out_df.set_index('mutations')
 
         for fs_file in fs_files:
-            
+
             if fs_file in self.boolean_headers:
                 continue
 
@@ -2645,7 +2659,7 @@ class TED(MavispModule):
 
         try:
             ted = pd.read_csv(os.path.join(self.data_dir, self.module_dir, ted_file),
-                               sep=',', 
+                               sep=',',
                                dtype={'TED_id': str, 'TED_boundaries': str, 'CATH_label': str})
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the summary.csv file. Arguments:{e.args}"
@@ -2688,7 +2702,7 @@ class TED(MavispModule):
                 labels = matching['CATH_label'].dropna().astype(str)
                 labels = labels[labels.str.strip() != ""]
                 if labels.empty:
-                    continue  
+                    continue
                 ted_annotations[mutation] = " | ".join(labels)
 
         # Add new column to data
@@ -2713,12 +2727,12 @@ class DisulfideBridges(MavispModule):
         warnings = []
 
         ss_files = os.listdir(os.path.join(self.data_dir, self.module_dir))
-        
+
         if not set(self.required_files).issubset(set(ss_files)):
             this_error = f"the following files are required: {', '.join(self.required_files)}"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
-        
+
         try:
             df_dis = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'mutlist_disulfide_disruptions.tsv'),
                                sep='\t')
@@ -2751,7 +2765,7 @@ class DisulfideBridges(MavispModule):
         out_df = out_df.fillna('neutral')
 
         self.data = out_df
-    
+
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[])
