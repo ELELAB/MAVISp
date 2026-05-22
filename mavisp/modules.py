@@ -5,6 +5,7 @@
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
 #           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
 #           (C) 2026 Eszter Toldi, Technical University of Denmark (DTU)
+#           (C) 2026 Laura Jense, Technical University of Denmark (DTU)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
