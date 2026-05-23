@@ -21,13 +21,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from importlib.resources import as_file, files
 import pandas as pd
 from mavisp.methods import *
 from mavisp.utils import three_to_one, three_to_one_hgvsp
 from collections import defaultdict
 import logging as log
 import re
-import pkg_resources
 import numbers
 import yaml
 
@@ -1444,8 +1444,8 @@ class PTMs(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # load phospho-SLiM data file
-        fname = pkg_resources.resource_filename(__name__, 'data/phosphoSLiMs_15062023.csv')
-        phospho_slims = pd.read_csv(fname)
+        with as_file(files(__package__).joinpath('data/phosphoSLiMs_15062023.csv')) as fname:
+            phospho_slims = pd.read_csv(fname)
 
         # create final table
         final_table = pd.DataFrame({'mutation' : mutations})

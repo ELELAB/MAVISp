@@ -22,7 +22,6 @@ dependencies = [
     "pyyaml",
     "requests",
     "termcolor",
-    "setuptools",
 ]
 dynamic = ["version"]
 
