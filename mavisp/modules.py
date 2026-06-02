@@ -907,15 +907,21 @@ class EFoldMine(MavispModule):
 
         # Compare with mutations:
         result = []
-
+        
+        efoldmine_parsed = efoldmine_parsed.copy()
+        efoldmine_parsed['mavisp_residue_index'] = efoldmine_parsed['residue_index'] + 1
+        residue_counts = efoldmine_parsed['mavisp_residue_index'].value_counts().to_dict()
+        efoldmine_by_residue = {row.mavisp_residue_index: row for row in efoldmine_parsed.itertuples(index=False)}
+        
         for mut in mutations:
             mut_resn = int(mut[1:-1])
-            row = efoldmine_parsed[efoldmine_parsed['residue_index']+1 == mut_resn]
-            if len(row) != 1:
-                this_error = f"Expected exactly one row for residue index {mut_resn}, but found {len(row)} rows."
+            row_count = residue_counts.get(mut_resn, 0)
+            if row_count != 1:
+                this_error = f"Expected exactly one row for residue index {mut_resn}, but found {row_count} rows."
                 raise MAVISpMultipleError(warning=warnings, critical=[MAVISpCriticalError(this_error)])
-            is_early_folding = row['is_early_folding'].iloc[0]
-            efoldmine_score = row['earlyFolding'].iloc[0]
+            row = efoldmine_by_residue[mut_resn]
+            is_early_folding = row.is_early_folding
+            efoldmine_score = row.earlyFolding
             result.append((is_early_folding, efoldmine_score))
 
         # Create DataFrame:
@@ -2625,13 +2631,15 @@ class Pfam(MavispModule):
         # Dictionary of muts + res_numbers
         mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
 
+        pfam_intervals = [(row.start, row.end, f"{row.pfam_domain} ({row.accession})")
+            for row in pfam.itertuples(index=False)]
+
         # Map res_numbers to PFAM domains
         pfam_annotations = {}
         for mutation, resn in mutation_residues.items():
-            matching_domains = pfam[(pfam['start'] <= resn) & (pfam['end'] >= resn)]
-            pfam_annotations[mutation] = ", ".join(
-                f"{row['pfam_domain']} ({row['accession']})" for _, row in matching_domains.iterrows()) if not matching_domains.empty else None
-
+            matching_domains = [label for start, end, label in pfam_intervals if start <= resn <= end]
+            pfam_annotations[mutation] = ", ".join(matching_domains) if matching_domains else None
+        
         # Add new column to data
         self.data = pd.DataFrame.from_dict(pfam_annotations, orient='index', columns=['Pfam domain classification'])
 
@@ -2688,21 +2696,21 @@ class TED(MavispModule):
                     raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        ted_expanded = pd.DataFrame(multi_boundaries)
+        ted_intervals = [(row['start'], row['end'], row['CATH_label']) for row in multi_boundaries]
+
         # Dictionary of muts + res_numbers
         mutation_residues = {mut: int(mut[1:-1]) for mut in mutations}
 
         # Map res_numbers to TED domains
         ted_annotations = {}
         for mutation, resn in mutation_residues.items():
-            matching = ted_expanded[(ted_expanded['start'] <= resn) & (ted_expanded['end'] >= resn)]
-            if matching.empty:
-                continue
-            else:
-                labels = matching['CATH_label'].dropna().astype(str)
-                labels = labels[labels.str.strip() != ""]
-                if labels.empty:
-                    continue
+            labels = []
+            for start, end, cath_label in ted_intervals:
+                if start <= resn <= end and not pd.isna(cath_label):
+                    label = str(cath_label)
+                    if label.strip() != "":
+                        labels.append(label)
+            if labels:
                 ted_annotations[mutation] = " | ".join(labels)
 
         # Add new column to data
