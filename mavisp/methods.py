@@ -512,7 +512,7 @@ class AlloSigma(Method):
     filtered_re = re.compile(r"^filtered_(up|down)_(.+)\.tsv$")
 
     def _get_dataset_label(self, suffix):
-        label = self.dataset_aliases.get(suffix, suffix.replace("_", " "))
+        label = self.dataset_aliases.get(suffix, suffix.replace('_', ' '))
         return f"AlloSigMA {self.version} predicted consequence - {label}"
 
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
@@ -559,7 +559,7 @@ class AlloSigma(Method):
         # raise error if columns don't match the residue format
         forbidden_cols = []
         for c in filt.columns:
-            if not re.fullmatch(self.mutation_re, c):
+            if not re.fullmatch(self.mutation_re.pattern, c):
                 forbidden_cols.append(c)
         if len(forbidden_cols) > 0:
             raise KeyError(f"column names {', '.join(forbidden_cols)} are not in the expected residue format")
