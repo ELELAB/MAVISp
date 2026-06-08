@@ -2310,10 +2310,18 @@ class AllosigmaPSNLongRange(MavispModule):
 
     exp_files = ['allosigma_mut.txt']
 
-    datasets = {'results_sub_cat.txt'  : 'AlloSigMA2-PSN classification - active sites',
-                'results_cofactor.txt' : 'AlloSigMA2-PSN classification - cofactor sites',
-                'results_summary.txt'  : 'AlloSigMA2-PSN classification - pockets and interfaces'}
-
+    dataset_aliases = {"sub_cat": "active sites",
+        "cofactor": "cofactor sites",
+        "summary": "pockets and interfaces"}
+    
+    def _get_dataset_label(self, filename):
+        
+        suffix = filename.removeprefix("results_").removesuffix(".txt")
+        
+        suffix = self.dataset_aliases.get(suffix, suffix.replace("_", " "))
+        
+        return f"AlloSigMA2-PSN classification - {suffix}"
+    
     def _generate_allosigma_psn_classification(self, row, ensemble_data):
         allosigma_mode = row['allosigma-mode']
 
@@ -2364,10 +2372,10 @@ class AllosigmaPSNLongRange(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        found_data_files = list(set(psn_files).intersection(self.datasets.keys()))
+        found_data_files = [f for f in psn_files if f.startswith("results_") and f.endswith(".txt")]
 
         if len(found_data_files) < 1:
-            this_error = (f"the input files for AlloSigma2-PSN must include one or more of {', '.join(self.datasets.keys())}, "
+            this_error = (f"no results_*.txt files were found in {base_path}; "
             f"found {', '.join(psn_files)}")
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
@@ -2415,7 +2423,8 @@ class AllosigmaPSNLongRange(MavispModule):
 
             try:
                 # Perform classification
-                psn[self.datasets[data_file]] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
+                column_name = self._get_dataset_label(data_file)
+                psn[column_name] = psn.apply(self._generate_allosigma_psn_classification, ensemble_data=df_ensemble_data, axis=1)
             except Exception as e:
                 this_error = f"Exception {type(e).__name__} occurred while performing allosigma-psn classifcation."
                 raise MAVISpMultipleError(warning=warnings,
