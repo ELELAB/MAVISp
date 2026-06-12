@@ -591,9 +591,9 @@ class AlloSigma(Method):
                         warning=[])
 
         allosigma2_data = []
-  
+
         for dirname, allosigma2_files in allosigma2_domains.items():
-            
+
             # check if the files are the expected ones
             if not set(self.exp_files).issubset(set(allosigma2_files)):
                 this_error = (f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")
