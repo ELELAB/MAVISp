@@ -500,17 +500,20 @@ class AlloSigma(Method):
 
     name = "AlloSigma"
 
-    datasets = {'sub_cat'  : 'AlloSigMA {version} predicted consequence - active sites',
-                'cofactor' : 'AlloSigMA {version} predicted consequence - cofactor sites',
-                'pockets'  : 'AlloSigMA {version} predicted consequence - pockets and interfaces'}
+    dataset_aliases = {"sub_cat": "active sites",
+        "cofactor": "cofactor sites",
+        "pockets": "pockets and interfaces"}
 
-    allowed_fnames = [f'filtered_up_{x}.tsv' for x in datasets.keys()] +\
-                     [f'filtered_down_{x}.tsv' for x in datasets.keys()] +\
-                     ['allosigma_mut.txt']
+    exp_files = ['allosigma_mut.txt']
 
     directions = ['up', 'down']
 
     mutation_re = re.compile('[ACDEFGHIKLMNPQRSTVWY][0-9]+')
+    filtered_re = re.compile(r"^filtered_(up|down)_(.+)\.tsv$")
+
+    def _get_dataset_label(self, suffix):
+        label = self.dataset_aliases.get(suffix, suffix.replace('_', ' '))
+        return f"AlloSigMA {self.version} predicted consequence - {label}"
 
     def _process_allosigma2_tables(self, row, filt_up, filt_down, cutoff):
 
@@ -556,7 +559,7 @@ class AlloSigma(Method):
         # raise error if columns don't match the residue format
         forbidden_cols = []
         for c in filt.columns:
-            if not re.fullmatch(self.mutation_re, c):
+            if not re.fullmatch(self.mutation_re.pattern, c):
                 forbidden_cols.append(c)
         if len(forbidden_cols) > 0:
             raise KeyError(f"column names {', '.join(forbidden_cols)} are not in the expected residue format")
@@ -592,13 +595,18 @@ class AlloSigma(Method):
         for dirname, allosigma2_files in allosigma2_domains.items():
 
             # check if the files are the expected ones
-            if 'allosigma_mut.txt' not in allosigma2_files:
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")],
-                                        warning=[])
+            if not set(self.exp_files).issubset(set(allosigma2_files)):
+                this_error = (f"the allosigma_mut.txt file must be present in the AlloSigma2 directory {allosigma2_dir}/{dirname}")
+                raise MAVISpMultipleError(warning=warnings,
+                                        critical=[MAVISpCriticalError(this_error)])
 
-            if not allosigma2_files.issubset(self.allowed_fnames):
-                raise MAVISpMultipleError(critical=[MAVISpCriticalError(f"the only allowed file names in the allosigma2 directory {allosigma2_dir}/{dirname} are {', '.join(list(self.allowed_fnames))}")],
-                                        warning=[])
+            found_data_files = [f for f in allosigma2_files if f.startswith("filtered_") and f.endswith(".tsv")]
+
+            if len(found_data_files) < 1:
+                this_error = (f"no filtered_*.tsv files were found in {dirname}; "
+                f"found {', '.join(allosigma2_files)}")
+                raise MAVISpMultipleError(warning=warnings,
+                                            critical=[MAVISpCriticalError(this_error)])
 
             # parse the mutation file
             try:
@@ -610,51 +618,53 @@ class AlloSigma(Method):
 
             available_suffixes = []
 
-            # for every data type
-            for suffix, colname in self.datasets.items():
+            # identify suffixes in the directory
+            for fname in sorted(found_data_files):
+                m = self.filtered_re.fullmatch(fname)
+                if m is None:
+                    continue
+                suffix = m.group(2)
+                if suffix not in available_suffixes:
+                    available_suffixes.append(suffix)
 
+            # parse each discovered suffix
+            for suffix in available_suffixes:
                 data = {}
 
-                available_files = {d : f'filtered_{d}_{suffix}.tsv' for d in self.directions if f'filtered_{d}_{suffix}.tsv' in allosigma2_files}
-
-                # skip if there are no files
-                if len(available_files) == 0:
-                    continue
-
-                available_suffixes.append(suffix)
-
-                # for either up or down mutations for the type
-                for direction, fname in available_files.items():
-
-                    try:
-                        data[direction] = self._parse_allosigma2_energy_table(os.path.join(allosigma2_dir, dirname, fname))
-                    except Exception as e:
-                        this_error = f"Exception {type(e).__name__} occurred when parsing {fname}. Arguments:{e.args}"
-                        raise MAVISpMultipleError(warning=warnings,
-                                                critical=[MAVISpCriticalError(this_error)])
-
-                # add None for when up/down was not available
                 for direction in self.directions:
-                    if direction not in list(data.keys()):
+                    fname = f"filtered_{direction}_{suffix}.tsv"
+                    if fname in allosigma2_files:
+                        try:
+                            data[direction] = self._parse_allosigma2_energy_table(
+                                os.path.join(allosigma2_dir, dirname, fname))
+                        except Exception as e:
+                            this_error = (
+                                f"Exception {type(e).__name__} occurred when parsing {fname}. "
+                                f"Arguments:{e.args}")
+                            raise MAVISpMultipleError(
+                                warning=warnings,
+                                critical=[MAVISpCriticalError(this_error)])
+                    else:
                         data[direction] = None
 
-                all_mut[suffix] = all_mut.apply(self._process_allosigma2_tables,
-                                                filt_up=data['up'],
-                                                filt_down=data['down'],
-                                                cutoff=2,
-                                                axis=1)
+                all_mut[suffix] = all_mut.apply(
+                    self._process_allosigma2_tables,
+                    filt_up=data["up"],
+                    filt_down=data["down"],
+                    cutoff=2,
+                    axis=1)
 
-            all_mut = all_mut[['mutations', 'allosigma-mode'] + available_suffixes]
-            all_mut = all_mut.set_index('mutations')
-
+            all_mut = all_mut[["mutations", "allosigma-mode"] + available_suffixes]
+            all_mut = all_mut.set_index("mutations")
+            
             allosigma2_data.append(all_mut)
 
         out_data = pd.concat(allosigma2_data, axis=0)
 
-        rename_scheme = {k : v.format(version=self.version) for k,v in self.datasets.items()}
-        rename_scheme['allosigma-mode'] = f'AlloSigMA {self.version} mutation type'
+        rename_scheme = {suffix: self._get_dataset_label(suffix) for suffix in available_suffixes}
+        rename_scheme["allosigma-mode"] = f"AlloSigMA {self.version} mutation type"
 
-        return out_data.rename(columns=rename_scheme).fillna('-'), warnings
+        return out_data.rename(columns=rename_scheme).fillna("-"), warnings
 
 class RaSP(Method):
 
