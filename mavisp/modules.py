@@ -1239,7 +1239,7 @@ class PTMs(MavispModule):
                         'T' : 'p',
                         'Y' : 'y'}
     protein_chain = 'A'
-    slim_pattern = re.compile('.* \((CLV|DEG|DOC|LIG|MOD|TRG)_[A-Za-z0-9_-]+\), [0-9]+-[0-9]+, (ggetELM|ELM)')
+    slim_pattern = re.compile(r'.* \((CLV|DEG|DOC|LIG|MOD|TRG)_[A-Za-z0-9_-]+\), [0-9]+-[0-9]+, (ggetELM|ELM)')
 
     def _assign_regulation_class(self, row):
         ref = row.name[0]
@@ -1616,7 +1616,7 @@ class CancermutsTable(MavispModule):
 
     def _process_sources(self, row):
 
-        manual_pattern = 'Manual annotations from (.+)\..+'
+        manual_pattern = r'Manual annotations from (.+)\..+'
 
         sources = row['sources'].split(',')
         for i,s in enumerate(sources):
@@ -1732,7 +1732,7 @@ class ClinVar(MavispModule):
     module_dir = "clinvar"
     name = "clinvar"
     variants_fname = "variants_output.csv"
-    mutation_pattern = re.compile('\(p\.([A-Z][a-z]{2}[0-9]+[A-Z][a-z]{2})\)')
+    mutation_pattern = re.compile(r'\(p\.([A-Z][a-z]{2}[0-9]+[A-Z][a-z]{2})\)')
 
     def _get_mutation_string(self, row):
         matches = self.mutation_pattern.findall(row['variant_name'])
@@ -2452,7 +2452,7 @@ class ExperimentalData(MavispModule):
     module_dir = "experimental_data"
     name = "experimental_data"
 
-    hgvsp_regexp = "p\.[A-Z][a-z][a-z][0-9]+[A-Z][a-z][a-z]"
+    hgvsp_regexp = r"p\.[A-Z][a-z][a-z][0-9]+[A-Z][a-z][a-z]"
 
     def _hgvs_to_mavisp(self, hgvsp, offset):
         return f"{three_to_one_hgvsp[hgvsp[2:5]]}{int(hgvsp[5:-3]) + int(offset)}{three_to_one_hgvsp[hgvsp[-3:]]}"
