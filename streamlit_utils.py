@@ -24,8 +24,16 @@ from pathlib import Path
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
 from dot_plot import generate_summary, filter_vep_summary
+from dot_plot_v2 import plot as do_dotplots_v2
+from dot_plot_v2 import process_input as process_input_for_dotplot_v2
+from dot_plot_v2 import generate_summary as generate_summary_v2
+from dot_plot_v2 import get_clinvar_columns
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
+
+OLD_CLINVAR_COLUMNS = ("ClinVar Interpretation", "ClinVar Review Status")
+NEW_CLINVAR_CLASS_TYPE = "germline"
+POPEVE_COLUMNS = ("popEVE score", "popEVE status")
 
 @st.cache_data
 def get_base64_of_bin_file(png_file):
@@ -188,28 +196,60 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
 
     df = df.copy()
 
-    if 'ClinVar Interpretation' not in df.columns:
-        df['ClinVar Interpretation'] = None
-
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
-                                                            d_cutoff=demask_co,
-                                                            r_cutoff=revel_co,
-                                                            g_cutoff=gemme_co,
-                                                            residues=None,
-                                                            mutations=None,
-                                                            clinvar_dict=clinvar_dict,
-                                                            plot_Revel=True,
-                                                            plot_Demask=True,
-                                                            plot_Source=None,
-                                                            plot_Clinvar=None,
-                                                            color_Clinvar=True)
+    # Old-style CSVs have aggregated ClinVar columns and should use dot_plot.py.
+    if all(col in df.columns for col in OLD_CLINVAR_COLUMNS):
+        # dot_plot.py does not support popEVE columns, so ignore them on this path.
+        df = df.drop(columns=[col for col in POPEVE_COLUMNS if col in df.columns])
 
-    if not do_revel:
-        processed_df = processed_df.drop(columns=['REVEL'])
+        plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                                d_cutoff=demask_co,
+                                                                r_cutoff=revel_co,
+                                                                g_cutoff=gemme_co,
+                                                                residues=None,
+                                                                mutations=None,
+                                                                clinvar_dict=clinvar_dict,
+                                                                plot_Revel=True,
+                                                                plot_Demask=True,
+                                                                plot_Source=None,
+                                                                plot_Clinvar=None,
+                                                                color_Clinvar=True)
 
-    my_plots = do_dotplots(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
+        if not do_revel:
+            plot_df = plot_df.drop(columns=['REVEL'])
+
+        if not do_demask and 'DeMaSk predicted consequence' in plot_df.columns:
+            plot_df = plot_df.drop(columns=['DeMaSk predicted consequence'])
+
+        my_plots = do_dotplots(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, True)
+    else:
+        # New-style CSVs split ClinVar fields and should use dot_plot_v2.py.
+        clinvar_cols = get_clinvar_columns(df, NEW_CLINVAR_CLASS_TYPE)
+
+        plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot_v2(df,
+                                                                d_cutoff=demask_co,
+                                                                r_cutoff=revel_co,
+                                                                p_cutoff=0.5,
+                                                                g_cutoff=gemme_co,
+                                                                residues=None,
+                                                                mutations=None,
+                                                                clinvar_dict=clinvar_dict,
+                                                                plot_Revel=True,
+                                                                plot_popEVE=True,
+                                                                plot_Demask=True,
+                                                                plot_Source=None,
+                                                                plot_Clinvar=None,
+                                                                color_Clinvar=True,
+                                                                clinvar_cols=clinvar_cols)
+
+        if not do_revel:
+            plot_df = plot_df.drop(columns=['REVEL'])
+
+        if not do_demask and 'DeMaSk predicted consequence' in plot_df.columns:
+            plot_df = plot_df.drop(columns=['DeMaSk predicted consequence'])
+
+        my_plots = do_dotplots_v2(plot_df, clinvar_mapped_df, fig_width, fig_height, n_muts, False, NEW_CLINVAR_CLASS_TYPE, True)
 
     return my_plots
 
@@ -219,20 +259,46 @@ def process_df_for_lolliplot(df):
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
-                                                            r_cutoff=0.5,
-                                                            d_cutoff=0.25,
-                                                            g_cutoff=3.0,
-                                                            residues=None,
-                                                            mutations=None,
-                                                            clinvar_dict=clinvar_dict,
-                                                            plot_Revel=False,
-                                                            plot_Demask=True,
-                                                            plot_Source=None,
-                                                            plot_Clinvar=None,
-                                                            color_Clinvar=False)
+    # Old-style CSVs have aggregated ClinVar columns and should use dot_plot.py.
+    if all(col in df.columns for col in OLD_CLINVAR_COLUMNS):
+        # dot_plot.py does not support popEVE columns, so ignore them on this path.
+        df = df.drop(columns=[col for col in POPEVE_COLUMNS if col in df.columns])
 
-    text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
+        plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
+                                                                r_cutoff=0.5,
+                                                                d_cutoff=0.25,
+                                                                g_cutoff=3.0,
+                                                                residues=None,
+                                                                mutations=None,
+                                                                clinvar_dict=clinvar_dict,
+                                                                plot_Revel=False,
+                                                                plot_Demask=True,
+                                                                plot_Source=None,
+                                                                plot_Clinvar=None,
+                                                                color_Clinvar=False)
+
+        text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
+    else:
+        # New-style CSVs split ClinVar fields and should use dot_plot_v2.py.
+        clinvar_cols = get_clinvar_columns(df, NEW_CLINVAR_CLASS_TYPE)
+
+        plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot_v2(df,
+                                                                r_cutoff=0.5,
+                                                                p_cutoff=0.5,
+                                                                d_cutoff=0.25,
+                                                                g_cutoff=3.0,
+                                                                residues=None,
+                                                                mutations=None,
+                                                                clinvar_dict=clinvar_dict,
+                                                                plot_Revel=False,
+                                                                plot_popEVE=True,
+                                                                plot_Demask=True,
+                                                                plot_Source=None,
+                                                                plot_Clinvar=None,
+                                                                color_Clinvar=False,
+                                                                clinvar_cols=clinvar_cols)
+
+        text, summary_df = generate_summary_v2(full_df, d_cutoff=0.25, r_cutoff=0.5, p_cutoff=0.5, clinvar_cols=clinvar_cols)
 
     filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
 
