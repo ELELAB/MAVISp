@@ -230,7 +230,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
         plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot_v2(df,
                                                                 d_cutoff=demask_co,
                                                                 r_cutoff=revel_co,
-                                                                p_cutoff=0.5,
+                                                                p_cutoff=-4.617,
                                                                 g_cutoff=gemme_co,
                                                                 residues=None,
                                                                 mutations=None,
@@ -284,7 +284,7 @@ def process_df_for_lolliplot(df):
 
         plotting_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot_v2(df,
                                                                 r_cutoff=0.5,
-                                                                p_cutoff=0.5,
+                                                                p_cutoff=-4.617,
                                                                 d_cutoff=0.25,
                                                                 g_cutoff=3.0,
                                                                 residues=None,
@@ -298,7 +298,7 @@ def process_df_for_lolliplot(df):
                                                                 color_Clinvar=False,
                                                                 clinvar_cols=clinvar_cols)
 
-        text, summary_df = generate_summary_v2(full_df, d_cutoff=0.25, r_cutoff=0.5, p_cutoff=0.5, clinvar_cols=clinvar_cols)
+        text, summary_df = generate_summary_v2(full_df, d_cutoff=0.25, r_cutoff=0.5, p_cutoff=-4.617, clinvar_cols=clinvar_cols)
 
     filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
 
