@@ -3,8 +3,8 @@
 # Copyright (C) 2023 Ludovica Beltrame <beltrameludo@gmail.com>,
 # Simone Scrima <simonescrima@gmail.com>, Karolina Krzesińska <kzokr@dtu.dk>,
 # Matteo Tiberti
-# Danish Cancer Society & Technical University of Denmark
-# 2026 Eszter Toldi, Technical University of Denmark (DTU)
+# Danish Cancer Society & Technical University of Denmark,
+# 2026 Eszter Toldi, Technical University of Denmark
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -210,7 +210,13 @@ def color_xticklabels(mutations, clinvar_col):
         'likely pathogenic': '#A71B32',
         'benign': '#3A8752',
         'likely benign': '#3A8752',
-        'uncertain': '#878E99'}
+        'uncertain': '#878E99',
+        "oncogenic": "#A71B32",
+        "likely oncogenic": "#A71B32",
+        "strong": "#A71B32",
+        "potential": "#A71B32",
+        "unknown": "#878E99",
+        "benign/likely benign": "#3A8752"}
 
     # Create a list to store the colors
     tick_colors = []
@@ -264,8 +270,23 @@ def convert_to_float(value):
     else:
         return value
 
-def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
-    clinvar_dict, plot_Revel, plot_Demask, plot_Source, plot_Clinvar, color_Clinvar):
+def get_clinvar_columns(df, clinvar_class_type: str):
+    split = { "aggregated": ("ClinVar Interpretation", "ClinVar Review Status"),
+              "germline": ("ClinVar Germline Interpretation", "ClinVar Germline Review Status"),
+              "oncogenicity": ("ClinVar Oncogenicity Interpretation", "ClinVar Oncogenicity Review Status"),
+              "clinical_impact": ("ClinVar Clinical Impact Interpretation", "ClinVar Clinical Impact Review Status")}
+    pair = split[clinvar_class_type]
+    if all(col in df.columns for col in pair):
+        return pair
+    if clinvar_class_type == "aggregated":
+        raise ValueError( "ClinVar mode 'aggregated' requested (default), but aggregated columns are missing. "
+                          "This looks like a 'new style' entry csv. "
+                          "Use -cct germline|oncogenicity|clinical_impact.")
+    raise ValueError(f"ClinVar mode '{clinvar_class_type}' requested, but the corresponding columns are missing.")
+
+
+def process_input(full_df, r_cutoff, p_cutoff, d_cutoff, g_cutoff, residues, mutations,
+    clinvar_dict, plot_Revel, plot_popEVE, plot_Demask, plot_Source, plot_Clinvar, color_Clinvar, clinvar_cols):
     ''' Read MAVISp aggregated table.
 
     The function takes as input a MAVISp csv file and returns
@@ -310,9 +331,11 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     '''
 
     # Assert the required column is present
-    if (plot_Clinvar or color_Clinvar) and 'ClinVar Interpretation' not in full_df.columns:
-        log.error("ClinVar Interpretation column is missing from the input data.")
-        raise TypeError("ClinVar Interpretation column is missing from the input data.")
+
+
+    if (plot_Clinvar or color_Clinvar) and clinvar_cols[0] not in full_df.columns:
+        log.error(f"{clinvar_cols[0]} column is missing from the input data.")
+        raise TypeError(f"{clinvar_cols[0]} column is missing from the input data.")
 
     f = lambda x: '(ThermoMPNN)' in x or \
                     '(Foldetta from FoldX and Rosetta)' in x or \
@@ -328,6 +351,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
                     'AlloSigMA 2 predicted consequence - pockets and interfaces' in x or \
                     ('AlloSigMA2-PSN classification' in x and not 'AlloSigMA 2 mutation type' in x) or\
                     'PTM effect in ' in x or 'REVEL score' in x or \
+                    'popEVE score' in x or \
                     'EVE classification (25% Uncertain)' in x or \
                     'DeMaSk delta fitness' in x or \
                     'DeMaSk predicted consequence' in x or \
@@ -355,11 +379,24 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     for d in [df, full_df]:
         d['REVEL score'] = d['REVEL score'].apply(convert_to_float)
 
+        # Convert popEVE score column to numeric values.
+        # Invalid/non-numeric values are converted to NaN.
+        if 'popEVE score' in d.columns:
+            d['popEVE score'] = pd.to_numeric(d['popEVE score'], errors='coerce')
+
 
     # Add REVEL score interpretation column
     df['REVEL'] = np.where(df['REVEL score'].isna(), None,
                                 np.where(df['REVEL score'] >= r_cutoff,
                                     'Damaging', 'Neutral'))
+
+    try:
+        # Add popEVE score interpretation column
+        df['popEVE'] = np.where(df['popEVE score'].isna(), None,
+                                np.where(df['popEVE score'] < p_cutoff,
+                                         'Damaging', 'Neutral'))
+    except:
+        log.warning(f'- no popEVE found in MAVISp csv.')
 
     try:
         # Convert GEMME score into absolute value
@@ -377,12 +414,17 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
                 'Neutral')))
 
     # Drop score columns
+    score_cols_to_drop = ['REVEL score',
+                        'DeMaSk delta fitness']
+
     if 'GEMME Score' in df.columns:
-        df.drop(columns = ['REVEL score','DeMaSk delta fitness', 'GEMME Score'],
-            inplace = True)
-    else:
-        df.drop(columns = ['REVEL score','DeMaSk delta fitness'],
-            inplace = True)
+        score_cols_to_drop.append('GEMME Score')
+
+    if 'popEVE score' in df.columns:
+        score_cols_to_drop.append('popEVE score')
+
+    df.drop(columns=score_cols_to_drop, inplace=True)
+
 
     # Sort columns based on broad effect categories
     functional_cols = [col for col in df.columns if 'functional' in col.lower() and 'experimental data classification' not in col.lower()]
@@ -445,7 +487,8 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
         'AlphaMissense classification',
         'EVE classification (25% Uncertain)',
         'GEMME predicted consequence',
-        'REVEL'
+        'REVEL',
+        'popEVE'
     ]
     demask_pred_col = 'DeMaSk predicted consequence'
     experimental_present = [col for col in experimental_cols if col in df.columns]
@@ -587,18 +630,23 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
         # Filter df according to poss. previous arguments
         clinvar_mapped_df = full_df.loc[full_df.index.isin(df.index)]
         # Map dictionary to df
-        clinvar_mapped_df = map_clinvar_categories(clinvar_mapped_df, clinvar_dict)
+        clinvar_mapped_df = map_clinvar_categories(clinvar_mapped_df, clinvar_dict, clinvar_cols)
 
     # Keep only user-defined mutations according to ClinVar annotation
     if plot_Clinvar:
         # Define a mapping of user-input to categories
         filter_terms = {
-            'benign': ['benign'],
+            'benign': ['benign', 'benign/likely benign'],
             'likely_benign' : ['likely benign'],
             'pathogenic': ['pathogenic'],
             'likely_pathogenic': ['likely pathogenic'],
             'uncertain': ['uncertain'],
-            'conflicting': ['conflicting']}
+            'conflicting': ['conflicting interpretation'],
+            'oncogenic': ['oncogenic'],
+            'likely_oncogenic': ['likely oncogenic'],
+            'strong': ['strong'],
+            'potential': ['potential'],
+            'unknown': ['unknown']}
 
         # Filter dataframe according to flag option
         if 'all' in plot_Clinvar:
@@ -641,6 +689,9 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
     if not plot_Revel and 'REVEL' in plot_df.columns:
         plot_df = plot_df.drop(columns=['REVEL'])
 
+    if not plot_popEVE and 'popEVE' in plot_df.columns:
+        plot_df = plot_df.drop(columns=['popEVE'])
+
     if not plot_Demask and 'DeMaSk predicted consequence' in plot_df.columns:
         plot_df = plot_df.drop(columns=['DeMaSk predicted consequence'])
 
@@ -649,7 +700,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
 
     return plot_df, df, full_df, clinvar_mapped_df
 
-def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
+def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_class_type, clinvar_col):
     ''' Plot
 
     The function is aimed at plotting a matrix showing the effect of
@@ -795,13 +846,34 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
         if clinvar_flag or clinvar_col:
             ax2 = ax.twinx()
             ax2.get_yaxis().set_visible(False)
-
-            xtick_legend_dict = {
-                    '#000000': 'Not available',
-                    '#EBD479': 'Conflicting',
-                    '#878E99': 'Uncertain ',
-                    '#3A8752': 'Benign/Likely Benign',
-                    '#A71B32': 'Pathogenic/Likely Pathogenic'}
+            if clinvar_class_type in ("aggregated", "germline"):
+                xtick_legend_dict = {
+                        '#000000': 'Not available',
+                        '#EBD479': 'Conflicting',
+                        '#878E99': 'Uncertain ',
+                        '#3A8752': 'Benign/Likely Benign',
+                        '#A71B32': 'Pathogenic/Likely Pathogenic'}
+                if clinvar_class_type == "aggregated":
+                    clinvar_label = "ClinVar classification"
+                else:
+                    clinvar_label = "ClinVar germline classification"
+            elif clinvar_class_type == "oncogenicity":
+                clinvar_label = "ClinVar Oncogenicity classification"
+                xtick_legend_dict = {
+                        '#000000': 'Not available',
+                        '#878E99': 'Uncertain significance',
+                        '#EBD479': 'Conflicting',
+                        '#3A8752': 'Benign/Likely benign',
+                        '#A71B32': 'Oncogenic/Likely oncogenic'}
+            elif clinvar_class_type == "clinical_impact":
+                clinvar_label = "ClinVar Clinical Impact"
+                xtick_legend_dict = {
+                        '#000000': 'Not available',
+                        '#EBD479': 'Conflicting',
+                        '#A71B32': 'Strong',
+                        '#C05A2A': 'Potential',
+                        '#878E99': 'Unknown',
+                        '#3A8752': 'Benign/Likely benign'}
 
             xtick_legend_list = [Line2D([0], [0],
                                 color='w',
@@ -812,7 +884,7 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
                                 markeredgecolor='k') for k in xtick_legend_dict.keys()]
 
             fake = Line2D([], [], color="none")
-            labels = ["ClinVar classification:"] + list(xtick_legend_dict.values())
+            labels = [clinvar_label] + list(xtick_legend_dict.values())
             handles = [fake] + xtick_legend_list
             second_legend = ax2.legend(handles=handles,
                                        labels=labels,
@@ -833,7 +905,7 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_col):
 
     return figures
 
-def generate_summary(data,d_cutoff,r_cutoff):
+def generate_summary(data,d_cutoff,r_cutoff, p_cutoff, clinvar_cols):
     ''' Summary log.txt file.
 
     The function is aimed at summarizing the number of mutations
@@ -1120,9 +1192,9 @@ def generate_summary(data,d_cutoff,r_cutoff):
     all_stability = []
 
     # Define columns and effects' variables
-    clinvar_clmn = 'ClinVar Interpretation'
-    vus = '(?i)uncertain'
-    conflict = 'conflicting interpretations of pathogenicity'
+    clinvar_clmn = clinvar_cols[0]
+    vus = r'(?i)uncertain|unknown'
+    conflict = 'conflicting'
     d_s = ['destabilizing', 'stabilizing']
 
     if filter_col_stability:
@@ -1144,7 +1216,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
                     # Calculate number of VUS
                     stab_d_vus = str(len(data[(data[col].isin(d_s) & \
                                         data[clinvar_clmn].astype(str).str.contains(vus))]))
-                    out += f'-- {stab_d_vus} of these are vus: '
+                    out += f'-- {stab_d_vus} of these are vus according to {clinvar_clmn}: '
 
                     # List VUS mutations
                     vus_list = data.index[(data[col].isin(d_s) & \
@@ -1156,7 +1228,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
                     # Calculate number of variants with conflicting interpretations
                     stab_d_conf = str(len(data[(data[col].isin(d_s) & \
                                         data[clinvar_clmn].astype(str).str.contains(conflict))]))
-                    out += f'-- {stab_d_conf} of these have conflicting interpretations of pathogenicity: '
+                    out += f'-- {stab_d_conf} of these have conflicting interpretations according to {clinvar_clmn}: '
 
                     # List mutations with conflicting interpretations
                     conf_list = data.index[(data[col].isin(d_s) & \
@@ -1166,7 +1238,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
                     out += out_list(conf_list)
 
                 except KeyError:
-                    log.warning('Missing ClinVar Interpretation column, please check the input file. Continuing...')
+                    log.warning(f'Missing {clinvar_cols[0]}, please check the input file. Continuing...')
                     out += f'ClinVar Interpretation column not available yet; not possible to predict the number ' \
                            f'of vus and/or variants with conflicting interpretations with a destabilizing effect.\n'
             except:
@@ -1517,6 +1589,18 @@ def generate_summary(data,d_cutoff,r_cutoff):
         f'which could be of interest for further investigation:\n'
     out += f'-- {revel_d}\n'
 
+    # popEVE score < -4.617 (default)
+    try:
+        popeve_d = data_d.index[data_d['popEVE score'] < p_cutoff].to_list()
+
+        out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
+               f'with a predicted damaging effect (except for PTM.function) and retained only ' \
+               f'the ones with a popEVE score < {p_cutoff} for a total of {len(popeve_d)} variants ' \
+               f'which could be of interest for further investigation:\n'
+        out += f'-- {popeve_d}\n'
+    except KeyError:
+        out += '\n- popEVE score not available.\n'
+
     # Demask
     demask_d = data_d.index[(data_d['DeMaSk delta fitness'] >= d_cutoff) | (data_d['DeMaSk delta fitness'] <= -d_cutoff)].to_list()
     out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
@@ -1587,7 +1671,7 @@ def generate_summary(data,d_cutoff,r_cutoff):
     # Clinvar classification
     try:
         clinvar_nan = data[clinvar_clmn].isna().sum()
-        out += '\nNot reported in clinvar: ' + str(clinvar_nan) + '\n'
+        out += f'\nNot reported {clinvar_clmn} in clinvar: ' + str(clinvar_nan) + '\n'
         clinvar_grouped = data.groupby([clinvar_clmn])[clinvar_clmn].count()
         out += str(clinvar_grouped) + '\n'
     except KeyError:
@@ -1771,7 +1855,7 @@ def load_clinvar_dict(tsv_file):
                                 names=['clinvar', 'internal_category'])
     return clinvar_dict.set_index('clinvar')['internal_category'].to_dict()
 
-def map_clinvar_categories(dataframe, clinvar_dict):
+def map_clinvar_categories(dataframe, clinvar_dict, clinvar_cols):
     """Translate ClinVar to internal categories.
 
     The function takes the full dataframe of the input
@@ -1792,10 +1876,12 @@ def map_clinvar_categories(dataframe, clinvar_dict):
         Updated dataframe with added 'ClinVar Category' column.
     """
     dataframe['ClinVar Category'] = dataframe.apply(
-        lambda row: clinvar_dict.get(row['ClinVar Interpretation'])
-        if pd.notna(row['Mutation sources']) and 'clinvar' in row['Mutation sources'].lower()
-        else None,
-        axis=1)
+    lambda row: clinvar_dict.get(str(row[clinvar_cols[0]]).replace(", ", ","))
+    if (pd.notna(row['Mutation sources'])
+        and 'clinvar' in row['Mutation sources'].lower()
+        and pd.notna(row[clinvar_cols[0]]))
+    else None,
+    axis=1)
     return dataframe
 
 def filter_vep_summary(summary, df, vep_filter, glof_filter):
@@ -1849,6 +1935,8 @@ def filter_vep_summary(summary, df, vep_filter, glof_filter):
         filtered_index_vep = df[df['REVEL'] == 1].index
     elif vep_filter == 'eve':
         filtered_index_vep = df[df['EVE classification (25% Uncertain)'] == 1].index
+    elif vep_filter == 'popeve':
+        filtered_index_vep = df[df['popEVE'] == 1].index
     elif vep_filter == 'none':
         filtered_index_vep = df.index
 
@@ -1890,7 +1978,10 @@ def main():
                         help = i_helpstr,
                         required = True)
 
-    v_helpstr = "Input: MAVISp ClinVar dictionary file. Only required if options -pltC or -colC are used."
+    v_helpstr = "Input: MAVISp ClinVar dictionary file. Only required if options -pltC or -colC are used." \
+                "for old entries or new entries with germline classification → use the standard  dictionary" \
+                "for oncogenicity  → use the onco dictionary" \
+                "for clinical impact → use the clinical dictionary"
     parser.add_argument("-v", "--clinvar-dictionary",
                         dest = "clinvar_dict",
                         action = "store",
@@ -1926,6 +2017,14 @@ def main():
                         default = R_default,
 	                    type = float,
                         help = R_helpstr)
+
+    P_default = -4.617
+    P_helpstr = f"Threshold to classify a mutation according to the " \
+                f"popEVE score. (Default = {P_default})"
+    parser.add_argument("-P", "--popeve_threshold",
+                        default=P_default,
+                        type=float,
+                        help=P_helpstr)
 
     D_default = 0.25
     D_helpstr = f"Threshold to classify a mutation according to the " \
@@ -1967,6 +2066,11 @@ def main():
                         action = 'store_true',
                         help = pltR_helpstr)
 
+    pltP_helpstr = f"Plotting of popEVE classification. (Default = None)"
+    parser.add_argument("-pltP", "--plot_popEVE",
+                        action='store_true',
+                        help=pltP_helpstr)
+
     pltD_helpstr = f"Plotting of Demask LoF/GoF if" \
                     f" mutation is above demask threshold. " \
                     f"(Default = None)"
@@ -1974,12 +2078,21 @@ def main():
                         action = 'store_true',
                         help = pltD_helpstr)
 
+    clinvarclasstype_helpstr = f"ClinVar classification type to use for plotting/coloring. " \
+                               f"Choices:aggregated, germline, oncogenicity, clinical_impact."
+    parser.add_argument("-cct", "--clinvar_class_type",
+                        default = "aggregated",
+                        choices = ["aggregated", "germline", "oncogenicity", "clinical_impact"],
+                        help = clinvarclasstype_helpstr)
+
     pltC_helpstr =  f"Plotting of Clinvar variants " \
                     f"choose from: all, uncertain, " \
                     f"benign, likely benign, pathogenic, " \
-                    f"likely pathogenic, conflicting. " \
-                    f"For combinations, provide space separated " \
-                    f"options (e.g. benign uncertain)" \
+                    f"likely pathogenic, conflicting, oncogenic, " \
+                    f"likely_oncogenic, potential, strong, unknown " \
+                    f"tier_IV. For combinations, provide space separated " \
+                    f"options (e.g. benign uncertain). Make sure that the " \
+                    f"chosen options are aligned with the chosen cct flag." \
                     f"(Default = None)"
     parser.add_argument("-pltC", "--plot_Clinvar",
                         nargs='+',
@@ -1989,7 +2102,12 @@ def main():
                                     "likely_benign",
                                     "pathogenic",
                                     "likely_pathogenic",
-                                    "conflicting"],
+                                    "conflicting",
+                                    "oncogenic",
+                                    "likely_oncogenic",
+                                    "potential",
+                                    "strong",
+                                    "unknown"],
                         help = pltC_helpstr)
 
     colC_helpstr =  f"Color x-axis of ClinVar mutations" \
@@ -2010,10 +2128,10 @@ def main():
                         help = pltS_helpstr)
 
     AMx_helpstr = "Restrict mechanisitc indicators output to pathogenic variants. Choose the VEP to use" \
-                  "to detect pathogenic variants between none, alphamissense, revel, gemme, eve. If this option" \
+                  "to detect pathogenic variants between none, alphamissense, revel, gemme, eve, popeve. If this option" \
                   "is used without argument it will default to alphamissense"
     parser.add_argument("-vep", "--vep-filter",
-                        choices=["none", "alphamissense", "revel", "gemme", "eve"],
+                        choices=["none", "alphamissense", "revel", "gemme", "eve", "popeve"],
                         nargs="?",
                         const="alphamissense",
                         default="none",
@@ -2072,6 +2190,11 @@ def main():
     # Read input
 
     full_df = pd.read_csv(args.input, index_col = 'Mutation')
+    try:
+        clinvar_cols = get_clinvar_columns(full_df, args.clinvar_class_type)
+    except ValueError as e:
+        log.error(f"ERROR: {e}")
+        exit(1)
 
     if args.plot_Clinvar or args.color_Clinvar:
         try:
@@ -2080,23 +2203,34 @@ def main():
         except FileNotFoundError as e:
             log.error(f"ClinVar dictionary file not found: {e}. Exiting...")
             exit(1)
+        # check if correct dict was provided:
+        expected_header = {"aggregated": "#ClinVar",
+                           "germline": "#ClinVar",
+                           "oncogenicity": "#Oncogenicity",
+                           "clinical_impact": "#Clinical Impact"}[args.clinvar_class_type]
+        first_cell = pd.read_csv(args.clinvar_dict, sep="\t", header=None).iat[0, 0]
+        if str(first_cell).strip() != expected_header:
+            log.error(f"ERROR: Wrong ClinVar dictionary for --clinvar_class_type {args.clinvar_class_type}")
+            exit(1)
     else:
         clinvar_dict = None
-
 
     try:
         plot_df, classification_df, dataframe, clinvar_mapped_df =  process_input(full_df = full_df,
                                                           r_cutoff = args.revel_threshold,
+                                                          p_cutoff=args.popeve_threshold,
                                                           d_cutoff = args.demask_threshold,
                                                           g_cutoff= args.gemme_threshold,
                                                           residues = args.residues,
                                                           mutations = args.mutations,
                                                           clinvar_dict = clinvar_dict,
                                                           plot_Revel = args.plot_Revel,
+                                                          plot_popEVE=args.plot_popEVE,
                                                           plot_Demask = args.plot_Demask,
                                                           plot_Source = args.plot_Source,
                                                           plot_Clinvar = args.plot_Clinvar,
-                                                          color_Clinvar = args.color_Clinvar)
+                                                          color_Clinvar = args.color_Clinvar,
+                                                          clinvar_cols = clinvar_cols)
     except TypeError as e:
         print(f"ERROR: {str(e)}")
         exit(1)
@@ -2107,10 +2241,12 @@ def main():
     ############################### SUMMARY ###############################
 
     # Write summary output file
-    with open('log.txt', 'w') as out:
+    with open(f'log_{args.clinvar_class_type}.txt', 'w') as out:
         summary, summary_df = generate_summary(data = dataframe,
                                                d_cutoff = args.demask_threshold,
-                                               r_cutoff= args.revel_threshold)
+                                               r_cutoff = args.revel_threshold,
+                                               p_cutoff=args.popeve_threshold,
+                                               clinvar_cols = clinvar_cols)
         out.write(summary)
 
     ################################# PLOT #################################
@@ -2134,7 +2270,8 @@ def main():
                    height = args.figsize[1],
                    xlim = args.x_lim,
                    clinvar_flag = bool(args.plot_Clinvar),
-                   clinvar_col = bool(args.color_Clinvar))
+                   clinvar_col = bool(args.color_Clinvar),
+                   clinvar_class_type = args.clinvar_class_type)
 
 
     if len(figures) > 0:
@@ -2149,7 +2286,7 @@ def main():
 ################################# AM CSV #################################
     filtered_am = filter_vep_summary(summary_df, classification_df, args.AMx, args.adf)
 
-    filtered_am.to_csv('mechanistic_indicators_out.csv', index=True)
+    filtered_am.to_csv(f'mechanistic_indicators_out_{args.clinvar_class_type}.csv', index=True)
 
 if __name__ == '__main__':
     main()
