@@ -498,7 +498,7 @@ def process_input(full_df, r_cutoff, d_cutoff, g_cutoff, residues, mutations,
                     False : 2}
 
     # First fill None values with code
-    df.fillna(value=3, inplace=True)
+    df.astype(object).fillna(value=3, inplace=True)
 
     # Replace the string nomenclature with the
     # effect code
