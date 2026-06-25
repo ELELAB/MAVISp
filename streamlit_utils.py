@@ -192,15 +192,15 @@ def load_clinvar_dict(tsv_file):
     return clinvar_dict.set_index('clinvar')['internal_category'].to_dict()
 
 @st.cache_data
-def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
+def plot_dotplot(df, demask_co, revel_co, gemme_co, popeve_co=-4.617, fig_width=14, fig_height=4, n_muts=50, do_revel=False, do_demask=True):
 
     df = df.copy()
 
     clinvar_dict = load_clinvar_dict('mavisp/data/clinvar_interpretation_internal_dictionary.txt')
 
-    # Old-style CSVs have aggregated ClinVar columns and should use dot_plot.py.
+    # Old-style CSVs have aggregated ClinVar columns and should use dot_plot.py
     if all(col in df.columns for col in OLD_CLINVAR_COLUMNS):
-        # dot_plot.py does not support popEVE columns, so ignore them on this path.
+        # dot_plot.py does not support popEVE columns, so ignore them on this path
         df = df.drop(columns=[col for col in POPEVE_COLUMNS if col in df.columns])
 
         plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot(df,
@@ -230,7 +230,7 @@ def plot_dotplot(df, demask_co, revel_co, gemme_co, fig_width=14, fig_height=4, 
         plot_df, processed_df, full_df, clinvar_mapped_df = process_input_for_dotplot_v2(df,
                                                                 d_cutoff=demask_co,
                                                                 r_cutoff=revel_co,
-                                                                p_cutoff=-4.617,
+                                                                p_cutoff=popeve_co,
                                                                 g_cutoff=gemme_co,
                                                                 residues=None,
                                                                 mutations=None,
