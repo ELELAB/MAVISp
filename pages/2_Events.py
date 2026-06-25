@@ -34,11 +34,14 @@ st.header("Current events")
 st.subheader("MAVISp BioCurator Training Workshop 2026")
 
 st.markdown("""
+**Important message**: we have **extended the deadline** for joining the workshop until **July the 15th**! Read below for more information
+
 ### Essential information
+
 - When: 7th to 9th of September 2026
 - Where: Danish Cancer Institute, Strandboulevarden 49, 2100 Copenhagen, Denmark
 - Participation fee: none (free of charge)
-- Deadline for registering: June 28th 2026
+- Deadline for registering: July 15th 2026
 - We are able to accommodate up to 20 participants
 - Requirements:
   - Basic competence with Linux and its terminal
@@ -47,43 +50,39 @@ st.markdown("""
 - Registration [here](https://docs.google.com/forms/d/e/1FAIpQLSesi3Si0qLHlJuf1xJ3Sy4LoPUFy05uBpAzKK2FC1m3X_MzfA/viewform?usp=publish-editor)
 
 ### Full description
-            
+
 We are organizing the second MAVISp BioCurator Training Workshop!
-            
 During the event, you will learn the basics of the MAVISp methodology
 and work towards becoming a curator for the MAVISp server and website.
-            
+
 The program includes:
-            
 - An overview of the methodological framework behind MAVISp
 - Hands on sessions, to learn how to use the tools supported by MAVISp to curate a protein
 - Access to a computing server to perform the analyses
 - Exciting talks by invited speakers
-            
-The methodology you will learn can be used to generate data for novel proteins to be
-added to the MAVISp dataset. 
-            
-Read more about MAVISp on [our publication](https://onlinelibrary.wiley.com/doi/full/10.1002/pro.70548) 
-and the [MAVISp GitBook site](https://elelab.gitbook.io/mavisp/documentation/how-to-contribute-as-a-biocurator)
+
+The methodology you will learn can be used to generate data for novel proteins to be added to the MAVISp dataset.
+
+Read more about MAVISp on [our publication](https://onlinelibrary.wiley.com/doi/full/10.1002/pro.70548) and the [MAVISp GitBook site](https://elelab.gitbook.io/mavisp/documentation/how-to-contribute-as-a-biocurator)
 
 Please register by filling out [this form](https://docs.google.com/forms/d/e/1FAIpQLSesi3Si0qLHlJuf1xJ3Sy4LoPUFy05uBpAzKK2FC1m3X_MzfA/viewform?usp=preview)
 
-A tentative programme for the three days follows
+A programme for the three days follows
 
 #### Day 1 – September 7th 2026 - DCI, 5.1.A.B
-            
+
 - **09:00 – 09:15** Welcome and overview
 - **09:15 – 09:45** Introducing MAVISp: a community-driven framework for bio-curators and developers
 - **09:45 – 10:00** Introduction to the workshop and practicalities
 - **10:00 – 10:45** Structure trimming strategies and structure selection for variant analysis
-- **10.45 - 11.00** Coffee  break
+- **10.45 - 11.00** Coffee break
 - **11:00 – 12:30** Practical: Trimming your protein structure and reporting results in small groups
 - **12:30 – 13:30** Lunch break
 - **13:30 – 14:15** Introduction to first Snakemake workflows: MutateX and ThermoMPNN
 - **14:15 – 15:15** Practical: Designing input for the MutateX Snakemake workflow and ThermoMPNN workflow
-- **15:15 - 15:30** Coffee break 
-- **15:30 – 16:15** Long-range module in simple mode 
-- **16:15 – 17:30** Practical: submission of jobs for long-range module (in small groups)
+- **15:15 - 15:30** Coffee break
+- **15:30 – 16:15** Long-range module in simple mode
+- **16:15 – 17:30** Practical: submission of jobs for long-range module
 
 #### Day 2 – September 8th 2026 - DCI, 5.S.A
 
@@ -91,33 +90,33 @@ A tentative programme for the three days follows
 - **09:30 – 10:15** Snakemake workflow for MAVISp automatization
 - **10:15 – 11:15** Practical: Running MAVISp automatization (in small groups)
 - **11:15 - 11:30** Coffee break
-- **11:30 - 12:00** How to request imports and validate aggregated CSV files 
+- **11:30 - 12:00** How to request imports and validate aggregated CSV files
 - **12:00 - 12:30** Practical: Requesting and running downstream analyses in MAVISp (in small groups)
 - **12:30 – 13:30** Lunch break
 - **13:30 - 14:30** First look at results obtained so far and data analysis through the database (in small groups)
-- **14:30 - 15:00** Evaluating results, discussion and Q&A 
-- **15:00 - 15:15** Coffee break 
+- **14:30 - 15:00** Evaluating results, discussion and Q&A
+- **15:00 - 15:15** Coffee break
 - **15:15 - 16:00** Introduction to GitBook reporting
-- **16:00 - 17:00** Practical: GitBook reporting (in small groups)
-- **17:00 - 19:00** Networking - Small bites and drinks 
+- **16:00 - 16:45** Practical: GitBook reporting (in small groups)
+- **16:45 - 17:00** Recap of the day
+- **17:00 - 19:00** Networking with small bites and drinks
 
 #### Day 3 – September 9th 2026 - DCI, 4.1.A
-            
-- **09:00 – 09:30** Overview of other MAVISp modules and ensemble mode 
-- **09:30 - 10:00** How to contribute as a curator or developer 
+
+- **09:00 – 09:30** Overview of other MAVISp modules and ensemble mode
+- **09:30 - 10:00** How to contribute as a curator or developer
 - **10:00 - 10:30** Closing training part and Feedback
 - **10:30 - 10:45** Coffee break
-- **10:45 - 11:00** Introduction of Final Session with Invited Talks
-- **11:00 - 11:30** Invited Talk - Possible new tools for the framework - TBA
-- **11:30 - 12:00** Invited Talk - Possible new tools for the framework - TBA
-- **12:00 - 12:20** Invited Talk - Selected from the developer teams - TBA
-- **12:20 - 13:20** Lunch break
-- **13:20 - 14:00** Invited Talk - Selected from the developer teams - TBA
-- **14:00 - 14:30** Invited Talk - Possible new sources of data and annotation for the framework -  TBA
-- **14:30 - 15:00** Invited Talk - Possible new sources of data and annotation for the framework -  TBA
-- **15:00 - 16.00** Closing remarks, Networking with coffee and cakes 
-
-            
+- **10:45 - 11:00** Introduction of final session with invited talks
+- **11:00 - 11:30** Invited Talk - **Kresten Lindorff-Larsen** - University of Copenhagen, Denmark - *Understanding the effects of missense variants using analyses of protein stability and conservation*
+- **11:30 - 12:00** Invited Talk - **Daniel Caleb Romero Yianni** - Technical University of Denmark - *Physics-inspired sampling of Inverse Folding models for protein-protein ΔΔG estimation*
+- **12:00 - 12:30** Invited Talk - **Parveen Gartan** - University of Bergen, Norway - *Applications of lambda dynamics for protein-small molecule affinity predictions*
+- **12:30 - 13:30** Lunch break
+- **13:30 - 14:00** Selected Talk - **Pablo Sánchez-Iziquierdo Besora** and **Guglielmo Tedeschi** - Technical University of Denmark and Danish Cancer Institute, and University of Chemistry and Technology, Czech republic - *Predicting protein-ligand free energy perturbation with alchemistry*
+- **14:00 - 14:30** Selected Talk - **Karolina Krzesińska** - Technical University of Denmark and Danish Cancer Institute, Denmark - *Capturing allosteric effects of mutations: benchmarking and updates to the long range module*
+- **14:30 - 15:00** Invited Talk - **Sebastian Kmiecik** - University of Warsaw, Poland - *CABS-flex 3.0: web server and standalone workflows for protein flexibility and peptide modeling*
+- **15:00 - 15:30** Invited Talk - **Katerina Nastou** - Statens Serum Institut, Denmark - *Text mining for STRING: from physical interactions to typed regulatory relationships*
+- **15:30 - 16.30** Closing remarks, networking with coffee and cakes
 """)
 
 st.divider()
