@@ -185,6 +185,12 @@ with dataset:
 with dotplots:
 
     this_dataset_table = this_dataset.copy()
+    # popEVE is only used by the v2 dot plot path; old-style CSVs may contain
+    # the column, but streamlit_utils drops it before calling dot_plot.py.
+    has_popeve = (
+        'popEVE score' in this_dataset_table.columns
+        and not all(col in this_dataset_table.columns for col in OLD_CLINVAR_COLUMNS)
+    )
 
     col1, col2 = st.columns(2)
 
@@ -193,6 +199,7 @@ with dotplots:
         revel_co = st.number_input("Cutoff for REVEL score (between 0 and 1)", value=0.5, min_value=0.0, max_value=1.0)
         demask_co = st.number_input("Cutoff for DeMaSk score (absolute value)", value=0.25, min_value=0.0)
         gemme_co = st.number_input("Cutoff for GEMME", value=-3.0)
+        popeve_co = st.number_input("Cutoff for popEVE", value=-4.617, format="%.3f", disabled=not has_popeve)
     with col2:
         do_demask = st.checkbox('Show available DeMaSk classification', value=True)
         n_muts = st.number_input("Number of mutations per plot", value=50, min_value=0)
@@ -241,6 +248,7 @@ with dotplots:
                             demask_co=demask_co,
                             revel_co=revel_co,
                             gemme_co=gemme_co,
+                            popeve_co=popeve_co,
                             n_muts=n_muts,
                             fig_width=fig_width,
                             fig_height=fig_height,
