@@ -1172,7 +1172,7 @@ class TaccDenovoPhospho(MavispModule):
                                                     netphos_variants=netphos.index)
             stability_ddg = stability_ddg[stability_ddg.index.isin(netphos.index)]
             final_data = final_data.join(stability_ddg, how='left')
-            final_data['Classification of change in folding free energy with phosphorylation (kcal/mol)'] = final_data.apply(self._generate_free_energy_classification,
+            final_data['Classification of change in folding free energy with phosphorylation'] = final_data.apply(self._generate_free_energy_classification,
                                                                                                         column=stability_col,
                                                                                                         axis=1)
             if os.path.exists(stability_std_fname):
