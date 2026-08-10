@@ -9,7 +9,7 @@ curators:
 uniprot_ac: P04637
 refseq_id: NP_000537
 review_status: 3
-ensemble_files_osf: https://osf.io/38khf/ 
+ensemble_files: https://osf.io/38khf/
 ensemble_sources : [ cabsflex, md ]
 stability_foldx_version: foldx5
 local_int_foldx_version: foldx5

@@ -75,7 +75,7 @@ protein_table = st.dataframe(filtered_show_table,
                                  use_container_width=True,
                                  on_select='rerun',
                                  selection_mode='single-row',
-                                 column_config = { 'OSF repository for ensemble data' : st.column_config.LinkColumn(display_text='OSF'),
+                                 column_config = { 'Repository for ensemble data' : st.column_config.LinkColumn(display_text='Repository'),
                                                    'GitBook report' : st.column_config.LinkColumn(display_text='report')})
 
 if len(protein_table.selection['rows']) == 0:
