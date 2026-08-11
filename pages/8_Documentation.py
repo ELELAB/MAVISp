@@ -189,8 +189,8 @@ data = [
         'Possible values': 'Integer number, e.g., 3'
     },
     {
-        'Column': 'OSF repository for ensemble data',
-        'Description': 'Link to the OSF repository hosting ensemble files',
+        'Column': 'Repository for ensemble data',
+        'Description': 'Link to the repository containing the ensemble data',
         'Possible values': 'URL link'
     },
     {

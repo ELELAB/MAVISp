@@ -241,12 +241,12 @@ class MAVISpEnsembleMode(MAVISpMode):
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'stability_foldx_version',
     'local_int_foldx_version', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'sampling_functional_dynamics',
-    'interfaces_functional_dynamics', 'review_status', 'curators', 'gitbook_entry', 'ensemble_files_osf',
+    'interfaces_functional_dynamics', 'review_status', 'curators', 'gitbook_entry', 'ensemble_files',
     'structure_source', 'structure_description', 'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_cols = ['system', 'uniprot_ac', 'refseq_id', 'ensemble_sources', 'stability_foldx_version',
     'local_int_foldx_version', 'ensemble_size_foldx', 'ensemble_size_rosetta',  'sampling_functional_dynamics',
     'interfaces_functional_dynamics', 'simulation_length', 'simulation_force_field', 'review_status',
-    'curators', 'gitbook_entry', 'ensemble_files_osf', 'structure_source', 'structure_description',
+    'curators', 'gitbook_entry', 'ensemble_files', 'structure_source', 'structure_description',
     'linker_design', 'pdb_id', 'cofactors_in_structure']
     index_col_labels = {'system' : "Protein",
                         'uniprot_ac' : 'Uniprot AC',
@@ -254,7 +254,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                         'ensemble_sources' : "Ensemble sources",
                         'ensemble_size_foldx' : 'Ensemble sizes (FoldX)',
                         'ensemble_size_rosetta' : 'Ensemble sizes (Rosetta)',
-                        'ensemble_files_osf' : 'OSF repository for ensemble data',
+                        'ensemble_files' : 'Repository for ensemble data',
                         'sampling_functional_dynamics' : "Sampling methods for functional dynamics",
                         'interfaces_functional_dynamics' : "Regions of interest for functional dynamics",
                         'simulation_length' : 'Simulation length (ns)',
@@ -354,7 +354,7 @@ class MAVISpEnsembleMode(MAVISpMode):
             curators = None
             mavisp_criticals.append(MAVISpCriticalError("curators field not found in metadata file"))
 
-        for k in ['ensemble_files_osf', 'gitbook_entry']:
+        for k in ['ensemble_files', 'gitbook_entry']:
             if k not in metadata.keys():
                 metadata[k] = ''
             out_metadata[k] = metadata[k]
