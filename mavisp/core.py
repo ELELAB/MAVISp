@@ -68,7 +68,12 @@ class MAVISpFileSystem:
 
         # check if there are proteins with no mode
         all_systems_with_mode = set([p for s in self.systems_per_mode.values() for p in s])
+
         all_dirs = set(self._dir_list(self._tree))
+        if include_proteins is not None:
+            all_dirs = set(include_proteins)
+        if exclude_proteins is not None:
+            all_dirs = all_dirs - set(exclude_proteins)
         
         empty_systems = all_dirs - all_systems_with_mode
 

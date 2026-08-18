@@ -149,8 +149,9 @@ def main():
                                 include_proteins=included_proteins,
                                 modes=args.modes)
     except MAVISpEmptySystemsError as e:
-        print(colored(f"\n *** Critical error: One or more systems with no supported mode found ({", ".join(e.empty_systems)})\n", 'magenta'))
-        exit(2)
+        print(colored(f"\n *** Critical error: One or more systems with no supported mode found ({", ".join(e.empty_systems)}) ***\n", 'magenta'))
+        log.error("One or more error detected. Will not proceed to generate the database. Exiting...")
+        exit(1)
 
     mfs.ingest()
 
