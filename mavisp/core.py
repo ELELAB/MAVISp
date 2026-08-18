@@ -59,14 +59,30 @@ class MAVISpFileSystem:
 
         self.dataset_tables = {}
 
+        self.systems_per_mode = {}
+
         for mode_name, mode in self.supported_modes.items():
-            self.dataset_tables[mode_name] = self._gen_dataset_table(mode, include=include_proteins, exclude=exclude_proteins)
+            self.systems_per_mode[mode_name], self.dataset_tables[mode_name] = self._gen_dataset_table(mode, 
+                                                                                                       include=include_proteins,
+                                                                                                       exclude=exclude_proteins)
+
+        # check if there are proteins with no mode
+        all_systems_with_mode = set([p for s in self.systems_per_mode.values() for p in s])
+        all_dirs = set(self._dir_list(self._tree))
+        
+        empty_systems = all_dirs - all_systems_with_mode
+
+        if len(empty_systems) != 0:
+            raise MAVISpEmptySystemsError(empty_systems=empty_systems)
+
 
     def _gen_dataset_table(self, mode, include, exclude):
 
         self.log.info("generating dataset table")
 
         df_list = []
+
+        systems_per_mode = []
 
         for system in self._dir_list(self._tree):
             if (include is not None and system not in include) or (exclude is not None and system in exclude) and (not (exclude is None and include is None)):
@@ -76,6 +92,8 @@ class MAVISpFileSystem:
             if mode.name not in self._dir_list(self._tree[system]):
                 self.log.warning(f"mode {mode.name} not found for {system}")
                 continue
+
+            systems_per_mode.append(system)
 
             self.log.info(f"adding {system}, {mode.name} to dataset")
 
@@ -106,7 +124,7 @@ class MAVISpFileSystem:
         main_df = pd.DataFrame.from_records(df_list)
         self.log.debug(f"identified datasets:\n{main_df}")
 
-        return main_df
+        return systems_per_mode, main_df
 
     def _dir_list(self, d):
 

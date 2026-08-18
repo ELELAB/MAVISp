@@ -22,6 +22,7 @@ import pandas as pd
 import yaml
 from mavisp.core import MAVISpFileSystem
 from mavisp.utils import mutation_to_HGVSp
+from mavisp.error import MAVISpEmptySystemsError
 import logging as log
 from termcolor import colored
 from time import strftime
@@ -142,10 +143,14 @@ def main():
 
     print(header)
 
-    mfs = MAVISpFileSystem( data_dir=in_path,
-                            exclude_proteins=excluded_proteins,
-                            include_proteins=included_proteins,
-                            modes=args.modes)
+    try:
+        mfs = MAVISpFileSystem( data_dir=in_path,
+                                exclude_proteins=excluded_proteins,
+                                include_proteins=included_proteins,
+                                modes=args.modes)
+    except MAVISpEmptySystemsError as e:
+        print(colored(f"\n *** Critical error: One or more systems with no supported mode found ({", ".join(e.empty_systems)})\n", 'magenta'))
+        exit(2)
 
     mfs.ingest()
 

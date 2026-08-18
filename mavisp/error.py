@@ -14,4 +14,10 @@ class MAVISpMultipleError(Exception):
         self.warning = warning
         self.critical = critical
 
+class MAVISpEmptySystemsError(Exception):
+    def __init__(self, empty_systems, message=""):
+        super().__init__(message)
+
+        self.empty_systems = empty_systems
+
 
