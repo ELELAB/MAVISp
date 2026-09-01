@@ -72,40 +72,40 @@ A programme for the three days follows
 #### Day 1 – September 7th 2026 - DCI, 5.1.A.B
 
 - **09:00 – 09:15** Welcome and overview
-- **09:15 – 09:45** Introducing MAVISp: a community-driven framework for bio-curators and developers
-- **09:45 – 10:00** Introduction to the workshop and practicalities
-- **10:00 – 10:45** Structure trimming strategies and structure selection for variant analysis
+- **09:15 – 09:45** _Elena Papaleo_ - Introducing MAVISp: a community-driven framework for bio-curators and developers
+- **09:45 – 10:15** _Matteo Tiberti_ - Introduction to the workshop and practicalities
+- **10:15 – 10:45** _Mattia Utichi_ - Structure trimming strategies and structure selection for variant analysis
 - **10.45 - 11.00** Coffee break
-- **11:00 – 12:30** Practical: Trimming your protein structure and reporting results in small groups
+- **11:00 – 12:30** Practical: Trimming your protein structure
 - **12:30 – 13:30** Lunch break
-- **13:30 – 14:15** Introduction to first Snakemake workflows: MutateX and ThermoMPNN
-- **14:15 – 15:15** Practical: Designing input for the MutateX Snakemake workflow and ThermoMPNN workflow
-- **15:15 - 15:30** Coffee break
-- **15:30 – 16:15** Long-range module in simple mode
-- **16:15 – 17:30** Practical: submission of jobs for long-range module
+- **13:30 – 14:00** _Pablo Sánchez-Iziquierdo Besora_ - Introduction to first Snakemake workflow: MutateX
+- **14:00 – 15:00** Practical: Designing input for the MutateX Snakemake workflow
+- **15:00 - 15:15** Coffee break
+- **15:15 – 15:45** _Karolina Krzesińska_ - Long-range module in simple mode
+- **15:45 – 16:30** Practical: Long-range module
 
 #### Day 2 – September 8th 2026 - DCI, 5.S.A
 
-- **09:00 – 09:30** Recap of day 1
-- **09:30 – 10:15** Snakemake workflow for MAVISp automatization
-- **10:15 – 11:15** Practical: Running MAVISp automatization (in small groups)
+- **09:15 – 09:45** _Matteo Tiberti_ - Recap of day 1
+- **09:45 – 10:15** _Alessia Campo_ - Snakemake workflow for MAVISp automatization
+- **10:15 – 11:15** Practical: Running MAVISp automatization
 - **11:15 - 11:30** Coffee break
-- **11:30 - 12:00** How to request imports and validate aggregated CSV files
-- **12:00 - 12:30** Practical: Requesting and running downstream analyses in MAVISp (in small groups)
+- **11:30 - 12:00** _Karolina Krzesińska_ - Requesting data imports and validating aggregated MAVISp entries
+- **12:00 - 12:30** Practical: Requesting and running downstream analyses in MAVISp
 - **12:30 – 13:30** Lunch break
-- **13:30 - 14:30** First look at results obtained so far and data analysis through the database (in small groups)
-- **14:30 - 15:00** Evaluating results, discussion and Q&A
+- **13:30 - 14:30** Practical: First look at results obtained so far
+- **14:30 - 15:00** _Matteo Tiberti_ - Evaluating results, discussion and Q&A
 - **15:00 - 15:15** Coffee break
-- **15:15 - 16:00** Introduction to GitBook reporting
-- **16:00 - 16:45** Practical: GitBook reporting (in small groups)
-- **16:45 - 17:00** Recap of the day
+- **15:15 - 15:45** _Eleni Kiachaki_ - Introduction to GitBook reporting
+- **15:45 - 16:45** Practical: GitBook reporting
+- **16:45 - 17:00** _Matteo Tiberti_ - Recap of the day
 - **17:00 - 19:00** Networking with small bites and drinks
 
 #### Day 3 – September 9th 2026 - DCI, 4.1.A
 
-- **09:00 – 09:30** Overview of other MAVISp modules and ensemble mode
-- **09:30 - 10:00** How to contribute as a curator or developer
-- **10:00 - 10:30** Closing training part and Feedback
+- **09:00 – 09:30** _Mattia Utichi_ - Overview of other MAVISp modules and ensemble mode
+- **09:30 - 10:00** _Elena Papaleo_ - How to contribute as a curator or developer
+- **10:00 - 10:30** _Matteo Tiberti_ - Closing training part and Feedback
 - **10:30 - 10:45** Coffee break
 - **10:45 - 11:00** Introduction of final session with invited talks
 - **11:00 - 11:30** Invited Talk - **Kresten Lindorff-Larsen** - University of Copenhagen, Denmark - *Understanding the effects of missense variants using analyses of protein stability and conservation*
