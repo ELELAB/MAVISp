@@ -114,9 +114,9 @@ with dataset:
         if bcol in display_dataset_table.columns:
             replace_boolean_col(display_dataset_table, bcol)
 
-    if 'PTMs' in display_dataset_table.columns:
+    if 'Phosphorylation' in display_dataset_table.columns:
         ptm_link = f"http://www.phosphosite.org/uniprotAccAction?id={upac}"
-        display_dataset_table['PTMs'] = display_dataset_table['PTMs'].replace(to_replace='P', value=f'http://www.phosphosite.org/uniprotAccAction?id=P{upac}')
+        display_dataset_table['Phosphorylation'] = display_dataset_table['Phosphorylation'].replace(to_replace='P', value=f'http://www.phosphosite.org/uniprotAccAction?id=P{upac}')
 
     available_data_sources = list(set(",".join(display_dataset_table['Mutation sources'].tolist()).split(",")))
 
@@ -166,7 +166,7 @@ with dataset:
                     hide_index=True,
                     use_container_width=True,
                     column_config = { 'Mutation sources' : st.column_config.ListColumn(),
-                                      'PTMs' : st.column_config.LinkColumn(display_text='P')})
+                                      'Phosphorylation' : st.column_config.LinkColumn(display_text='P')})
 
     st.download_button(label="Download current dataset view",
                              data=filtered_display_dataset_table.to_csv(),
