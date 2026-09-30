@@ -1570,13 +1570,13 @@ class Phosphorylation(MavispModule):
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "Phosphorylation",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
-                                                'sas_sc_rel'           : "PTM residue SASA (%)" ,
-                                                'stability_ddg_ptm'    : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'sas_sc_rel'           : "Phosphorylation residue SASA (%)" ,
+                                                'stability_ddg_ptm'    : "Change in stability with phosphorylation (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
-                                                'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
-                                                'regulation'           : "PTM effect in regulation",
-                                                'stability'            : "PTM effect in stability" ,
-                                                'function'             : "PTM effect in function"
+                                                'binding_ddg_ptm'      : "Change in binding with phosphorylation (FoldX5, kcal/mol)",
+                                                'regulation'           : "Phosphorylation effect in regulation",
+                                                'stability'            : "Phosphorylation effect in stability" ,
+                                                'function'             : "Phosphorylation effect in function"
                                                 })
 
         if len(warnings) > 0:
@@ -1599,8 +1599,8 @@ class TaccPTMs(Phosphorylation):
 
         super().ingest(mutations)
 
-        self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
-                                    "acc_std" : "PTM residue SASA (%), standard deviation"})
+        self.data.rename(columns = {"Phosphorylation residue SASA (%)" : "Phosphorylation residue SASA (%), average",
+                                    "acc_std" : "Phosphorylation residue SASA (%), standard deviation"})
 
 class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
     module_dir = "phosphorylation"
