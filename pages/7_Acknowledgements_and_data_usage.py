@@ -59,8 +59,6 @@ available under a variety of licensing terms, which are listed below for reuse.
 Unless stated otherwise in the following text, MAVISp data is released under
 the [Creative Commons Attribution 4.0 International (CC BY 4.0) license](https://creativecommons.org/licenses/by/4.0/).
 
-Bulk download of MAVISp data tables is available at [our OSF repository](https://osf.io/ufpzm/)
-
 The MAVISp software and source code for this website is available at our
 [MAVISp GitHub repository](https://github.com/ELELAB/MAVISp)
 and released under open source license.''')
