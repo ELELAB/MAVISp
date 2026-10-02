@@ -2,13 +2,8 @@ Cancer Systems Biology, Technical University of Denmark, 2800, Lyngby, Denmark
 Cancer Structural Biology, Danish Cancer Institute, 2100, Copenhagen, Denmark  
 Repository associated to the publication:  
 > MAVISp: A Modular Structure-Based Framework for Genomic Variant Interpretation
-> Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Simone Scrima,
-> Pablo Sanchez Izquierdo, Karolina Krzesinska, Francesca Maselli, Terezia Dorcakova,
-> Jordan Safer, Alberte Heering Estad, Katrine Meldgard, Philipp Becker, Julie Bruun Brockhoff,
-> Amalie Drud Nielsen, Valentina Sora, Alberto Pettenella, Jeremy Vinhas,
-> Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert, Sumaiya Iqbal, Matteo Lambrughi,
-> Matteo Tiberti, Elena Papaleo. 
-> bioRxiv https://doi.org/10.1101/2022.10.22.513328
+> Matteo A et al, Protein Science, 2026 
+>  https://doi.org/10.1002/pro.70548
 
 # MAVISp web app
 
