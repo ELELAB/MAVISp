@@ -1224,10 +1224,10 @@ class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPh
     module_dir = "denovo_phospho"
     name = "denovo_phospho"
 
-class PTMs(MavispModule):
+class Phosphorylation(MavispModule):
 
-    module_dir = "ptm"
-    name = "ptms"
+    module_dir = "phosphorylation"
+    name = "phosphorylation"
     expected_files = ['summary_stability.txt',
                       'sasa.rsa',
                       'metatable.csv']
@@ -1568,22 +1568,22 @@ class PTMs(MavispModule):
         if not binding_energies_available:
             final_table = final_table.drop(columns=['binding_ddg_mut', 'binding_ddg_ptm'])
 
-        self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
+        self.data = final_table.rename(columns={'phosphorylation_site' : "Phosphorylation",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
-                                                'sas_sc_rel'           : "PTM residue SASA (%)" ,
-                                                'stability_ddg_ptm'    : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'sas_sc_rel'           : "Phosphorylation residue SASA (%)" ,
+                                                'stability_ddg_ptm'    : "Change in stability with phosphorylation (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
-                                                'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
-                                                'regulation'           : "PTM effect in regulation",
-                                                'stability'            : "PTM effect in stability" ,
-                                                'function'             : "PTM effect in function"
+                                                'binding_ddg_ptm'      : "Change in binding with phosphorylation (FoldX5, kcal/mol)",
+                                                'regulation'           : "Phosphorylation effect in regulation",
+                                                'stability'            : "Phosphorylation effect in stability" ,
+                                                'function'             : "Phosphorylation effect in function"
                                                 })
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
 
-class TaccPTMs(PTMs):
+class TaccPTMs(Phosphorylation):
 
     expected_files = ['summary_stability.txt',
                       'acc_REL.csv',
@@ -1599,12 +1599,12 @@ class TaccPTMs(PTMs):
 
         super().ingest(mutations)
 
-        self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
-                                    "acc_std" : "PTM residue SASA (%), standard deviation"})
+        self.data.rename(columns = {"Phosphorylation residue SASA (%)" : "Phosphorylation residue SASA (%), average",
+                                    "acc_std" : "Phosphorylation residue SASA (%), standard deviation"})
 
 class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
-    module_dir = "ptm"
-    name = "ptms"
+    module_dir = "phosphorylation"
+    name = "phosphorylation"
 
 class CancermutsTable(MavispModule):
     module_dir = "cancermuts"

@@ -599,52 +599,52 @@ data = [ ( 'HGVSg'                           , 'Genomic mutation(s) cause of the
          ( 'Mutation sources'                , 'which database or dataset the mutations were gathered from',) ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description']))
 
-st.subheader("PTMs")
+st.subheader("Phosphorylation")
 
-st.write("""The `PTMs` module tries to predict the effect of mutations on residues
+st.write("""The `Phosphorylation` module tries to predict the effect of mutations on residues
 that are affected by post-translational modifications. It currently supports
 phosphorylation only as well as phosphorylatable residues. The module predicts the
 effect of the mutation on three different aspects: regulation, function and stability,
 as detailed in the MAVISp paper. The final columns produced by this module are:""")
 
-data = [ ( "PTMs",
+data = [ ( "Phosphorylation",
            "whether this position was found to be phosphorylatable or not in the protein",
            "P for phosphorylatable residues, nothing otherwise"),
          ( "is site part of phospho-SLiM",
             "whether this residue is included in a short linear motif that is known to be phosphorylatable",
             "True if it is, False if it's not"),
-         ( "PTM residue SASA (%)",
+         ( "Phosphorylation residue SASA (%)",
            "SAS for wild-type, unmodified residue in the selected structure or structural ensemble",
            "value (%)"),
-         ( "Change in stability with PTM (FoldX5, kcal/mol)",
+         ( "Change in stability with phosphorylation (FoldX5, kcal/mol)",
            "Change in folding free energy upon phosphorylation",
            "value (kcal/mol)"),
          ( "Change in binding with mutation (FoldX5, kcal/mol)",
            "Change in binding free energy upon mutation",
            "value (kcal/mol)"),
-         ( "Change in binding with PTM (FoldX5, kcal/mol)",
+         ( "Change in binding with phosphorylation (FoldX5, kcal/mol)",
            "Change in binding free energy upon phosphorylation",
            "value (kcal/mol)"),
-         ( "PTM effect in regulation",
-           "Final classification of the effect of PTM in terms of regulation",
+         ( "Phosphorylation effect in regulation",
+           "Final classification of the effect of phosphorylation in terms of regulation",
            "see below"),
-         ( "PTM effect in stability",
-           "Final classification of the effect of PTM in terms of stability",
+         ( "Phosphorylation effect in stability",
+           "Final classification of the effect of phosphorylation in terms of stability",
            "see below"),
-         ( "PTM effect in function",
-           "Final classification of the effect of PTM in terms of function",
+         ( "Phosphorylation effect in function",
+           "Final classification of the effect of phosphorylation in terms of function",
            "see below") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
 
-st.write("""The PTM regulation classification predicts on whether the mutation
+st.write("""The phosphorylation regulation classification predicts on whether the mutation
 will have consequences on the functional regulation of the protein.
 
-The PTM stability classification predicts whether the presence of the mutation is
+The phosphorylation stability classification predicts whether the presence of the mutation is
 likely to have an effect on stability, by removing the possibility of a residue
 to be phosphorylated. This is important because phosphorylation itself can have
 an effect on stability.
 
-The PTM function classification predicts whether the presence of the mutation is
+The phosphorylation function classification predicts whether the presence of the mutation is
 likely to have consequences on function. In this context, we consider binding with
 other protein as the function that we test.
 
