@@ -39,15 +39,11 @@ at the Danish Technical University, Lyngby, Denmark. The project is led by
 Elena Papaleo, head of both labs.""")
 
 st.write("""If you use MAVISp in your research, please cite
-  [our preprint](https://www.biorxiv.org/content/10.1101/2022.10.22.513328v4):""")
+  [our publication](https://onlinelibrary.wiley.com/doi/10.1002/pro.70548):""")
 
-st.code("""MAVISp: A Modular Structure-Based Framework for Genomic Variant Interpretation
-Matteo Arnaudi, Ludovica Beltrame, Kristine Degn, Mattia Utichi, Simone Scrima,
-Pablo Sanchez Izquierdo, Karolina Krzesinska, Francesca Maselli, Terezia Dorcakova,
-Jordan Safer, Alberte Heering Estad, Katrine Meldgard, Philipp Becker, Julie Bruun Brockhoff,
-Amalie Drud Nielsen,  View ORCID ProfileValentina Sora, Alberto Pettenella, Jeremy Vinhas,
-Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert, Sumaiya Iqbal, Matteo Lambrughi,
-Matteo Tiberti, Elena Papaleo. bioRxiv https://doi.org/10.1101/2022.10.22.513328""", language=None)
+st.code("""Arnaudi M, Utichi M, Degn K, Tiberti M, Beltrame L, Krzesińska K, et al.
+MAVISp: A modular structure-based framework for protein variant effects.
+Protein Science. 2026;35(5):e70548. https://doi.org/10.1002/pro.70548""", language=None)
 
 st.subheader("Data and software availability")
 
