@@ -47,9 +47,6 @@ of the final classification performed by MAVISp.''')
 st.write('''Please see the Acknowledgement and data usage page for information on our data sources,
 licensing term, and data reuse permissions''')
 
-st.write('''If you need to download the MAVISp dataset in bulk and/or check the full
-dataset for any of our proteins, please refer to our [OSF repository](https://osf.io/ufpzm/)''')
-
 try:
     show_table = load_main_table(database_fs, mode)
 except FileNotFoundError:
