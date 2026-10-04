@@ -249,7 +249,12 @@ class MAVISpFileSystem:
                         try:
                             self.log.info(f"processing module {mod.name} for {system}, {mode_name}")
                             this_module = mod(analysis_basepath)
-                            this_module.ingest(mutations['mutation'].tolist())
+                            if mod.name == 'splicing':
+                                cancermuts = mavisp_modules.get('cancermuts')
+                                annotations = cancermuts.get_dataset_view() if cancermuts is not None else None
+                                this_module.ingest(mutations['mutation'].tolist(), genomic_annotations=annotations)
+                            else:
+                                this_module.ingest(mutations['mutation'].tolist())
 
                         except MAVISpMultipleError as e:
                             mavisp_errors[mod.name].extend(e.critical)
