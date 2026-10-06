@@ -17,6 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from mavisp.modules import *
+from mavisp.splicing import Splicing
 import yaml
 
 class MAVISpMode:
@@ -37,6 +38,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
+                          Splicing,
                           Pfam,
                           TED,
                           PTMs,
@@ -58,7 +60,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           popEVE,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
+    module_order = ['cancermuts', 'splicing', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
@@ -212,6 +214,7 @@ class MAVISpSimpleMode(MAVISpMode):
 class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
+                          Splicing,
                           Pfam,
                           TED,
                           EnsemblePTMs,
@@ -234,7 +237,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           popEVE,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
+    module_order = ['cancermuts', 'splicing', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
