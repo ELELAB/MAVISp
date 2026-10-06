@@ -1029,8 +1029,8 @@ class TaccDenovoPhospho(MavispModule):
     def _parse_sas(self, fname):
 
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average', 'acc_std'])
-        sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
-        sas_data.set_index('resn', inplace=True)
+        sas_data = sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'})
+        sas_data = sas_data.set_index('resn')
         return sas_data
 
     def _parse_netphos_best_site(self, fname, warnings):
@@ -1405,7 +1405,7 @@ class PTMs(MavispModule):
 
         try:
             ddg_stability = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt'),
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
         except Exception as e:
@@ -1415,7 +1415,7 @@ class PTMs(MavispModule):
 
         try:
             ddg_binding = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'summary_binding.txt'),
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
             binding_energies_available = True
@@ -1933,7 +1933,7 @@ class DeMaSk(MavispModule):
         log.info(f"parsing DeMaSk data file {demask_file}")
 
         try:
-            demask = pd.read_csv(os.path.join(self.data_dir, self.module_dir, demask_file), delim_whitespace=True)
+            demask = pd.read_csv(os.path.join(self.data_dir, self.module_dir, demask_file), sep=r"\s+")
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -2093,7 +2093,7 @@ class GEMME(MavispModule):
 
         # calculate which residue is WT for each row (for every residue, this would
         # be the one with score 'None')
-        wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0])
+        wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0], include_groups=False)
         wts.name = 'wt'
 
         # join WT definition on main dataframe

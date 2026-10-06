@@ -54,7 +54,7 @@ class MutateXStability(Method):
 
         # stack remaining columns
         df = df.set_index('residue')
-        df = df.stack()
+        df = df.stack().drop_na()
         df = df.reset_index()
 
         # create mutation column
@@ -167,7 +167,7 @@ class MutateXBinding(Method):
 
         # Stack remaining columns
         df = df.set_index('residue') # set 'residue' column as index
-        df = df.stack() # rotates columns downward and makes the dataframe long-format (level_1 contains the original column names and 0 contains the values)
+        df = df.stack().drop_na() # rotates columns downward and makes the dataframe long-format (level_1 contains the original column names and 0 contains the values)
         df = df.reset_index() # reset index to turn the index into a column
 
         # Create mutation column
@@ -331,24 +331,26 @@ class RosettaDDGPredictionStability(Method):
                 csv_files.append(os.path.join(dir_path, folder, ddg_file))
 
             list_mutation_label = None
-            mutation_data = None
+            mutation_data_list = []
 
             for fname in csv_files:
                 tmp = self._parse_aggregate_csv(fname, warnings)
 
-                # Check if the mutation labels are the same in the different csv files
+                # Check if the mutation labels are the same in the
+                # different csv files
                 if list_mutation_label is None:
                     list_mutation_label = set(tmp.index)
                 elif list_mutation_label != set(tmp.index):
-                    this_error = f"the mutation labels are not the same in the different csv files"
-                    raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+                    this_error = "the mutation labels are not the same in the different csv files")
+                    raise MAVISpMultipleError(
+                        warning=warnings,
+                        critical=[MAVISpCriticalError(this_error)]
+                    )
 
-                # Allow to merge the data from the different cl folders
-                if mutation_data is None:
-                    mutation_data = tmp
-                else:
-                    mutation_data = mutation_data.join(tmp, rsuffix="_")
+                mutation_data_list.append(tmp)
+
+            # Combine data from the different cl folders
+            mutation_data = pd.concat(mutation_data_list, axis=1)
 
             avg_ddg_colname = f'{self.type} ({self.version}, {self.unit})'
             std_ddg_colname = f'{self.type} ({self.version}, {self.unit}, st. dev.)'
@@ -359,13 +361,13 @@ class RosettaDDGPredictionStability(Method):
             mutation_data[avg_ddg_colname] = mutation_data_mean
             mutation_data[std_ddg_colname] = mutation_data_std
 
-            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+            mutation_data = mutation_data[ [avg_ddg_colname, std_ddg_colname] ]
 
             # Sort the data by mutation_label
             mutation_data = mutation_data.sort_index()
 
-            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
-            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+            avg_mutation_data = mutation_data[ [ c for c in mutation_data.columns if 'st. dev.'    not in c ] ]
+            std_mutation_data = mutation_data[ [ c for c in mutation_data.columns if ', st. dev.)'     in c ] ]
 
         return avg_mutation_data, std_mutation_data, None, warnings
 
@@ -693,7 +695,7 @@ class RaSP(Method):
 
         try:
             df = pd.read_csv(fname, usecols= ['mutation_interest', 'fraction_destabilizing'])
-            df.rename(columns={'mutation_interest': 'variant'}, inplace=True)
+            df = df.rename(columns={'mutation_interest': 'variant'})
             df = df.set_index('variant')
             df.columns = [f"{self.version} proportion of damaging conformations"]
         except Exception as e:
@@ -754,24 +756,26 @@ class RaSP(Method):
                 csv_files.append(os.path.join(dir_path, item, ddg_file))
 
             list_mutation_label = None
-            mutation_data = None
+            mutation_data_list = []
 
             for fname in csv_files:
                 tmp = self._parse_postprocessed_csv(fname, warnings)
 
-                # Check if the mutation labels are the same in the different csv files
+                # Check if the mutation labels are the same in the
+                # different csv files
                 if list_mutation_label is None:
                     list_mutation_label = set(tmp.index)
                 elif list_mutation_label != set(tmp.index):
-                    this_error = f"the mutation labels are not the same in the different csv files"
-                    raise MAVISpMultipleError(warning=warnings,
-                                            critical=[MAVISpCriticalError(this_error)])
+                    this_error = "the mutation labels are not the same in the different csv files"
+                    raise MAVISpMultipleError(
+                        warning=warnings,
+                        critical=[MAVISpCriticalError(this_error)]
+                    )
 
-                # Allow to merge the data from the different cl folders
-                if mutation_data is None:
-                    mutation_data = tmp
-                else:
-                    mutation_data = mutation_data.join(tmp, rsuffix="_")
+                mutation_data_list.append(tmp)
+
+            # Combine data from the different cl folders
+            mutation_data = pd.concat(mutation_data_list, axis=1)
 
             avg_ddg_colname = f'{self.type} ({self.unit}'
             std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
@@ -782,12 +786,12 @@ class RaSP(Method):
             mutation_data[avg_ddg_colname] = mutation_data_mean
             mutation_data[std_ddg_colname] = mutation_data_std
 
-            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+            mutation_data = mutation_data[ [avg_ddg_colname, std_ddg_colname] ]
 
             mutation_data = mutation_data.sort_index()
 
-            avg_mutation_data = mutation_data[[ c for c in mutation_data.columns if not 'st. dev.' in c ]]
-            std_mutation_data = mutation_data[[ c for c in mutation_data.columns if ', st. dev.)' in c ]]
+            avg_mutation_data = mutation_data[ [ c for c in mutation_data.columns if 'st. dev.' not in c ] ]
+            std_mutation_data = mutation_data[ [ c for c in mutation_data.columns if ', st. dev.)' in c ] ]
 
         return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
 
@@ -855,7 +859,7 @@ class ThermoMPNN(Method):
                 csv_files.append(os.path.join(dir_path, folder, ddg_file))
 
             list_mutation_label = None
-            mutation_data = None
+            mutation_data_list = []
 
             for fname in csv_files:
                 tmp = self._parse_postprocessed_csv(fname, warnings)
@@ -863,29 +867,31 @@ class ThermoMPNN(Method):
                 if list_mutation_label is None:
                     list_mutation_label = set(tmp.index)
                 elif list_mutation_label != set(tmp.index):
-                    this_error = "The mutation labels are not the same in the different csv files."
-                    raise MAVISpMultipleError(warning=warnings,
-                                              critical=[MAVISpCriticalError(this_error)])
+                    this_error = ("The mutation labels are not the same in the different csv files.")
+                    raise MAVISpMultipleError(
+                        warning=warnings,
+                        critical=[MAVISpCriticalError(this_error)]
+                    )
 
-                if mutation_data is None:
-                    mutation_data = tmp
-                else:
-                    mutation_data = mutation_data.join(tmp, rsuffix="_")
+                mutation_data_list.append(tmp)
+
+            # Combine data from the different folders
+            mutation_data = pd.concat(mutation_data_list, axis=1)
 
             std_ddg_colname = f'{self.type} ({self.unit}, st. dev.)'
             avg_ddg_colname = f'{self.type} ({self.unit})'
 
             mutation_data_mean = mutation_data.mean(axis=1)
-            mutation_data_std  = mutation_data.std(axis=1)
+            mutation_data_std = mutation_data.std(axis=1)
 
             mutation_data[avg_ddg_colname] = mutation_data_mean
             mutation_data[std_ddg_colname] = mutation_data_std
 
-            mutation_data = mutation_data[[avg_ddg_colname, std_ddg_colname]]
+            mutation_data = mutation_data[ [avg_ddg_colname, std_ddg_colname] ]
 
             mutation_data = mutation_data.sort_index()
 
-            avg_mutation_data = mutation_data[[c for c in mutation_data.columns if 'st. dev.' not in c]]
-            std_mutation_data = mutation_data[[c for c in mutation_data.columns if ', st. dev.)' in c]]
+            avg_mutation_data = mutation_data[ [ c for c in mutation_data.columns if 'st. dev.' not in c ] ]
+            std_mutation_data = mutation_data[ [ c for c in mutation_data.columns if ', st. dev.)' in c ] ]
 
         return avg_mutation_data, std_mutation_data, conf_mutation_data, warnings
