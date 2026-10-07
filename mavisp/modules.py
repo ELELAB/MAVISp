@@ -1436,7 +1436,7 @@ class PTMs(MavispModule):
                                         critical=[MAVISpCriticalError(this_error)])
 
         try:
-            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'metatable.csv'))
+            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'metatable.csv'), low_memory=False)
         except:
             this_error = f"Exception {type(e).__name__} occurred when parsing the cancermuts.csv file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1645,7 +1645,7 @@ class CancermutsTable(MavispModule):
 
         # parse cancermuts table
         try:
-            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, cancermuts_file))
+            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, cancermuts_file), low_memory=False)
         except:
             this_error = f"Failed parsing Cancermuts table {cancermuts_file}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1779,8 +1779,6 @@ class ClinVar(MavispModule):
             warnings.append(MAVISpWarningError(f"the input file has the old style clinvar_code column"))
             clinvar_found.rename({'clinvar_code' : 'variant_id'})
 
-        clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
-
         if clinvar_found[['variant_id', 'interpretation']].isna().any().any():
             this_error = f"variant_id or interpretation columns have missing values"
             raise MAVISpMultipleError(warning=warnings,
@@ -1799,16 +1797,17 @@ class ClinVar(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         if "number_of_stars" in clinvar_found.columns:
-            clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
-            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation', 'number_of_stars']]
-            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
-                                               'interpretation' : 'ClinVar Interpretation',
-                                               'number_of_stars': 'ClinVar Review Status'}, axis=1)
+            cols = ['variant_id', 'interpretation', 'number_of_stars']
         else:
+            cols = ['variant_id', 'interpretation']
             warnings.append(MAVISpWarningError(f"the variant_output.csv file doesn't contain the number_of_stars column (ClinVar review status)"))
-            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation']]
-            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
-                                               'interpretation' : 'ClinVar Interpretation',}, axis=1)
+
+        clinvar_found = clinvar_found.groupby('mutations')[cols].agg(lambda x: ", ".join(x.dropna().astype('string')))
+
+        self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
+                                            'interpretation' : 'ClinVar Interpretation',
+                                            'number_of_stars': 'ClinVar Review Status'}, axis=1)
+
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -2084,7 +2083,8 @@ class GEMME(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        # rename columns and rows as better names
+        # rename columns and rows as better names; first copy to reduce fragmentation and avoid warning
+        gemme = gemme.copy()
         gemme = gemme.rename(columns={h:h[1:] for h in gemme.columns},
                              index={r:r.upper() for r in gemme.index})
 
@@ -2497,7 +2497,7 @@ class ExperimentalData(MavispModule):
             raise RuntimeError("some mutations could not be classified - does your classification cover the whole range?")
 
         # generate classification
-        out_series = series.copy()
+        out_series = pd.Series(index=series.index, dtype='string')
 
         for mask, desc in zip(masks, mask_descriptions):
             out_series[mask] = desc
