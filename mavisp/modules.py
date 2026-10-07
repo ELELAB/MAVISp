@@ -973,7 +973,7 @@ class DenovoPhospho(MavispModule):
             # Data type alignment and merge
             sas_data = sas_data.reset_index()
             aggregated_df = pd.merge(aggregated_df, sas_data, left_on='resnum', right_on='resn', how='left')
-            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'] + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase']
+            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'].astype(str) + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase'].astype(str)
         except Exception as e:
             this_error = f"Error during data preparation: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1459,9 +1459,9 @@ class PTMs(MavispModule):
         final_table = final_table.set_index('mutation')
 
         # join cancermuts info
-        cancermuts['mutation']  = cancermuts['ref_aa']\
+        cancermuts['mutation']  = cancermuts['ref_aa'].astype(str)\
                                 + cancermuts['aa_position'].astype(str)\
-                                + cancermuts['alt_aa']
+                                + cancermuts['alt_aa'].astype(str)
 
         # remove rows with no mutation defined
         cancermuts = cancermuts[~ pd.isna(cancermuts['mutation'])]
@@ -1486,12 +1486,12 @@ class PTMs(MavispModule):
         ddg_stability['ref'] = ddg_stability['mutation'].str[0]
         ddg_stability['alt'] = ddg_stability['mutation'].str[-1]
         ddg_stability['number'] = ddg_stability['mutation'].str[2:-1].astype(int)
-        ddg_stability['mutation'] = ddg_stability['ref'] + ddg_stability['number'].astype(str) + ddg_stability['alt']
+        ddg_stability['mutation'] = ddg_stability['ref'].astype(str) + ddg_stability['number'].astype(str) + ddg_stability['alt'].astype(str)
 
         ddg_binding['ref'] = ddg_binding['mutation'].str[0]
         ddg_binding['alt'] = ddg_binding['mutation'].str[-1]
         ddg_binding['number'] = ddg_binding['mutation'].str[2:-1].astype(int)
-        ddg_binding['mutation'] = ddg_binding['ref'] + ddg_binding['number'].astype(str) + ddg_binding['alt']
+        ddg_binding['mutation'] = ddg_binding['ref'].astype(str) + ddg_binding['number'].astype(str) + ddg_binding['alt'].astype(str)
 
         if ddg_stability.shape[0] != 0 and ddg_binding.shape[0] != 0 and not (ddg_binding['mutation'] == ddg_stability['mutation']).all():
             this_error = f"stability DDG summary has different residues or a different order of residues than binding DDG summary"
@@ -1660,7 +1660,7 @@ class CancermutsTable(MavispModule):
 
         # process table
         cancermuts = cancermuts[ ~ pd.isna(cancermuts.alt_aa)]
-        cancermuts['mutation_index'] = cancermuts.ref_aa + cancermuts.aa_position.astype(str) + cancermuts.alt_aa
+        cancermuts['mutation_index'] = cancermuts.ref_aa.astype(str) + cancermuts.aa_position.astype(str) + cancermuts.alt_aa.astype(str)
         cancermuts = cancermuts.set_index('mutation_index')
         cancermuts['sources'] = cancermuts.apply(self._process_sources, axis=1)
 
@@ -1897,7 +1897,7 @@ class AlphaFoldMetadata(MavispModule):
         nres = afmd.shape[0]
         afmd = afmd.iloc[np.arange(nres).repeat(len(three_to_one))]
         afmd['alt_aa'] = list(three_to_one.values()) * nres
-        afmd['mutations'] = afmd['resname'] + afmd['resnum'].astype(str) + afmd['alt_aa']
+        afmd['mutations'] = afmd['resname'].astype(str) + afmd['resnum'].astype(str) + afmd['alt_aa'].astype(str)
         afmd = afmd.set_index('mutations')
         afmd = afmd[['pLDDT', 'secstruc']]
         afmd = afmd.rename(columns={'pLDDT'    : 'AlphaFold2 model pLDDT score',
@@ -1944,7 +1944,7 @@ class DeMaSk(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        demask['mutations'] = demask['WT'] + demask['pos'].astype(str) + demask['var']
+        demask['mutations'] = demask['WT'].astype(str) + demask['pos'].astype(str) + demask['var'].astype(str)
         demask = demask[['mutations', 'score', 'entropy', 'log2f_var']]
         demask = demask.set_index('mutations')
 
@@ -2100,7 +2100,7 @@ class GEMME(MavispModule):
         gemme = gemme.join(wts, on='res')
 
         # reconstruct mutations in the usual format
-        gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
+        gemme['mutations'] = gemme['wt'].astype(str) + gemme['res'].astype(str) + gemme['mut'].astype(str)
 
         # drop unnecessary columns
         gemme = gemme.drop(columns=['wt', 'res', 'mut'])
@@ -2412,9 +2412,9 @@ class AllosigmaPSNLongRange(MavispModule):
                     warnings=warnings)
 
             # Build mutations column + order columns
-            df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+            df_simple_data['mutations'] = (df_simple_data['wt_residue'].astype(str) +
                 df_simple_data['position'].astype(str) +
-                df_simple_data['mutated_residue'])
+                df_simple_data['mutated_residue'].astype(str))
             df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
 
             # Define working copy of data
@@ -2770,12 +2770,12 @@ class DisulfideBridges(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        df_dis['mutation'] = df_dis.wt + df_dis.pos.astype(str) + df_dis.mut
+        df_dis['mutation'] = df_dis.wt.astype(str) + df_dis.pos.astype(str) + df_dis.mut.astype(str)
         df_dis = df_dis.set_index('mutation')
         df_dis['Loss of disulfide bridge'] = 'damaging'
         df_dis = df_dis[['Loss of disulfide bridge']]
 
-        df_denovo['mutation'] = df_denovo.wt + df_denovo.pos.astype(str) + df_denovo.mut
+        df_denovo['mutation'] = df_denovo.wt.astype(str) + df_denovo.pos.astype(str) + df_denovo.mut.astype(str)
         df_denovo = df_denovo.set_index('mutation')
         df_denovo = df_denovo[['classification']].replace({'de_novo_disulfide' : 'damaging'})
         df_denovo = df_denovo.rename(columns={'classification' : 'Predicted de-novo disulfide bridge'})

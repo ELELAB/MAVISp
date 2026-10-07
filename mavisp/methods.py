@@ -48,17 +48,17 @@ class MutateXStability(Method):
         df = df.drop(columns=cols_to_drop)
 
         # create residue column
-        df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
+        df['residue'] = df['WT residue type'].astype(str) + df['Residue #'].astype(str)
 
         df = df.drop(['WT residue type', 'Residue #', 'chain ID'], axis=1)
 
         # stack remaining columns
         df = df.set_index('residue')
-        df = df.stack().drop_na()
+        df = df.stack().dropna()
         df = df.reset_index()
 
         # create mutation column
-        df['mutations'] = df['residue'] + df['level_1']
+        df['mutations'] = df['residue'].astype(str) + df['level_1'].astype(str)
         df = df.set_index('mutations')
 
         # drop now useless columns, rename
@@ -148,7 +148,7 @@ class MutateXBinding(Method):
                                       critical=[MAVISpCriticalError(this_error)])
 
         # Create residue column
-        df['residue'] = df['WT residue type'] + df['Residue #'].astype(str)
+        df['residue'] = df['WT residue type'].astype(str) + df['Residue #'].astype(str)
 
         # Detect and handle homodimer case
         chains = set(df['chain ID'].unique())
@@ -167,7 +167,7 @@ class MutateXBinding(Method):
 
         # Stack remaining columns
         df = df.set_index('residue') # set 'residue' column as index
-        df = df.stack().drop_na() # rotates columns downward and makes the dataframe long-format (level_1 contains the original column names and 0 contains the values)
+        df = df.stack().dropna() # rotates columns downward and makes the dataframe long-format (level_1 contains the original column names and 0 contains the values)
         df = df.reset_index() # reset index to turn the index into a column
 
         # Create mutation column
@@ -341,7 +341,7 @@ class RosettaDDGPredictionStability(Method):
                 if list_mutation_label is None:
                     list_mutation_label = set(tmp.index)
                 elif list_mutation_label != set(tmp.index):
-                    this_error = "the mutation labels are not the same in the different csv files")
+                    this_error = "the mutation labels are not the same in the different csv files"
                     raise MAVISpMultipleError(
                         warning=warnings,
                         critical=[MAVISpCriticalError(this_error)]
@@ -572,7 +572,7 @@ class AlloSigma(Method):
 
         all_mut = pd.read_csv(fname, sep='\t')
 
-        all_mut['mutations'] = all_mut.wt_residue + all_mut.position.astype(str) + all_mut.mutated_residue
+        all_mut['mutations'] = all_mut.wt_residue.astype(str) + all_mut.position.astype(str) + all_mut.mutated_residue.astype(str)
 
         return all_mut
 
