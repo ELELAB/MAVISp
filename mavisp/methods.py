@@ -545,10 +545,9 @@ class AlloSigma(Method):
 
     def _parse_allosigma2_energy_table(self, fname):
 
-        filt = pd.read_csv(fname, sep='\t', index_col=0)
+        filt = pd.read_csv(fname, sep='\t')
 
         # process dataframe
-        filt = filt.reset_index()
         filt['mutations'] = filt['mutations'].str.split()
         filt = filt.explode('mutations')
         filt = filt.set_index('mutations')
