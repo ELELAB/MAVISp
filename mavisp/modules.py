@@ -1802,7 +1802,7 @@ class ClinVar(MavispModule):
             cols = ['variant_id', 'interpretation']
             warnings.append(MAVISpWarningError(f"the variant_output.csv file doesn't contain the number_of_stars column (ClinVar review status)"))
 
-        clinvar_found = clinvar_found.groupby('mutations')[cols].agg(lambda x: ", ".join(x.dropna().astype('string')))
+        clinvar_found = clinvar_found.groupby('mutations')[cols].agg(lambda x: ", ".join(x.fillna('nan').astype('string')))
 
         self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
                                             'interpretation' : 'ClinVar Interpretation',
