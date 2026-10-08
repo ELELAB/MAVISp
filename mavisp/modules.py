@@ -973,7 +973,7 @@ class DenovoPhospho(MavispModule):
             # Data type alignment and merge
             sas_data = sas_data.reset_index()
             aggregated_df = pd.merge(aggregated_df, sas_data, left_on='resnum', right_on='resn', how='left')
-            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'] + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase']
+            aggregated_df['restype_resnum_kinase'] = aggregated_df['restype'].astype(str) + aggregated_df['resnum'].astype(str) + '_' + aggregated_df['kinase'].astype(str)
         except Exception as e:
             this_error = f"Error during data preparation: {e}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1029,8 +1029,8 @@ class TaccDenovoPhospho(MavispModule):
     def _parse_sas(self, fname):
 
         sas_data = pd.read_csv(fname, usecols=['residue', 'acc_average', 'acc_std'])
-        sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'}, inplace=True)
-        sas_data.set_index('resn', inplace=True)
+        sas_data = sas_data.rename(columns={'residue': 'resn','acc_average': 'sas_sc_rel'})
+        sas_data = sas_data.set_index('resn')
         return sas_data
 
     def _parse_netphos_best_site(self, fname, warnings):
@@ -1405,7 +1405,7 @@ class PTMs(MavispModule):
 
         try:
             ddg_stability = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'summary_stability.txt'),
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
         except Exception as e:
@@ -1415,7 +1415,7 @@ class PTMs(MavispModule):
 
         try:
             ddg_binding = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'summary_binding.txt'),
-                delim_whitespace=True,
+                sep=r"\s+",
                 header=None,
                 names=['mutation', 'ddg_avg', 'ddg_std', 'ddg_min', 'ddg_max', 'idx'])
             binding_energies_available = True
@@ -1436,7 +1436,7 @@ class PTMs(MavispModule):
                                         critical=[MAVISpCriticalError(this_error)])
 
         try:
-            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'metatable.csv'))
+            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, 'metatable.csv'), low_memory=False)
         except:
             this_error = f"Exception {type(e).__name__} occurred when parsing the cancermuts.csv file. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1459,9 +1459,9 @@ class PTMs(MavispModule):
         final_table = final_table.set_index('mutation')
 
         # join cancermuts info
-        cancermuts['mutation']  = cancermuts['ref_aa']\
+        cancermuts['mutation']  = cancermuts['ref_aa'].astype(str)\
                                 + cancermuts['aa_position'].astype(str)\
-                                + cancermuts['alt_aa']
+                                + cancermuts['alt_aa'].astype(str)
 
         # remove rows with no mutation defined
         cancermuts = cancermuts[~ pd.isna(cancermuts['mutation'])]
@@ -1486,12 +1486,12 @@ class PTMs(MavispModule):
         ddg_stability['ref'] = ddg_stability['mutation'].str[0]
         ddg_stability['alt'] = ddg_stability['mutation'].str[-1]
         ddg_stability['number'] = ddg_stability['mutation'].str[2:-1].astype(int)
-        ddg_stability['mutation'] = ddg_stability['ref'] + ddg_stability['number'].astype(str) + ddg_stability['alt']
+        ddg_stability['mutation'] = ddg_stability['ref'].astype(str) + ddg_stability['number'].astype(str) + ddg_stability['alt'].astype(str)
 
         ddg_binding['ref'] = ddg_binding['mutation'].str[0]
         ddg_binding['alt'] = ddg_binding['mutation'].str[-1]
         ddg_binding['number'] = ddg_binding['mutation'].str[2:-1].astype(int)
-        ddg_binding['mutation'] = ddg_binding['ref'] + ddg_binding['number'].astype(str) + ddg_binding['alt']
+        ddg_binding['mutation'] = ddg_binding['ref'].astype(str) + ddg_binding['number'].astype(str) + ddg_binding['alt'].astype(str)
 
         if ddg_stability.shape[0] != 0 and ddg_binding.shape[0] != 0 and not (ddg_binding['mutation'] == ddg_stability['mutation']).all():
             this_error = f"stability DDG summary has different residues or a different order of residues than binding DDG summary"
@@ -1645,7 +1645,7 @@ class CancermutsTable(MavispModule):
 
         # parse cancermuts table
         try:
-            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, cancermuts_file))
+            cancermuts = pd.read_csv(os.path.join(self.data_dir, self.module_dir, cancermuts_file), low_memory=False)
         except:
             this_error = f"Failed parsing Cancermuts table {cancermuts_file}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1660,7 +1660,7 @@ class CancermutsTable(MavispModule):
 
         # process table
         cancermuts = cancermuts[ ~ pd.isna(cancermuts.alt_aa)]
-        cancermuts['mutation_index'] = cancermuts.ref_aa + cancermuts.aa_position.astype(str) + cancermuts.alt_aa
+        cancermuts['mutation_index'] = cancermuts.ref_aa.astype(str) + cancermuts.aa_position.astype(str) + cancermuts.alt_aa.astype(str)
         cancermuts = cancermuts.set_index('mutation_index')
         cancermuts['sources'] = cancermuts.apply(self._process_sources, axis=1)
 
@@ -1779,8 +1779,6 @@ class ClinVar(MavispModule):
             warnings.append(MAVISpWarningError(f"the input file has the old style clinvar_code column"))
             clinvar_found.rename({'clinvar_code' : 'variant_id'})
 
-        clinvar_found['variant_id'] = clinvar_found['variant_id'].astype(str)
-
         if clinvar_found[['variant_id', 'interpretation']].isna().any().any():
             this_error = f"variant_id or interpretation columns have missing values"
             raise MAVISpMultipleError(warning=warnings,
@@ -1799,16 +1797,17 @@ class ClinVar(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
 
         if "number_of_stars" in clinvar_found.columns:
-            clinvar_found['number_of_stars'] = clinvar_found['number_of_stars'].astype(str)
-            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation', 'number_of_stars']]
-            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
-                                               'interpretation' : 'ClinVar Interpretation',
-                                               'number_of_stars': 'ClinVar Review Status'}, axis=1)
+            cols = ['variant_id', 'interpretation', 'number_of_stars']
         else:
+            cols = ['variant_id', 'interpretation']
             warnings.append(MAVISpWarningError(f"the variant_output.csv file doesn't contain the number_of_stars column (ClinVar review status)"))
-            clinvar_found = clinvar_found.groupby('mutations').agg(lambda x: ", ".join(list(x)))[['variant_id', 'interpretation']]
-            self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
-                                               'interpretation' : 'ClinVar Interpretation',}, axis=1)
+
+        clinvar_found = clinvar_found.groupby('mutations')[cols].agg(lambda x: ", ".join(x.fillna('nan').astype('string')))
+
+        self.data = clinvar_found.rename({ 'variant_id'     : 'ClinVar Variation ID',
+                                            'interpretation' : 'ClinVar Interpretation',
+                                            'number_of_stars': 'ClinVar Review Status'}, axis=1)
+
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
@@ -1897,7 +1896,7 @@ class AlphaFoldMetadata(MavispModule):
         nres = afmd.shape[0]
         afmd = afmd.iloc[np.arange(nres).repeat(len(three_to_one))]
         afmd['alt_aa'] = list(three_to_one.values()) * nres
-        afmd['mutations'] = afmd['resname'] + afmd['resnum'].astype(str) + afmd['alt_aa']
+        afmd['mutations'] = afmd['resname'].astype(str) + afmd['resnum'].astype(str) + afmd['alt_aa'].astype(str)
         afmd = afmd.set_index('mutations')
         afmd = afmd[['pLDDT', 'secstruc']]
         afmd = afmd.rename(columns={'pLDDT'    : 'AlphaFold2 model pLDDT score',
@@ -1933,7 +1932,7 @@ class DeMaSk(MavispModule):
         log.info(f"parsing DeMaSk data file {demask_file}")
 
         try:
-            demask = pd.read_csv(os.path.join(self.data_dir, self.module_dir, demask_file), delim_whitespace=True)
+            demask = pd.read_csv(os.path.join(self.data_dir, self.module_dir, demask_file), sep=r"\s+")
         except Exception as e:
             this_error = f"Exception {type(e).__name__} occurred when parsing the csv files. Arguments:{e.args}"
             raise MAVISpMultipleError(warning=warnings,
@@ -1944,7 +1943,7 @@ class DeMaSk(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        demask['mutations'] = demask['WT'] + demask['pos'].astype(str) + demask['var']
+        demask['mutations'] = demask['WT'].astype(str) + demask['pos'].astype(str) + demask['var'].astype(str)
         demask = demask[['mutations', 'score', 'entropy', 'log2f_var']]
         demask = demask.set_index('mutations')
 
@@ -2084,7 +2083,8 @@ class GEMME(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
 
-        # rename columns and rows as better names
+        # rename columns and rows as better names; first copy to reduce fragmentation and avoid warning
+        gemme = gemme.copy()
         gemme = gemme.rename(columns={h:h[1:] for h in gemme.columns},
                              index={r:r.upper() for r in gemme.index})
 
@@ -2093,14 +2093,14 @@ class GEMME(MavispModule):
 
         # calculate which residue is WT for each row (for every residue, this would
         # be the one with score 'None')
-        wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0])
+        wts = gemme.groupby('res').apply(lambda x: x[pd.isna(x['score'])]['mut'].to_list()[0], include_groups=False)
         wts.name = 'wt'
 
         # join WT definition on main dataframe
         gemme = gemme.join(wts, on='res')
 
         # reconstruct mutations in the usual format
-        gemme['mutations'] = gemme['wt'] + gemme['res'] + gemme['mut']
+        gemme['mutations'] = gemme['wt'].astype(str) + gemme['res'].astype(str) + gemme['mut'].astype(str)
 
         # drop unnecessary columns
         gemme = gemme.drop(columns=['wt', 'res', 'mut'])
@@ -2412,9 +2412,9 @@ class AllosigmaPSNLongRange(MavispModule):
                     warnings=warnings)
 
             # Build mutations column + order columns
-            df_simple_data['mutations'] = (df_simple_data['wt_residue'] +
+            df_simple_data['mutations'] = (df_simple_data['wt_residue'].astype(str) +
                 df_simple_data['position'].astype(str) +
-                df_simple_data['mutated_residue'])
+                df_simple_data['mutated_residue'].astype(str))
             df_simple_data = df_simple_data[['mutations', 'allosigma-mode']]
 
             # Define working copy of data
@@ -2497,7 +2497,7 @@ class ExperimentalData(MavispModule):
             raise RuntimeError("some mutations could not be classified - does your classification cover the whole range?")
 
         # generate classification
-        out_series = series.copy()
+        out_series = pd.Series(index=series.index, dtype='string')
 
         for mask, desc in zip(masks, mask_descriptions):
             out_series[mask] = desc
@@ -2770,12 +2770,12 @@ class DisulfideBridges(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[MAVISpCriticalError(this_error)])
 
-        df_dis['mutation'] = df_dis.wt + df_dis.pos.astype(str) + df_dis.mut
+        df_dis['mutation'] = df_dis.wt.astype(str) + df_dis.pos.astype(str) + df_dis.mut.astype(str)
         df_dis = df_dis.set_index('mutation')
         df_dis['Loss of disulfide bridge'] = 'damaging'
         df_dis = df_dis[['Loss of disulfide bridge']]
 
-        df_denovo['mutation'] = df_denovo.wt + df_denovo.pos.astype(str) + df_denovo.mut
+        df_denovo['mutation'] = df_denovo.wt.astype(str) + df_denovo.pos.astype(str) + df_denovo.mut.astype(str)
         df_denovo = df_denovo.set_index('mutation')
         df_denovo = df_denovo[['classification']].replace({'de_novo_disulfide' : 'damaging'})
         df_denovo = df_denovo.rename(columns={'classification' : 'Predicted de-novo disulfide bridge'})
