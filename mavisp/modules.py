@@ -1570,7 +1570,7 @@ class Phosphorylation(MavispModule):
 
         self.data = final_table.rename(columns={'phosphorylation_site' : "Phosphorylation",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
-                                                'sas_sc_rel'           : "Phosphorylation residue SASA (%)" ,
+                                                'sas_sc_rel'           : "Phosphorylation site residue SASA (%)" ,
                                                 'stability_ddg_ptm'    : "Change in stability with phosphorylation (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
                                                 'binding_ddg_ptm'      : "Change in binding with phosphorylation (FoldX5, kcal/mol)",
@@ -1583,7 +1583,7 @@ class Phosphorylation(MavispModule):
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
 
-class TaccPTMs(Phosphorylation):
+class TaccPhosphorylation(Phosphorylation):
 
     expected_files = ['summary_stability.txt',
                       'acc_REL.csv',
@@ -1599,10 +1599,10 @@ class TaccPTMs(Phosphorylation):
 
         super().ingest(mutations)
 
-        self.data.rename(columns = {"Phosphorylation residue SASA (%)" : "Phosphorylation residue SASA (%), average",
-                                    "acc_std" : "Phosphorylation residue SASA (%), standard deviation"})
+        self.data.rename(columns = {"Phosphorylation site residue SASA (%)" : "Phosphorylation site residue SASA (%), average",
+                                    "acc_std" : "Phosphorylation site residue SASA (%), standard deviation"})
 
-class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
+class EnsemblePhosphorylation(MavispMultiEnsembleModule, module_class=TaccPhosphorylation):
     module_dir = "phosphorylation"
     name = "phosphorylation"
 
