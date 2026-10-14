@@ -36,13 +36,13 @@ Python packages:
 
 In principle, it is compatible with all operating systems that support Python.
 
-It has been last test on Linux (Ubuntu 22.04), and on macOS (15.5),
-with Python 3.13.5 and the following package versions:
+It has been last tested on Linux (Ubuntu 22.04), and on macOS (15.5),
+with Python 3.14.8 and the following package versions:
 
-- streamlit 1.51.0
-- pandas 2.3.3
-- matplotlib 3.10.7
-- fsspec 2025.10.0
+- streamlit 1.65.0
+- pandas 3.0.6
+- matplotlib 3.11.2
+- fsspec 2026.9.0
 
 ## Installing requirements
 
@@ -252,18 +252,17 @@ In order to install the package and all its requirements automatically, you will
 working Python 3.12+ installation available. We recommend installing the package in its own
 virtual environment - please see previous instructions on how to create a virtual environment.
 
-The MAVISp Python package requires the following packages, and has been tested
+The MAVISp Python package requires the following packages, and has been tested in Python 3.14.8
 with the following versions:
 
-- pandas 2.3.1
-- tabulate 0.9.0
-- matplotlib 3.10.5
-- numpy 2.3.2
-- PyYAML 6.0.2 
-- streamlit 1.47.1
-- requests 2.32.4
-- termcolor 3.1.0
-- fsspec 2025.10.0
+- pandas 3.0.6
+- tabulate 0.10.0
+- matplotlib 3.11.2
+- numpy 2.5.3
+- PyYAML 6.0.3
+- requests 2.34.2
+- termcolor 3.3.0
+- fsspec 2026.9.0
 
 ## Installation
 
