@@ -601,9 +601,8 @@ st.dataframe(pd.DataFrame(data, columns=['Column', 'Description']))
 
 st.subheader("Phosphorylation")
 
-st.write("""The `Phosphorylation` module tries to predict the effect of mutations on residues
-that are affected by post-translational modifications. It currently supports
-phosphorylation only as well as phosphorylatable residues. The module predicts the
+st.write("""The `Phosphorylation` module tries to predict the effect of mutations on
+phosphorylatable residues. The module predicts the
 effect of the mutation on three different aspects: regulation, function and stability,
 as detailed in the MAVISp paper. The final columns produced by this module are:""")
 
@@ -613,7 +612,7 @@ data = [ ( "Phosphorylation",
          ( "is site part of phospho-SLiM",
             "whether this residue is included in a short linear motif that is known to be phosphorylatable",
             "True if it is, False if it's not"),
-         ( "Phosphorylation residue SASA (%)",
+         ( "Phosphorylation site residue SASA (%)",
            "SAS for wild-type, unmodified residue in the selected structure or structural ensemble",
            "value (%)"),
          ( "Change in stability with phosphorylation (FoldX5, kcal/mol)",
