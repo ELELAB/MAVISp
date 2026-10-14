@@ -1248,7 +1248,7 @@ class Phosphorylation(MavispModule):
         S_T = set(['S', 'T']) # set of S and T residue types
         allowed_wt_res = self.allowed_ptm_muts.keys()
 
-        # if site is not a known PTM
+        # if site is not a known phosphorylation site
         if row['phosphorylation_site'] != 'P':
             # if wt residue is S,T,Y or mutation is NOT S->T or T->S
             # return uncertain, otherwise neutral
@@ -1257,7 +1257,7 @@ class Phosphorylation(MavispModule):
             else:
                 return 'neutral'
 
-        # if site is a known PTM,
+        # if site is a known phosphorylation site,
         else:
             # if S to T or T to S, return neutral
             if r_a == S_T:
@@ -1295,11 +1295,11 @@ class Phosphorylation(MavispModule):
 
     def _assign_stability_class(self, row, mut_col_name, ptm_col_name):
 
-        # if WT residue is not PTMable, mutation is neutral
+        # if WT residue is not phosphorylatable, mutation is neutral
         if not row.name[0] in self.allowed_ptm_muts.keys():
             return 'neutral'
 
-        # otherwise if site is not a known PTM, return NA
+        # otherwise if site is not a known phosphorylation site, return NA
         elif row['phosphorylation_site'] != 'P':
             return pd.NA
 
@@ -1307,11 +1307,11 @@ class Phosphorylation(MavispModule):
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
             return pd.NA
 
-        # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
+        # otherwise if phosphorylation OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
             return 'uncertain'
 
-        # otherwise, if PTM and mut they are classified the same, return Neutral.
+        # otherwise, if phosphorylation and mut they are classified the same, return Neutral.
         # if they are not classified the same, return damaging
         elif row[mut_col_name] == row[ptm_col_name]:
             return 'neutral'
@@ -1347,11 +1347,11 @@ class Phosphorylation(MavispModule):
 
     def _assign_function_class(self, row, mut_col_name, ptm_col_name):
 
-        # if WT residue is not PTMable, mutation is neutral
+        # if WT residue is not phosphorylatable, mutation is neutral
         if not row.name[0] in self.allowed_ptm_muts.keys():
             return 'neutral'
 
-        # otherwise if site is not a known PTM, return NA
+        # otherwise if site is not a known phosphorylation site, return NA
         elif row['phosphorylation_site'] != 'P':
             return pd.NA
 
@@ -1363,11 +1363,11 @@ class Phosphorylation(MavispModule):
             else:
                 return 'uncertain'
 
-        # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
+        # otherwise if phosphorylation OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
             return 'uncertain'
 
-        # otherwise, if PTM and mut they are classified the same, return Neutral.
+        # otherwise, if phosphorylation and mut they are classified the same, return Neutral.
         # if they are not classified the same, return damaging
         elif row[mut_col_name] == row[ptm_col_name]:
             return 'neutral'
@@ -1506,7 +1506,7 @@ class Phosphorylation(MavispModule):
         binding_ptm_muts    = ddg_binding[  is_ptm_binding]
         binding_cancer_muts = ddg_binding[~ is_ptm_binding]
 
-        # process DDG PTM information. We do only one check since we already
+        # process DDG phosphorylation information. We do only one check since we already
         # checked that binding and stability have the same mutations
         if not set(stability_ptm_muts['alt']).issubset(set(self.allowed_ptms)):
             warnings.append(MAVISpWarningError(f"in DDG summary files, some of the mutations were not to {', '.join(self.allowed_ptms)}. These will be filtered out."))
