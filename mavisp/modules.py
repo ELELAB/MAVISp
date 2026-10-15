@@ -1224,10 +1224,10 @@ class EnsembleDenovoPhospho(MavispMultiEnsembleModule, module_class=TaccDenovoPh
     module_dir = "denovo_phospho"
     name = "denovo_phospho"
 
-class PTMs(MavispModule):
+class Phosphorylation(MavispModule):
 
-    module_dir = "ptm"
-    name = "ptms"
+    module_dir = "phosphorylation"
+    name = "phosphorylation"
     expected_files = ['summary_stability.txt',
                       'sasa.rsa',
                       'metatable.csv']
@@ -1248,7 +1248,7 @@ class PTMs(MavispModule):
         S_T = set(['S', 'T']) # set of S and T residue types
         allowed_wt_res = self.allowed_ptm_muts.keys()
 
-        # if site is not a known PTM
+        # if site is not a known phosphorylation site
         if row['phosphorylation_site'] != 'P':
             # if wt residue is S,T,Y or mutation is NOT S->T or T->S
             # return uncertain, otherwise neutral
@@ -1257,7 +1257,7 @@ class PTMs(MavispModule):
             else:
                 return 'neutral'
 
-        # if site is a known PTM,
+        # if site is a known phosphorylation site,
         else:
             # if S to T or T to S, return neutral
             if r_a == S_T:
@@ -1295,11 +1295,11 @@ class PTMs(MavispModule):
 
     def _assign_stability_class(self, row, mut_col_name, ptm_col_name):
 
-        # if WT residue is not PTMable, mutation is neutral
+        # if WT residue is not phosphorylatable, mutation is neutral
         if not row.name[0] in self.allowed_ptm_muts.keys():
             return 'neutral'
 
-        # otherwise if site is not a known PTM, return NA
+        # otherwise if site is not a known phosphorylation site, return NA
         elif row['phosphorylation_site'] != 'P':
             return pd.NA
 
@@ -1307,11 +1307,11 @@ class PTMs(MavispModule):
         elif pd.isna(row[ptm_col_name]) or pd.isna(row[mut_col_name]):
             return pd.NA
 
-        # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
+        # otherwise if phosphorylation OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
             return 'uncertain'
 
-        # otherwise, if PTM and mut they are classified the same, return Neutral.
+        # otherwise, if phosphorylation and mut they are classified the same, return Neutral.
         # if they are not classified the same, return damaging
         elif row[mut_col_name] == row[ptm_col_name]:
             return 'neutral'
@@ -1347,11 +1347,11 @@ class PTMs(MavispModule):
 
     def _assign_function_class(self, row, mut_col_name, ptm_col_name):
 
-        # if WT residue is not PTMable, mutation is neutral
+        # if WT residue is not phosphorylatable, mutation is neutral
         if not row.name[0] in self.allowed_ptm_muts.keys():
             return 'neutral'
 
-        # otherwise if site is not a known PTM, return NA
+        # otherwise if site is not a known phosphorylation site, return NA
         elif row['phosphorylation_site'] != 'P':
             return pd.NA
 
@@ -1363,11 +1363,11 @@ class PTMs(MavispModule):
             else:
                 return 'uncertain'
 
-        # otherwise if PTM OR mut are classified as Uncertain, return Uncertain
+        # otherwise if phosphorylation OR mut are classified as Uncertain, return Uncertain
         elif row[ptm_col_name] == 'Uncertain' or row[mut_col_name] == 'Uncertain':
             return 'uncertain'
 
-        # otherwise, if PTM and mut they are classified the same, return Neutral.
+        # otherwise, if phosphorylation and mut they are classified the same, return Neutral.
         # if they are not classified the same, return damaging
         elif row[mut_col_name] == row[ptm_col_name]:
             return 'neutral'
@@ -1506,7 +1506,7 @@ class PTMs(MavispModule):
         binding_ptm_muts    = ddg_binding[  is_ptm_binding]
         binding_cancer_muts = ddg_binding[~ is_ptm_binding]
 
-        # process DDG PTM information. We do only one check since we already
+        # process DDG phosphorylation information. We do only one check since we already
         # checked that binding and stability have the same mutations
         if not set(stability_ptm_muts['alt']).issubset(set(self.allowed_ptms)):
             warnings.append(MAVISpWarningError(f"in DDG summary files, some of the mutations were not to {', '.join(self.allowed_ptms)}. These will be filtered out."))
@@ -1568,22 +1568,22 @@ class PTMs(MavispModule):
         if not binding_energies_available:
             final_table = final_table.drop(columns=['binding_ddg_mut', 'binding_ddg_ptm'])
 
-        self.data = final_table.rename(columns={'phosphorylation_site' : "PTMs",
+        self.data = final_table.rename(columns={'phosphorylation_site' : "Phosphorylation",
                                                 'site_in_slim'         : "is site part of phospho-SLiM",
-                                                'sas_sc_rel'           : "PTM residue SASA (%)" ,
-                                                'stability_ddg_ptm'    : "Change in stability with PTM (FoldX5, kcal/mol)",
+                                                'sas_sc_rel'           : "Phosphorylation site residue SASA (%)" ,
+                                                'stability_ddg_ptm'    : "Change in stability with phosphorylation (FoldX5, kcal/mol)",
                                                 'binding_ddg_mut'      : "Change in binding with mutation (FoldX5, kcal/mol)",
-                                                'binding_ddg_ptm'      : "Change in binding with PTM (FoldX5, kcal/mol)",
-                                                'regulation'           : "PTM effect in regulation",
-                                                'stability'            : "PTM effect in stability" ,
-                                                'function'             : "PTM effect in function"
+                                                'binding_ddg_ptm'      : "Change in binding with phosphorylation (FoldX5, kcal/mol)",
+                                                'regulation'           : "Phosphorylation effect in regulation",
+                                                'stability'            : "Phosphorylation effect in stability" ,
+                                                'function'             : "Phosphorylation effect in function"
                                                 })
 
         if len(warnings) > 0:
             raise MAVISpMultipleError(warning=warnings,
                                         critical=[])
 
-class TaccPTMs(PTMs):
+class TaccPhosphorylation(Phosphorylation):
 
     expected_files = ['summary_stability.txt',
                       'acc_REL.csv',
@@ -1599,12 +1599,12 @@ class TaccPTMs(PTMs):
 
         super().ingest(mutations)
 
-        self.data.rename(columns = {"PTM residue SASA (%)" : "PTM residue SASA (%), average",
-                                    "acc_std" : "PTM residue SASA (%), standard deviation"})
+        self.data.rename(columns = {"Phosphorylation site residue SASA (%)" : "Phosphorylation site residue SASA (%), average",
+                                    "acc_std" : "Phosphorylation site residue SASA (%), standard deviation"})
 
-class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
-    module_dir = "ptm"
-    name = "ptms"
+class EnsemblePhosphorylation(MavispMultiEnsembleModule, module_class=TaccPhosphorylation):
+    module_dir = "phosphorylation"
+    name = "phosphorylation"
 
 class CancermutsTable(MavispModule):
     module_dir = "cancermuts"
