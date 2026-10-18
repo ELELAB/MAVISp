@@ -6,6 +6,7 @@
 #           (C) 2024 Karolina Krzesińska, Danish Cancer Society & DTU
 #           (C) 2026 Eszter Toldi, Technical University of Denmark (DTU)
 #           (C) 2026 Laura Jense, Technical University of Denmark (DTU)
+#           (C) 2026 Matteo Arnaudi, Danish Cancer Society & Technical University of Denmark (DTU)
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -1605,6 +1606,275 @@ class TaccPTMs(PTMs):
 class EnsemblePTMs(MavispMultiEnsembleModule, module_class=TaccPTMs):
     module_dir = "ptm"
     name = "ptms"
+
+
+class Splicing(MavispModule):
+    """Attach SpliceAI Lookup and Pangolin delta scores to MAVISp variants."""
+
+    module_dir = "splicing"
+    name = "splicing"
+    splicing_outputs = {
+        'pangolin_output.csv': (
+            ('splice_loss', 'Pangolin Splice_Loss Δ_score'),
+            ('splice_gain', 'Pangolin Splice_Gain Δ_score'),
+        ),
+        'spliceai_output.csv': (
+            ('acceptor_loss', 'SpliceAI Acceptor_Loss Δ_score'),
+            ('acceptor_gain', 'SpliceAI Acceptor_Gain Δ_score'),
+            ('donor_loss', 'SpliceAI Donor_Loss Δ_score'),
+            ('donor_gain', 'SpliceAI Donor_Gain Δ_score'),
+        ),
+    }
+
+    def __init__(self, data_dir=None):
+        
+        super().__init__(data_dir)
+
+    def _parse_genomic_annotations(self, genomic_annotation):
+        """Return normalized genomic annotations from a Cancermuts HGVSg field."""
+        if pd.isna(genomic_annotation) or not str(genomic_annotation).strip():
+            return []
+
+        parts = [part.strip() for part in str(genomic_annotation).split(',')]
+        annotations = []
+        i = 0
+        while i < len(parts):
+            if re.fullmatch(r'hg\d+', parts[i], flags=re.IGNORECASE):
+                if i + 1 >= len(parts) or not parts[i + 1]:
+                    raise MAVISpMultipleError(
+                        warning=[],
+                        critical=[MAVISpCriticalError(
+                            f"Incomplete genomic annotation: {genomic_annotation!r}"
+                        )],
+                    )
+                annotations.append(re.sub(r'\s+', '', parts[i] + ',' + parts[i + 1]))
+                i += 2
+            else:
+                annotations.append(re.sub(r'\s+', '', parts[i]))
+                i += 1
+
+        return annotations
+
+    def _read_splicing_output(self, source, output_columns):
+        """Read one predictor output and return a Mutation/HGVSg/type score lookup."""
+        try:
+            data = pd.read_csv(source, dtype=str)
+        except Exception as error:
+            raise MAVISpMultipleError(
+                warning=[],
+                critical=[MAVISpCriticalError(
+                    f"Failed parsing splicing table {source}: {error}"
+                )],
+            ) from error
+
+        required = {'Mutation', 'variant_coordinate', 'Δ_type', 'Δ_score'}
+        missing = required.difference(data.columns)
+        if missing:
+            raise MAVISpMultipleError(
+                warning=[],
+                critical=[MAVISpCriticalError(
+                    f"{source}: missing columns {sorted(missing)}"
+                )],
+            )
+
+        accepted = {kind for kind, _ in output_columns}
+        lookup = {}
+        for _, row in data.iterrows():
+            kind = str(row['Δ_type']).strip().casefold()
+            if kind not in accepted or pd.isna(row['Δ_score']):
+                continue
+            if pd.isna(row['Mutation']) or pd.isna(row['variant_coordinate']):
+                raise MAVISpMultipleError(
+                    warning=[],
+                    critical=[MAVISpCriticalError(
+                        f"{source}: missing Mutation or variant_coordinate"
+                    )],
+                )
+
+            score = str(row['Δ_score']).strip()
+            try:
+                numeric_score = float(score)
+            except ValueError as error:
+                raise MAVISpMultipleError(
+                    warning=[],
+                    critical=[MAVISpCriticalError(
+                        f"{source}: invalid Δ_score {score!r}"
+                    )],
+                ) from error
+
+            if not pd.notna(numeric_score) or abs(numeric_score) == float('inf'):
+                raise MAVISpMultipleError(
+                    warning=[],
+                    critical=[MAVISpCriticalError(
+                        f"{source}: non-finite Δ_score {score!r}"
+                    )],
+                )
+
+            key = (
+                str(row['Mutation']).strip(),
+                re.sub(r'\s+', '', str(row['variant_coordinate'])),
+                kind,
+            )
+            if key in lookup and float(lookup[key]) != numeric_score:
+                raise MAVISpMultipleError(
+                    warning=[],
+                    critical=[MAVISpCriticalError(
+                        f"{source}: conflicting Δ_scores for {key}; "
+                        "curate transcript predictions"
+                    )],
+                )
+            lookup.setdefault(key, score)
+
+        return lookup
+
+    def _add_splicing_scores(self, dataset):
+        """Match predictor scores using protein mutation and exact genomic annotation."""
+        dataset = dataset.copy()
+        folder = os.path.join(self.data_dir, self.module_dir)
+        hgvs_column = next((column for column in ('HGVSg', 'HGVS') if column in dataset), None)
+
+        for filename, output_columns in self.splicing_outputs.items():
+            source = os.path.join(folder, filename)
+            lookup = {}
+            if os.path.isfile(source):
+                lookup = self._read_splicing_output(source, output_columns)
+
+            for kind, column in output_columns:
+                values = []
+                for mutation, row in dataset.iterrows():
+                    annotations = (
+                        self._parse_genomic_annotations(row[hgvs_column])
+                        if hgvs_column else []
+                    )
+                    scores = [
+                        lookup.get((str(mutation).strip(), annotation, kind))
+                        for annotation in annotations
+                    ]
+                    if not scores or all(score is None for score in scores):
+                        values.append(pd.NA)
+                    elif len(scores) == 1:
+                        values.append(scores[0])
+                    else:
+                        values.append(', '.join(
+                            score if score is not None else 'NA' for score in scores
+                        ))
+                dataset[column] = values
+
+        return dataset
+
+    def ingest(self, mutations):
+        warnings = []
+        folder = os.path.join(self.data_dir, self.module_dir)
+
+        metatable_files = [
+            filename for filename in os.listdir(folder)
+            if 'metatable' in filename.casefold() and os.path.isfile(os.path.join(folder, filename))
+        ]
+        if len(metatable_files) != 1:
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    f"{folder}: expected exactly one Cancermuts metatable copy, "
+                    f"found {len(metatable_files)}"
+                )],
+            )
+
+        metatable_path = os.path.join(folder, metatable_files[0])
+        try:
+            metatable = pd.read_csv(metatable_path)
+        except Exception as error:
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    f"Failed parsing Cancermuts metatable copy {metatable_path}: {error}"
+                )],
+            ) from error
+
+        required = {'ref_aa', 'aa_position', 'alt_aa', 'genomic_mutation'}
+        missing = required.difference(metatable.columns)
+        if missing:
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    f"{metatable_path}: missing columns {sorted(missing)}"
+                )],
+            )
+
+        metatable = metatable.loc[metatable['alt_aa'].notna()].copy()
+        metatable.index = (
+            metatable['ref_aa']
+            + metatable['aa_position'].astype(str)
+            + metatable['alt_aa']
+        )
+        if metatable.index.has_duplicates:
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    f"{metatable_path}: duplicate protein mutations"
+                )],
+            )
+
+        available = [
+            filename for filename in self.splicing_outputs
+            if os.path.isfile(os.path.join(folder, filename))
+        ]
+        if not available:
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    f"{folder}: neither expected splicing CSV is present"
+                )],
+            )
+
+        for filename in self.splicing_outputs:
+            if filename not in available:
+                warnings.append(MAVISpWarningError(
+                    f"{filename} not found; corresponding scores are NA"
+                ))
+
+        genomic_annotations = metatable[['genomic_mutation']].rename(
+            columns={'genomic_mutation': 'HGVSg'}
+        )
+        base = genomic_annotations.reindex(mutations)
+
+        try:
+            annotated = self._add_splicing_scores(base)
+        except MAVISpMultipleError as error:
+            raise MAVISpMultipleError(
+                warning=warnings + error.warning,
+                critical=error.critical,
+            ) from error
+
+        columns = [
+            column
+            for outputs in self.splicing_outputs.values()
+            for _, column in outputs
+        ]
+        self.data = annotated[columns]
+        self.metadata = {'input': 'pre-filtered splicing outputs'}
+
+        has_hgvs = base['HGVSg'].notna() & base['HGVSg'].astype(str).str.strip().ne('')
+        for filename, outputs in self.splicing_outputs.items():
+            if filename not in available:
+                continue
+            values = self.data.loc[has_hgvs, [column for _, column in outputs]]
+            absent = values.isna().all(axis=1)
+            incomplete = values.isna().any(axis=1)
+            for column in values.columns:
+                incomplete |= values[column].fillna('').astype(str).str.contains(
+                    r'(?:^|,\s*)NA(?:,|$)', regex=True
+                )
+            missing_count = int(absent.sum())
+            partial_count = int((incomplete & ~absent).sum())
+            if missing_count or partial_count:
+                predictor = 'Pangolin' if filename == 'pangolin_output.csv' else 'SpliceAI'
+                warnings.append(MAVISpWarningError(
+                    f"{predictor}: splicing annotations were missing or incomplete "
+                    f"for {missing_count + partial_count} MAVISp mutations in {filename}."
+                ))
+
+        if warnings:
+            raise MAVISpMultipleError(warning=warnings, critical=[])
 
 class CancermutsTable(MavispModule):
     module_dir = "cancermuts"

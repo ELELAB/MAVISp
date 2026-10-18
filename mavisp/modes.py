@@ -3,6 +3,7 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
+#           (C) 2026 Matteo Arnaudi, Danish Cancer Society & Technical University of Denmark (DTU)
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -17,7 +18,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from mavisp.modules import *
-from mavisp.splicing import Splicing
 import yaml
 
 class MAVISpMode:
