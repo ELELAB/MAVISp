@@ -3,6 +3,7 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
+#           (C) 2026 Matteo Arnaudi, Danish Cancer Society & Technical University of Denmark (DTU)
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -37,6 +38,7 @@ class MAVISpSimpleMode(MAVISpMode):
 
     name = 'simple_mode'
     supported_modules = [ CancermutsTable,
+                          Splicing,
                           Pfam,
                           TED,
                           PTMs,
@@ -58,7 +60,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           popEVE,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
+    module_order = ['cancermuts', 'splicing', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
@@ -212,6 +214,7 @@ class MAVISpSimpleMode(MAVISpMode):
 class MAVISpEnsembleMode(MAVISpMode):
 
     supported_modules = [ CancermutsTable,
+                          Splicing,
                           Pfam,
                           TED,
                           EnsemblePTMs,
@@ -234,7 +237,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           popEVE,
                           EFoldMine,
                           ExperimentalData ]
-    module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
+    module_order = ['cancermuts', 'splicing', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
