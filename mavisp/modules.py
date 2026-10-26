@@ -1615,14 +1615,14 @@ class Splicing(MavispModule):
     name = "splicing"
     splicing_outputs = {
         'pangolin_output.csv': (
-            ('splice_loss', 'Pangolin Splice_Loss Δ_score'),
-            ('splice_gain', 'Pangolin Splice_Gain Δ_score'),
+            ('splice_loss', 'Pangolin Splice Loss Δ score'),
+            ('splice_gain', 'Pangolin Splice Gain Δ score'),
         ),
         'spliceai_output.csv': (
-            ('acceptor_loss', 'SpliceAI Acceptor_Loss Δ_score'),
-            ('acceptor_gain', 'SpliceAI Acceptor_Gain Δ_score'),
-            ('donor_loss', 'SpliceAI Donor_Loss Δ_score'),
-            ('donor_gain', 'SpliceAI Donor_Gain Δ_score'),
+            ('acceptor_loss', 'SpliceAI Acceptor Loss Δ score'),
+            ('acceptor_gain', 'SpliceAI Acceptor Gain Δ score'),
+            ('donor_loss', 'SpliceAI Donor Loss Δ score'),
+            ('donor_gain', 'SpliceAI Donor Gain Δ score'),
         ),
     }
 
@@ -1630,52 +1630,20 @@ class Splicing(MavispModule):
         
         super().__init__(data_dir)
 
-    def _parse_genomic_annotations(self, genomic_annotation):
-        """Return normalized genomic annotations from a Cancermuts HGVSg field."""
-        if pd.isna(genomic_annotation) or not str(genomic_annotation).strip():
-            return []
-
-        parts = [part.strip() for part in str(genomic_annotation).split(',')]
-        annotations = []
-        i = 0
-        while i < len(parts):
-            if re.fullmatch(r'hg\d+', parts[i], flags=re.IGNORECASE):
-                if i + 1 >= len(parts) or not parts[i + 1]:
-                    raise MAVISpMultipleError(
-                        warning=[],
-                        critical=[MAVISpCriticalError(
-                            f"Incomplete genomic annotation: {genomic_annotation!r}"
-                        )],
-                    )
-                annotations.append(re.sub(r'\s+', '', parts[i] + ',' + parts[i + 1]))
-                i += 2
-            else:
-                annotations.append(re.sub(r'\s+', '', parts[i]))
-                i += 1
-
-        return annotations
-
     def _read_splicing_output(self, source, output_columns):
         """Read one predictor output and return a Mutation/HGVSg/type score lookup."""
         try:
             data = pd.read_csv(source, dtype=str)
         except Exception as error:
-            raise MAVISpMultipleError(
-                warning=[],
-                critical=[MAVISpCriticalError(
-                    f"Failed parsing splicing table {source}: {error}"
-                )],
+            raise ValueError(
+                f"Failed parsing splicing table {source}: {error}"
             ) from error
 
         required = {'Mutation', 'variant_coordinate', 'Δ_type', 'Δ_score'}
         missing = required.difference(data.columns)
         if missing:
-            raise MAVISpMultipleError(
-                warning=[],
-                critical=[MAVISpCriticalError(
-                    f"{source}: missing columns {sorted(missing)}"
-                )],
-            )
+            raise ValueError(
+                f"{source}: missing columns {sorted(missing)}")
 
         accepted = {kind for kind, _ in output_columns}
         lookup = {}
@@ -1684,47 +1652,26 @@ class Splicing(MavispModule):
             if kind not in accepted or pd.isna(row['Δ_score']):
                 continue
             if pd.isna(row['Mutation']) or pd.isna(row['variant_coordinate']):
-                raise MAVISpMultipleError(
-                    warning=[],
-                    critical=[MAVISpCriticalError(
-                        f"{source}: missing Mutation or variant_coordinate"
-                    )],
-                )
+                raise ValueError(
+                    f"{source}: missing Mutation or variant_coordinate")
 
             score = str(row['Δ_score']).strip()
             try:
                 numeric_score = float(score)
             except ValueError as error:
-                raise MAVISpMultipleError(
-                    warning=[],
-                    critical=[MAVISpCriticalError(
-                        f"{source}: invalid Δ_score {score!r}"
-                    )],
-                ) from error
+                raise ValueError(
+                    f"{source}: invalid Δ_score {score!r}") from error
 
             if not pd.notna(numeric_score) or abs(numeric_score) == float('inf'):
-                raise MAVISpMultipleError(
-                    warning=[],
-                    critical=[MAVISpCriticalError(
-                        f"{source}: non-finite Δ_score {score!r}"
-                    )],
-                )
-
+                raise ValueError(f"{source}: non-finite Δ_score {score!r}")
             key = (
                 str(row['Mutation']).strip(),
                 re.sub(r'\s+', '', str(row['variant_coordinate'])),
                 kind,
             )
             if key in lookup and float(lookup[key]) != numeric_score:
-                raise MAVISpMultipleError(
-                    warning=[],
-                    critical=[MAVISpCriticalError(
-                        f"{source}: conflicting Δ_scores for {key}; "
-                        "curate transcript predictions"
-                    )],
-                )
+                raise ValueError("curate transcript predictions")
             lookup.setdefault(key, score)
-
         return lookup
 
     def _add_splicing_scores(self, dataset):
@@ -1743,8 +1690,9 @@ class Splicing(MavispModule):
                 values = []
                 for mutation, row in dataset.iterrows():
                     annotations = (
-                        self._parse_genomic_annotations(row[hgvs_column])
-                        if hgvs_column else []
+                        [annotation.strip() for annotation in str(row[hgvs_column]).split(", ")]
+                        if hgvs_column and pd.notna(row[hgvs_column])
+                        else []
                     )
                     scores = [
                         lookup.get((str(mutation).strip(), annotation, kind))
@@ -1752,12 +1700,9 @@ class Splicing(MavispModule):
                     ]
                     if not scores or all(score is None for score in scores):
                         values.append(pd.NA)
-                    elif len(scores) == 1:
-                        values.append(scores[0])
                     else:
                         values.append(', '.join(
-                            score if score is not None else 'NA' for score in scores
-                        ))
+                            score if score is not None else 'NA' for score in scores))
                 dataset[column] = values
 
         return dataset
@@ -1766,20 +1711,16 @@ class Splicing(MavispModule):
         warnings = []
         folder = os.path.join(self.data_dir, self.module_dir)
 
-        metatable_files = [
-            filename for filename in os.listdir(folder)
-            if 'metatable' in filename.casefold() and os.path.isfile(os.path.join(folder, filename))
-        ]
-        if len(metatable_files) != 1:
+        metatable_path = os.path.join(folder, 'metatable.csv')
+
+        if not os.path.isfile(metatable_path):
             raise MAVISpMultipleError(
                 warning=warnings,
                 critical=[MAVISpCriticalError(
-                    f"{folder}: expected exactly one Cancermuts metatable copy, "
-                    f"found {len(metatable_files)}"
+                    f"{folder}: required file metatable.csv not found"
                 )],
             )
 
-        metatable_path = os.path.join(folder, metatable_files[0])
         try:
             metatable = pd.read_csv(metatable_path)
         except Exception as error:
@@ -1839,10 +1780,10 @@ class Splicing(MavispModule):
 
         try:
             annotated = self._add_splicing_scores(base)
-        except MAVISpMultipleError as error:
+        except Exception as error:
             raise MAVISpMultipleError(
-                warning=warnings + error.warning,
-                critical=error.critical,
+                warning=warnings,
+                critical=[MAVISpCriticalError(str(error))]
             ) from error
 
         columns = [

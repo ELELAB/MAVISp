@@ -618,22 +618,22 @@ which no matching prediction is available.
 The module reports the following columns:""")
 
 data = [
-    ("Pangolin Splice_Loss Δ_score",
+    ("Pangolin Splice Loss Δ score",
      "Pangolin delta score for predicted splice loss",
      "value"),
-    ("Pangolin Splice_Gain Δ_score",
+    ("Pangolin Splice Gain Δ score",
      "Pangolin delta score for predicted splice gain",
      "value"),
-    ("SpliceAI Acceptor_Loss Δ_score",
+    ("SpliceAI Acceptor Loss Δ score",
      "SpliceAI delta score for predicted acceptor loss",
      "value"),
-    ("SpliceAI Acceptor_Gain Δ_score",
+    ("SpliceAI Acceptor Gain Δ score",
      "SpliceAI delta score for predicted acceptor gain",
      "value"),
-    ("SpliceAI Donor_Loss Δ_score",
+    ("SpliceAI Donor Loss Δ score",
      "SpliceAI delta score for predicted donor loss",
      "value"),
-    ("SpliceAI Donor_Gain Δ_score",
+    ("SpliceAI Donor Gain Δ score",
      "SpliceAI delta score for predicted donor gain",
      "value")
 ]
@@ -1034,3 +1034,4 @@ data = [ ( "TED-CATH domain classification",
            "TED domains and their associated CATH-assigned labels for the given residue in the protein",
            "single string reporting the CATH-label code") ]
 st.dataframe(pd.DataFrame(data, columns=['Column', 'Description', 'Possible values']))
+
