@@ -3,6 +3,7 @@
 #           (C) 2023 Jérémy Vinhas, Danish Cancer Society
 #           (C) 2024 Pablo Sánchez-Izquierdo, Danish Cancer Society
 #           (C) 2024 Eleni Kiahaki, Danish Cancer Society
+#           (C) 2026 Matteo Arnaudi, Danish Cancer Society & Technical University of Denmark (DTU)
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -57,11 +58,12 @@ class MAVISpSimpleMode(MAVISpMode):
                           AlphaMissense,
                           popEVE,
                           EFoldMine,
+                          Splicing,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
     'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
-    'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
+    'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'splicing', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
                           'stability_foldx_version',  'local_int_foldx_version', 'allosigma_distance_cutoff',
                           'allosigma_distance_mode', 'structure_source', 'structure_description', 'linker_design',
@@ -233,11 +235,12 @@ class MAVISpEnsembleMode(MAVISpMode):
                           AlphaMissense,
                           popEVE,
                           EFoldMine,
+                          Splicing,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
     'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
-    'gemme', 'eve', 'alphamissense', 'popeve', 'experimental_data']
+    'gemme', 'eve', 'alphamissense', 'popeve', 'splicing', 'experimental_data']
     name = 'ensemble_mode'
     supported_metadata = ['uniprot_ac', 'refseq_id', 'ensemble_sources', 'stability_foldx_version',
     'local_int_foldx_version', 'ensemble_size_foldx', 'ensemble_size_rosetta', 'sampling_functional_dynamics',
