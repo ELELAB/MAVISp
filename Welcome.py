@@ -38,16 +38,11 @@ groups, headed by Dr. Elena Papaleo
 Please use the menu on the left to navigate the website.
 
 If you use data from MAVISp from your research, please cite
-[our preprint](https://www.biorxiv.org/content/10.1101/2022.10.22.513328v6):""")
+[our publication](https://onlinelibrary.wiley.com/doi/10.1002/pro.70548):""")
 
-st.code("""MAVISp: A Modular Structure-Based Framework for Genomic Variant Interpretation
-Matteo Arnaudi, Mattia Utichi, Kristine Degn, Ludovica Beltrame, Simone Scrima, Karolina Krzesińska,
-Pablo Sánchez-Izquierdo Besora, Katrine Meldgård, Laura Bauer, Terézia Dorčaková, Anna Melidi,
-Lorenzo Favaro, Eleni Kiachaki, Anu Oswal, Alberte Heering Estad, Joachim Breitenstein, Jordan Safer,
-Paraskevi Saridaki, Francesca Maselli, Burcu Aykac Fas, Guglielmo Tedeschi, Philipp Becker,
-Jérémy Vinhas, Alberto Pettenella, Peter Wad Sackett, Claudia Cava, Anna Rohlin, Mef Nilbert,
-Sumaiya Iqbal, Matteo Lambrughi, Matteo Tiberti, Elena Papaleo
-bioRxiv (2025), 10.1101/2022.10.22.513328""", language=None)
+st.code("""Arnaudi M, Utichi M, Degn K, Tiberti M, Beltrame L, Krzesińska K, et al.
+MAVISp: A modular structure-based framework for protein variant effects.
+Protein Science. 2026;35(5):e70548. https://doi.org/10.1002/pro.70548""", language=None)
 
 st.write("""Please see the "Acknowledgement and data usage" section for information about our data
 sources, data license terms and data reuse""")
