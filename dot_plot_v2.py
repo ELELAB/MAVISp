@@ -29,9 +29,9 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from itertools import combinations
 from matplotlib.backends.backend_pdf import PdfPages
 import re
+
 
 def adjust_figsize_w(x_mut, original_w, original_m):
     ''' Adjust width of figuresize if the last plot has less mutations
@@ -157,16 +157,18 @@ def color_yticklabels(labels):
     # Define the prefix to classify the labels as having
     # an effect on stability, function or other
     stability = ['Stability classification',
-                 'PTM effect in stability',
+                 'Phosphorylation effect in stability',
+                 "Classification of change in folding free energy with phosphorylation",
                  'EFoldMine - part of early folding region',
                  'Loss of disulfide bridge',
                  'Predicted de-novo disulfide bridge']
 
 
     function = ['Local Int.',
+                "Classification of change in binding free energy with phosphorylation",
                 'Functional sites (cofactor)',
                 'Functional sites (active site)',
-                'PTM',
+                'Phosphorylation',
                 'AlloSigMA']
     # Iterate over the labels and append to the color list
     # the color based on the effect
@@ -342,15 +344,17 @@ def process_input(full_df, r_cutoff, p_cutoff, d_cutoff, g_cutoff, residues, mut
                     '(Foldetta from FoldX and RaSP)' in x or \
                     '(Rosetta, FoldX)' in x or \
                     '(RaSP, FoldX)' in x or \
+                    "Classification of change in folding free energy with phosphorylation" in x or \
                     'Local Int. classification' in x or \
                     'Local Int. With DNA classification' in x or \
+                    "Classification of change in binding free energy with phosphorylation" in x or \
                     'Functional sites (cofactor)' in x or \
                     'Functional sites (active site)' in x or \
                     'AlloSigMA 2 predicted consequence - active sites' in x or \
                     'AlloSigMA 2 predicted consequence - cofactor sites' in x or \
                     'AlloSigMA 2 predicted consequence - pockets and interfaces' in x or \
                     ('AlloSigMA2-PSN classification' in x and not 'AlloSigMA 2 mutation type' in x) or\
-                    'PTM effect in ' in x or 'REVEL score' in x or \
+                    'Phosphorylation effect in ' in x or 'REVEL score' in x or \
                     'popEVE score' in x or \
                     'EVE classification (25% Uncertain)' in x or \
                     'DeMaSk delta fitness' in x or \
@@ -427,13 +431,19 @@ def process_input(full_df, r_cutoff, p_cutoff, d_cutoff, g_cutoff, residues, mut
 
 
     # Sort columns based on broad effect categories
-    functional_cols = [col for col in df.columns if 'functional' in col.lower() and 'experimental data classification' not in col.lower()]
+    functional_cols = [col for col in df.columns if ('functional' in col.lower()
+                                                   and 'experimental data classification' not in col.lower())
+                       or "Classification of change in binding free energy with phosphorylation" in col]
     disulfide_cols = [col for col in df.columns if 'disulfide bridge' in col.lower()]
-    stability_cols = [col for col in df.columns if 'stability' in col.lower() and 'experimental data classification' not in col.lower()]
+    stability_cols = [col for col in df.columns if ('stability' in col.lower()
+                                                  and 'experimental data classification' not in col.lower())
+                      or "Classification of change in folding free energy with phosphorylation" in col]
     stability_cols += disulfide_cols
     efold_col = [col for col in df.columns if 'efoldmine' in col.lower()]
     other_cols = [col for col in df.columns if 'functional' not in col.lower()
                   and 'stability' not in col.lower()
+                  and "Classification of change in folding free energy with phosphorylation" not in col
+                  and "Classification of change in binding free energy with phosphorylation" not in col
                   and 'disulfide bridge' not in col.lower()
                   and 'experimental data classification' not in col.lower()
                   and 'efoldmine' not in col.lower()]
@@ -541,7 +551,7 @@ def process_input(full_df, r_cutoff, p_cutoff, d_cutoff, g_cutoff, residues, mut
                     False : 2}
 
     # First fill None values with code
-    df = df.astype(object).fillna(3)
+    df.fillna(value=3, inplace=True)
 
     # Replace the string nomenclature with the
     # effect code
@@ -738,9 +748,16 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_class_type, cli
     yticklabel_color = color_yticklabels(labels = df.columns.values)
 
     # Override display label for GEMME row
-    display_yticklabels = ['GEMME classification' if lbl == 'GEMME predicted consequence' else lbl
-                           for lbl in df.columns.values]
-
+    display_yticklabels = [
+                                'GEMME classification'
+                                if lbl == 'GEMME predicted consequence'
+                                else 'De novo phosphosite stability'
+                                if lbl.startswith('Classification of change in folding free energy with phosphorylation')
+                                else 'De novo phosphosite binding'
+                                if lbl.startswith('Classification of change in binding free energy with phosphorylation')
+                                else lbl
+                                for lbl in df.columns.values
+                          ]
     # Lower and upper limits
     l = 0
     u = xlim
@@ -905,866 +922,94 @@ def plot(df, full_df, width, height, xlim, clinvar_flag, clinvar_class_type, cli
 
     return figures
 
-def generate_summary(data,d_cutoff,r_cutoff, p_cutoff, clinvar_cols):
-    ''' Summary log.txt file.
 
-    The function is aimed at summarizing the number of mutations
-    with uncertain or damaging consequences for each type of
-    effect (structural and/or functional).
-    Additionally, it identified mutations with a mavisp
-    effect and with AM pathogenic classification and return
-    them as a df.
-
-    Parameters
-    ----------
-    data: dataframe matrix
-    out: output file to be written
-    Returns
-    ----------
-    out: str
-        string containing the summary information
-    alpha_d_df: df
-        df containing damaging mutations with AM pathogenic class.
-    '''
-
-    # Convert booleans to strings and then all the strings to lowercase
+def get_damaging_mutations(data):
+    ''' Select the mutations with a damaging effect in at least one MAVISp module. '''
     data = data.apply(lambda col: col.map(lambda x: str(x) if isinstance(x, bool) else x))
     data = data.apply(lambda x: x.str.lower() if x.dtype == object else x)
 
-    # Colnames ptm and allosigma
+    # Identify the columns of each module
 
-    filter_col_stability = [col for col in data if 'ThermoMPNN' in col or '(Foldetta from FoldX and Rosetta)' in col or '(Foldetta from FoldX and RaSP)' in col or '(Rosetta, FoldX)' in col or '(RaSP, FoldX)' in col]
-    filter_col_local = [col for col in data if 'Local Int. classification' in col or 'Local Int. With DNA classification' in col]
-    ptm_stab_clmn = [col for col in data if 'PTM effect in stability' in col]
-    ptm_reg_clmn = [col for col in data if 'PTM effect in regulation' in col]
-    ptm_funct_clmn = [col for col in data if 'PTM effect in function' in col]
+    filter_col_stability = [col for col in data if 'ThermoMPNN' in col
+                            or '(Foldetta from FoldX and Rosetta)' in col
+                            or '(Foldetta from FoldX and RaSP)' in col
+                            or '(Rosetta, FoldX)' in col
+                            or '(RaSP, FoldX)' in col
+                            or "Classification of change in folding free energy with phosphorylation" in col]
+    filter_col_local = [col for col in data if 'Local Int. classification' in col
+                        or 'Local Int. With DNA classification' in col
+                        or "Classification of change in binding free energy with phosphorylation" in col]
+    ptm_stab_clmn = [col for col in data if 'Phosphorylation effect in stability' in col]
+    ptm_reg_clmn = [col for col in data if 'Phosphorylation effect in regulation' in col]
+    ptm_funct_clmn = [col for col in data if 'Phosphorylation effect in function' in col]
     allosigma_clmn = [col for col in data if 'AlloSigMA 2 predicted consequence' in col]
     long_range_psn_clmn = [col for col in data if 'AlloSigMA2-PSN classification' in col]
     cofactor_active = [col for col in data if 'Functional sites' in col]
     disulfide_clmn = [col for col in data if 'disulfide bridge' in col]
-    # # Check if columns with well-defined names are in the dataframe
-    # for col in [ptm_stab_clmn, ptm_reg_clmn, ptm_funct_clmn, allosigma_clmn]:
-    #     if col not in data.columns:
-    #         log.warning(f'{col} not found in csv. Skipping associated analyses for summary file.')
 
-    out = ''
-    out += 'Summary of the effects.\n\n'
-
-    ### UNCERTAIN ###
-    out += '>>> UNCERTAIN effects:\n\n'
-    pattern = r'\[.*?\]'
-
-    ### Stability ###
-    for col in filter_col_stability:
-        try:
-            ensemble = re.findall(pattern, col)
-
-            # Calculate number of uncertain mutations
-            stab_un = str(len(data[data[col] == 'uncertain']))
-
-            # List uncertain mutations
-            stab_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-            # Print list of mutations only if they are less than 10
-            mutlist = out_list(stab_un_list)
-
-            if ensemble:
-                out += f'- {stab_un} variants remain uncertain for {col}. {mutlist}'
-
-                #out += f'- {stab_un} variants remain uncertain for STABILITY {ensemble[0]}. {mutlist}'
-            else:
-                out += f'- {stab_un} variants remain uncertain for {col}. {mutlist}'
-                #out += f'- {stab_un} variants remain uncertain for STABILITY. {mutlist}'
-
-        except KeyError:
-            log.warning(f'None of the STABILITY modules were found in MAVISp csv')
-
-    ### Local interactions ###
-    interactors = r'\((.*?)\)' # interactor are delimited by ()
-    if filter_col_local:
-        # Iterate over the interactors
-        for col in filter_col_local:
-            try:
-                ensemble = re.findall(pattern, col)
-                inter = re.findall(interactors, col) # search for interactors
-
-                # Calculate number or uncertain mutations
-                loc_un = str(len(data[data[col] == 'uncertain']))
-
-                # List uncertain mutations
-                loc_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-                # Print list of mutations only if the are less than 10
-                mutlist = out_list(loc_un_list)
-
-                if ensemble:
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
-                        continue
-                    if inter:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-                else:
-                    if 'DNA' in col:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION with DNA {inter}. {mutlist}'
-                        continue
-                    if inter:
-                        out += f'- {loc_un} variants remain uncertain for LOCAL_INTERACTION {inter}. {mutlist}'
-            except KeyError:
-                log.warning(f'{col} not found in MAVISp csv.')
-    else:
-        out += '- No classification for LOCAL_INTERACTION available yet.\n'
-
-    ### PTM_stability ###
-    for col in ptm_stab_clmn:
-        try:
-            ensemble = re.findall(pattern, col)
-
-            # Calculate number of uncertain mutations
-            ptm_s_un = str(len(data[data[col] == 'uncertain']))
-
-            # List uncertain mutations
-            ptm_s_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-            # Print list of mutations only if the are less than 10
-            ptm_mutlist_stab =  out_list(ptm_s_un_list)
-
-            if ensemble:
-                out += f'- {ptm_s_un} variants remain uncertain for PTM-stability. {ensemble[0]} {ptm_mutlist_stab} '
-            else:
-                out += f'- {ptm_s_un} variants remain uncertain for PTM-stability. {ptm_mutlist_stab} '
-        except KeyError:
-            log.warning(f'{ptm_stab_clmn} not found in MAVISp csv.')
-
-    ### PTM_regulation ### 
-    for col in ptm_reg_clmn:
-        try:
-            ensemble = re.findall(pattern, col)
-
-            # Calculate number of uncertain mutations
-            ptm_r_un = str(len(data[data[col] == 'uncertain']))
-
-            # List uncertain mutations
-            ptm_r_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-            # Print list of mutations only if the are less than 10
-            ptm_mutlist_reg = out_list(ptm_r_un_list)
-            if ensemble:
-                out += f'- {ptm_r_un} variants remain uncertain for PTM-regulation. {ensemble[0]} {ptm_mutlist_reg} '
-            else:
-                out += f'- {ptm_r_un} variants remain uncertain for PTM-regulation. {ptm_mutlist_reg} '
-
-        except KeyError:
-            log.warning(f'{ptm_reg_clmn} not found in MAVISp csv.')
-
-    # Uncertain PTM_function
-    for col in ptm_funct_clmn:
-        try:
-            ensemble = re.findall(pattern, col)
-
-            # Calculate number of uncertain mutations
-            ptm_f_un = str(len(data[data[col] == 'uncertain']))
-
-            # List uncertain mutations
-            ptm_f_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-            # Print list of mutations only if the are less than 10
-            ptm_mutlist_funct = out_list(ptm_f_un_list)
-            if ensemble:
-                out += f'- {ptm_f_un} variants remain uncertain for PTM-function. {ensemble[0]} {ptm_mutlist_funct} '
-            else:
-                out += f'- {ptm_f_un} variants remain uncertain for PTM-function. {ptm_mutlist_funct} '
-        except KeyError:
-            log.warning(f'- {ptm_funct_clmn} not found in MAVISp csv.')
-
-    ### Assess presence of PTM module ####
-    # Start counter
-    count_ptm_na = 0
-    d = {}
-    # Iterate over the ptm columns
-    ptm_module = ptm_stab_clmn + ptm_reg_clmn + ptm_funct_clmn
-
-    # Create dict for counting ptm per ensemble
-    for ptm in ptm_module:
-        matches = re.findall(pattern, ptm)
-        if matches:
-            d[matches[0]] = 0
-
-    for col in ptm_module:
-        ensemble = re.findall(pattern, col)
-        # If column not in dataframe
-        if ensemble:
-            for ens in d:
-                if col not in data.columns and ensemble[0] == ens:
-                    d[ens] += 1
-                else:
-                    continue
-        else:
-            if col not in data.columns:
-                # Increase counter by 1
-                count_ptm_na += 1
-    # Per ensemble if none is in the table
-    for ensemble in d:
-        if d[ensemble] == 3:
-             out += f'- No classification for PTM available yet for the {ensemble} ensemble.' \
-                     'No phosphorylation sites have been found in correspondence of the mutation sites.\n'
-
-    # If none of them in the table
-    if count_ptm_na == 3:
-        out += '- No classification for PTM available yet. No phosphorylation sites ' \
-               'have been found in correspondence of the mutation sites.\n'
-
-    lr_type = r'-(.*)'
-    ### Not evaluated long-range Allosigma2 ###
-    for col in allosigma_clmn:
-        try:
-            lr = re.findall(lr_type, col)
-
-            # Calculate number of uncertain mutations
-            na_long = str(len(data[data[col] == 'uncertain']))
-            out += f'- {na_long} variants couldn\'t be assessed with the LONG_RANGE {lr} module ' \
-                   f'due to small changes in side-chain volume upon mutation. '
-
-            # List uncertain mutations
-            allosigma_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-            # Print list of mutations only if the are less than 10
-            out += out_list(allosigma_un_list)
-        except KeyError:
-            log.warning(f'- {col} not found in MAVISp csv.')
-
-    funct_sites = r'\((.*?)\)'
-    ### Not evaluated long-range Allosigma2 ###
-    for col in cofactor_active:
-        try:
-            site = re.findall(funct_sites, col)
-            # Calculate number of uncertain mutations
-            site_unc = str(len(data[data[col] == 'uncertain']))
-            out += f'- {site_unc} variants couldn\'t be assessed with the functional site {site} module ' \
-            # List uncertain mutations
-            func_un_list = data.index[data[col] == 'uncertain'].to_list()
-            # Print list of mutations only if the are less than 10
-            out += out_list(func_un_list)
-        except KeyError:
-            log.warning(f'- {col} not found in MAVISp csv.')
-
-    ### Not evaluated for Long-Range AlloSigma2-PSN ###
-    if long_range_psn_clmn:
-        for col in long_range_psn_clmn:
-            try:
-                ensemble = re.findall(pattern, col)
-
-                # Calculate number of uncertain mutations
-                psn_un = str(len(data[data[col] == 'uncertain']))
-
-                # List uncertain mutations
-                psn_un_list = data.index[data[col] == 'uncertain'].to_list()
-
-                mutlist = out_list(psn_un_list)
-
-                # Print list of mutations only if the are less than 10
-                if ensemble:
-                    out += f'- {psn_un} variants remain uncertain for Long Range-PSN. {ensemble[0]} {mutlist} '
-                else:
-                    out += f'- {psn_un} variants remain uncertain for Long Range-PSN. {mutlist} '
-            except:
-                continue
-    else:
-        log.warning(f'- Long Range-PSN not found in MAVISp csv.')
-        out += f'- No classification for Long Range-PSN available yet.\n'
-
-    ### Not classified by any module ###
-
-    # Count mutations that cannot be classified
-    data['is_NC'] = data.apply(lambda row: all(value in ['uncertain', 'unknown', np.nan, None] for value in row), axis=1)
-    count_NC = data['is_NC'].sum()
-    out += f'- {count_NC} variants could not be classified with any of the MAVISp modules.'
-
-    # List mutations that cannot be classified
-    NC_list = data.index[data['is_NC'] == True].to_list()
-
-    # Print list of mutations only if the are less than 10
-    out += out_list(NC_list)
-
-    ### DAMAGING ###
-    out += '\n>>> DAMAGING/DESTABILIZING effects:\n\n'
-
-    ### Damaging stability ###
-    all_stability = []
-
-    # Define columns and effects' variables
-    clinvar_clmn = clinvar_cols[0]
-    vus = r'(?i)uncertain|unknown'
-    conflict = 'conflicting'
+    # Damaging stability
     d_s = ['destabilizing', 'stabilizing']
+    all_stability = []
+    for col in filter_col_stability:
+        all_stability_list = data.index[data[col].isin(d_s)].to_list()
+        all_stability.extend(all_stability_list)
 
-    if filter_col_stability:
-        for col in filter_col_stability:
-            try:
-                # Calculate number of damaging mutations
-                stab_d = str(len(data[data[col].isin(d_s)]))
-
-                # List damaging mutations
-                all_stability_list = data.index[data[col].isin(d_s)].to_list()
-                all_stability.extend(all_stability_list)
-
-                # Print list of mutations only if the are less than 10
-                dmg_mutlist = out_list(all_stability_list)
-
-                out += f'- {stab_d} variants are predicted with damaging effects for {col}. {dmg_mutlist}'
-
-                try:
-                    # Calculate number of VUS
-                    stab_d_vus = str(len(data[(data[col].isin(d_s) & \
-                                        data[clinvar_clmn].astype(str).str.contains(vus))]))
-                    out += f'-- {stab_d_vus} of these are vus according to {clinvar_clmn}: '
-
-                    # List VUS mutations
-                    vus_list = data.index[(data[col].isin(d_s) & \
-                                        data[clinvar_clmn].astype(str).str.contains(vus))].to_list()
-
-                    # Print list of mutations only if the are less than 10
-                    out += out_list(vus_list)
-
-                    # Calculate number of variants with conflicting interpretations
-                    stab_d_conf = str(len(data[(data[col].isin(d_s) & \
-                                        data[clinvar_clmn].astype(str).str.contains(conflict))]))
-                    out += f'-- {stab_d_conf} of these have conflicting interpretations according to {clinvar_clmn}: '
-
-                    # List mutations with conflicting interpretations
-                    conf_list = data.index[(data[col].isin(d_s) & \
-                                        data[clinvar_clmn].astype(str).str.contains(conflict))].to_list()
-
-                    # Print list of mutations only if the are less than 10
-                    out += out_list(conf_list)
-
-                except KeyError:
-                    log.warning(f'Missing {clinvar_cols[0]}, please check the input file. Continuing...')
-                    out += f'ClinVar Interpretation column not available yet; not possible to predict the number ' \
-                           f'of vus and/or variants with conflicting interpretations with a destabilizing effect.\n'
-            except:
-                continue
-    else:
-        all_stability = []
-        log.warning(f'- Damaging mutation for (RaSP, FoldX) and (Rosetta, FoldX) not found in MAVISp csv.')
-
-    all_stability = [item for sublist in all_stability if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
-
-    ### Damaging local interactions ###
+    # Damaging local interactions
     all_local = []
+    for col in filter_col_local:
+        loc_d_list = data.index[data[col].isin(d_s)].to_list()
+        all_local.extend(loc_d_list)
+    
+    # Damaging PTM_stability
+    ptm_s_d_list = []
+    for col in ptm_stab_clmn:
+        ptm_s_d_list.extend(data.index[data[col] == 'damaging'].to_list())
 
-    # If local interactions are found
-    if len(filter_col_local) > 0:
-        for col in filter_col_local:
-            ensemble = re.findall(pattern, col)
-            inter = re.findall(interactors, col)
+    # Damaging PTM_regulation
+    ptm_r_d_list = []
+    for col in ptm_reg_clmn:
+        ptm_r_d_list.extend(data.index[data[col] == 'damaging'].to_list())
 
-            # Calculate number of damaging mutations
-            loc_d = str(len(data[data[col].isin(d_s)]))
-
-            # List damaging mutations
-            loc_d_list = data.index[data[col].isin(d_s)].to_list()
-            all_local.extend(loc_d_list)
-
-            # Print list of mutations only if the are less than 10
-            mutlist = out_list(loc_d_list)
-            if ensemble:
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {ensemble[0]}. {mutlist}'
-                    continue
-                if inter:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter} {ensemble[0]}. {mutlist}'
-            else:
-                if 'DNA' in col:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION with DNA {inter}. {mutlist}'
-                    continue
-                if inter:
-                    out += f'- {loc_d} variants are destabilizing for the LOCAL_INTERACTION {inter}. {mutlist}'
-    else:
-        all_local = []
-        out += '- No classification for LOCAL_INTERACTION available yet.\n'
-    all_local = [item for sublist in all_local if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
-
-    ### Damaging PTM_stability ###
-    if ptm_stab_clmn:
-        for col in ptm_stab_clmn:
-            try:
-                ensemble = re.findall(pattern, col)
-                # Calculate number of damaging mutations
-                ptm_s_d = str(len(data[data[col] == 'damaging']))
-
-                # List damaging mutations
-                ptm_s_d_list = data.index[data[col] == 'damaging'].to_list()
-
-                # Print list of mutations only if the are less than 10
-                ptm_mutlist_stab = out_list(ptm_s_d_list)
-
-                if ensemble:
-                    out += f'- {ptm_s_d} variants are predicted with damaging effects on stability '\
-                        f'after the removal of a PTM. {ensemble[0]} {ptm_mutlist_stab} '
-                else:
-                    out += f'- {ptm_s_d} variants are predicted with damaging effects on stability ' \
-                        f'after the removal of a PTM. {ptm_mutlist_stab} '
-            except:
-                continue
-    else:
-        log.warning(f'- PTM effect in stability not found in MAVISp csv.')
-        ptm_s_d_list = []
-
-
-    ### Damaging PTM_regulation ###
-    if ptm_reg_clmn:
-        for col in ptm_reg_clmn:
-            try:
-                ensemble = re.findall(pattern, col)
-                # Calculate number of damaging mutations
-                ptm_r_d = str(len(data[data[col] == 'damaging']))
-
-                # List damaging mutations
-                ptm_r_d_list = data.index[data[col] == 'damaging'].to_list()
-
-                # Print list of mutations only if the are less than 10
-                ptm_mutlist_reg = out_list(ptm_r_d_list)
-                if ensemble:
-                    out += f'- {ptm_r_d} variants are likely to alter the regulation provided by ' \
-                           f'a phosphorylation. {ensemble[0]} {ptm_mutlist_reg} '
-                else:
-                    out += f'- {ptm_r_d} variants are likely to alter the regulation provided by ' \
-                           f'a phosphorylation. {ptm_mutlist_reg} '
-            except:
-                continue
-
-    else:
-        ptm_r_d_list = []
-        log.warning(f'- PTM effect in regulation not found in MAVISp csv.')
-
-
-    ### Damaging PTM_function ###
+    # Damaging PTM_function
     dmg_str = ['damaging', 'potentially_damaging']
-    if ptm_funct_clmn:
-        for col in ptm_funct_clmn:
-            try:
-                ensemble = re.findall(pattern, col)
-
-                # Calculate number of damaging mutations
-                ptm_f_d = str(len(data[data[col].isin(dmg_str)]))
-
-                # List damaging mutations
-                ptm_f_d_list = data.index[data[col].isin(dmg_str)].to_list()
-
-                # Print list of mutations only if the are less than 10
-                ptm_mutlist_funct = out_list(ptm_f_d_list)
-                if ensemble:
-                    out += f'- {ptm_f_d} variants are potentially damaging in terms of removing ' \
-                        f'the function related to a phosphorylation. {ensemble[0]} {ptm_mutlist_funct} '
-                else:
-                    out += f'- {ptm_f_d} variants are potentially damaging in terms of removing ' \
-                        f'the function related to a phosphorylation. {ptm_mutlist_funct}'
-            except:
-                continue
-    else:
-        log.warning(f'- PTM effect in function not found in MAVISp csv.')
-        ptm_f_d_list = []
-
-    ### Assess presence of PTM module ####
-    # Start counter
-    count_ptm_na = 0
-    d = {}
-    # Iterate over the ptm columns
-    ptm_module = ptm_stab_clmn + ptm_reg_clmn + ptm_funct_clmn
-
-    # Create dict for counting ptm per ensemble
-    for ptm in ptm_module:
-        matches = re.findall(pattern, ptm)
-        if matches:
-            d[matches[0]] = 0
-
-    for col in ptm_module:
-        ensemble = re.findall(pattern, col)
-        # If column not in dataframe
-        if ensemble:
-            for ens in d:
-                if col not in data.columns and ensemble[0] == ens:
-                    d[ens] += 1
-                else:
-                    continue
-        else:
-            if col not in data.columns:
-                # Increase counter by 1
-                count_ptm_na += 1
-    # Per ensemble if none is in the table
-    for ensemble in d:
-        if d[ensemble] == 3:
-            out += f'- No classification for PTM available yet for the {ensemble[0]} ensemble.'
-    # If none of the PTM columns is found in the table
-    if count_ptm_na == 3:
-        out += '- No classification for PTM available yet.\n'
+    ptm_f_d_list = []
+    for col in ptm_funct_clmn:
+        ptm_f_d_list.extend(data.index[data[col].isin(dmg_str)].to_list())
 
     all_ptm = ptm_s_d_list + ptm_r_d_list + ptm_f_d_list
 
-    ### Damaging long-range Allosigma2 ###
+    # Damaging Long-Range AlloSigma2
     multiple = []
     for col in allosigma_clmn:
-        try:
-            lr = re.findall(lr_type, col)
-            # Calculate number of damaging mutations (by class)
-            long_d = str(len(data[data[col] == 'destabilizing']))
-            long_me = str(len(data[data[col] == 'mixed_effects']))
-            long_s = str(len(data[data[col] == 'stabilizing']))
-            tot = str(int(long_d) + int(long_me) + int(long_s))
+        long_d_list = data.index[data[col] == 'destabilizing'].to_list()
+        long_me_list = data.index[data[col] == 'mixed_effects'].to_list()
+        long_s_list = data.index[data[col] == 'stabilizing'].to_list()
+        multiple.extend(long_d_list + long_me_list + long_s_list)
 
-            # List damaging mutations (by class)
-            long_d_list = data.index[data[col] == 'destabilizing'].to_list()
-            long_me_list = data.index[data[col] == 'mixed_effects'].to_list()
-            long_s_list = data.index[data[col] == 'stabilizing'].to_list()
-            all_long = long_d_list + long_me_list + long_s_list
-
-            # add long range type to a list to evaluate multiple effect later
-            multiple.append(all_long)
-
-            # Print list of mutations only if the are less than 10
-            out += f'- {tot} variants are damaging for LONG_RANGE {lr} '
-            out += out_list(all_long)
-            out += f'-- {long_d} as destabilizing '
-            out += out_list(long_d_list)
-            out += f'-- {long_s} as stabilizing '
-            out += out_list(long_s_list)
-            out += f'-- {long_me} with mixed effects '
-            out += out_list(long_me_list)
-
-        except KeyError:
-            out += f'- {col} not found in MAVISp csv.\n'
-            multiple.append([])
-    multiple = [item for sublist in multiple if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
-
-    ### Damaging disulfide bridges ###
+    # Damaging disulfide bridges
     all_disulfide = []
     for col in disulfide_clmn:
-        try:
-            disulfide_d = str(len(data[data[col] == 'damaging']))
-            disulfide_d_list = data.index[data[col] == 'damaging'].to_list()
-            all_disulfide.extend(disulfide_d_list)
-            out += f'- {disulfide_d} variants are damaging for {col} '
-            out += out_list(disulfide_d_list)
-        except KeyError:
-            out += f'- {col} not found in MAVISp csv.\n'
-            all_disulfide.append([])
-    all_disulfide = [item for sublist in all_disulfide if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
+        disulfide_d_list = data.index[data[col] == 'damaging'].to_list()
+        all_disulfide.extend(disulfide_d_list)
 
-    ### Damaging for functional sites ###
+    # Damaging functional sites
     multiple_1 = []
     for col in cofactor_active:
-        try:
-            funct = re.findall(funct_sites, col)
-            # Calculate number of damaging mutations (by class)
-            funct_sites_d = str(len(data[data[col] == 'damaging']))
+        funct_sites_d_list = data.index[data[col] == 'damaging'].to_list()
+        multiple_1.extend(funct_sites_d_list)
 
-            # List damaging mutations (by class)
-            funct_sites_d_list = data.index[data[col] == 'damaging'].to_list()
+    # Damaging Long-Range AlloSigma2-PSN
+    psn_d_list = []
+    for col in long_range_psn_clmn:
+        psn_d_list.extend(data.index[data[col] == 'damaging'].to_list())
 
-            # add long range type to a list to evaluate multiple effect later
-            multiple_1.append(funct_sites_d_list)
-
-            # Print list of mutations only if the are less than 10
-            out += f'- {funct_sites_d} variants are damaging for Functional site {funct} module '
-            out += out_list(funct_sites_d_list)
-
-        except KeyError:
-            out += f'- {col} not found in MAVISp csv.\n'
-            multiple_1.append([])
-
-    multiple_1= [item for sublist in multiple_1 if sublist != [] for item in (sublist if isinstance(sublist, list) else [sublist])]
-
-    ### Damaging for Long-Range AlloSigma2-PSN ###
-    psn_d_list=[]
-    if long_range_psn_clmn:
-        for col in long_range_psn_clmn:
-            try:
-                ensemble = re.findall(pattern, col)
-                    # Calculate number of damaging mutations
-                psn_d = str(len(data[data[col] == 'damaging']))
-
-                # List damaging mutations
-                psn_d_list = data.index[data[col] == 'damaging'].to_list()
-                # Print list of mutations only if the are less than 10
-                psn_d_mutlist = out_list(psn_d_list)
-
-                if ensemble:
-                    out += f'- {psn_d} variants are predicted with damaging long range effects on pocket site(s). {ensemble[0]} {psn_d_mutlist} '
-                else:
-                    out += f'- {psn_d} variants are predicted with damaging long range effects on pocket site(s). {psn_d_mutlist} '
-            except:
-                continue
-    else:
-        out += f'- No classification for Long Range-PSN available yet.\n'
-        psn_d_list = []
-
-    # Add long-range and long-range psn to single list
     all_long_range = multiple + psn_d_list
 
-    ### Multiple effects ###
-
-    lists = [("stability", all_stability),
-             ("local_interactions", all_local),
-             ("long_range", all_long_range),
-             ("disulfide", all_disulfide),
-             ("functional site",multiple_1),
-             ("ptm", all_ptm)]
-
-    # Find shared elements for each combination size
-    shared_elements = {}
-    for r in range(2, len(lists) + 1):
-
-        # Make combinations
-        combinations_lists = list(combinations(lists, r))
-
-        # Iterate over combinations
-        for combination in combinations_lists:
-
-            # Define combined name
-            combined_name = ", ".join(name for name, _ in combination)
-
-            # Initialize a set with the mutations from the first sublist
-            shared = set(combination[0][1])
-
-            # Iterate over the remaining sublists in the combination
-            for _, sublist in combination[1:]:
-
-                # Keep only the mutations that are common to all sublists
-                shared.intersection_update(sublist)
-
-            # Create an empty list for the combined name if it doesn't exist
-            if combined_name not in shared_elements.keys():
-                shared_elements[combined_name] = []
-
-            # Add value to dictionary key
-            shared_elements[combined_name].append(shared)
-
-    # Remove duplicate mutations from subsets
-    filt_shared_elements = remove_duplicate_mutations(shared_elements)
-
-    # Write out string
-    tmp_shared = ''
-
-    # Iterate over filtered dictionary items
-    for combination, shared in filt_shared_elements.items():
-
-        # If the shared elements contains something
-        if len(shared) > 0:
-
-            # Iterate over each value
-            for val in shared:
-
-                # If the value is not an empty set
-                if len(val) != 0:
-
-                    # Convert val set to string
-                    V = ', '.join(val)
-
-                    # Define out string
-                    tmp_shared += f"-- {V} -> [{combination}]\n"
-        else:
-            continue
-
-    # Write output file
-    if len(tmp_shared) > 0:
-        out += "- Variants with multiple effects:\n"
-        out += tmp_shared
-    else:
-        out += "- No variants with multiple effects have been found.\n"
-
-    ### DAMAGING ###
-    damaging_all = set(all_stability + all_local + ptm_s_d_list + ptm_r_d_list + all_long_range + all_disulfide)
-    data_d = data.query('index in @damaging_all')
-
-    # For alphamissense output include ptm_f as well in set and df
+    # Combine the damaging mutations of all modules
     damaging_full = set(all_stability + all_local + all_ptm + multiple_1 + all_long_range + all_disulfide)
     full_data_d = data.query('index in @damaging_full')
 
-    # REVEL score > 0.5 (default)
-    revel_d = data_d.index[data_d['REVEL score'] >= r_cutoff].to_list()
-
-    out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-        f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-        f'the ones with a REVEL score higher than 0.5 for a total of {len(revel_d)} variants ' \
-        f'which could be of interest for further investigation:\n'
-    out += f'-- {revel_d}\n'
-
-    # popEVE score < -4.617 (default)
-    try:
-        popeve_d = data_d.index[data_d['popEVE score'] < p_cutoff].to_list()
-
-        out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-               f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-               f'the ones with a popEVE score < {p_cutoff} for a total of {len(popeve_d)} variants ' \
-               f'which could be of interest for further investigation:\n'
-        out += f'-- {popeve_d}\n'
-    except KeyError:
-        out += '\n- popEVE score not available.\n'
-
-    # Demask
-    demask_d = data_d.index[(data_d['DeMaSk delta fitness'] >= d_cutoff) | (data_d['DeMaSk delta fitness'] <= -d_cutoff)].to_list()
-    out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-        f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-        f'the ones with a Demask delta fitness >= {d_cutoff} or <= -{d_cutoff} ' \
-        f'for a total of {len(demask_d)} variants which could be of interest for further investigation:\n'
-    out += f'-- {demask_d}\n'
-
-    try:
-        # EVE
-        eve_d = data_d.index[data_d['EVE classification (25% Uncertain)'] == 'pathogenic'].to_list()
-        out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-            f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-            f'the ones with an EVE classification of Pathogenic for a total of {len(eve_d)} variants ' \
-            f'which could be of interest for further investigation:\n '
-        out += f'-- {eve_d}\n'
-    except KeyError:
-        out += '\n- EVE grouped classification not available.\n'
-
-    # Initialise AlphaMissense df
-    alpha_d_df = pd.DataFrame()
-
-    try:
-        # Alphamissense
-        # Subset the df for damaging mutations and with alphamissense pathogenic classification
-        alpha_d_df = full_data_d[full_data_d['AlphaMissense classification'] == 'pathogenic']
-        alpha_d = data_d.index[data_d['AlphaMissense classification'] == 'pathogenic'].to_list()
-        out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-               f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-               f'the ones with an AlphaMissense classification of Pathogenic for a total of {len(alpha_d)} variants ' \
-               f'which could be of interest for further investigation:\n '
-        out += f'-- {alpha_d}\n'
-    except KeyError:
-        log.warning(f'AlphaMissense grouped classification not available. Outfile will be empty...')
-        out += '\n- AlphaMissense grouped classification not available.\n'
-
-    # Experimental Classification
-    try:
-        # ID experimental classification columns in df
-        exp_clm = [col for col in data if col.startswith('Experimental data classification')]
-
-        # If no experimental columns are present
-        if not exp_clm:
-            raise KeyError
-
-        for col in exp_clm:
-            exper_d = data_d.index[data_d[col] == 'damaging'].to_list()
-            experiment = re.findall(r'\([^)]*\)', col)
-            out += f'- We aggregated all the variants that have at least one of the MAVISp modules ' \
-                f'with a predicted damaging effect (except for PTM.function) and retained only ' \
-                f'the ones with an experimentally predicted damaging effect within the context of the experiment ' \
-                f'{experiment[0]} for a total of {len(exper_d)} variants ' \
-                f'which could be of interest for further investigation:\n '
-            out += f'-- {exper_d}\n'
-    except KeyError:
-        out += '\n- Experimental classification not available.\n'
-
-    # Early Folding Regions
-    try:
-        earlyfolding_reg = data.index[data['EFoldMine - part of early folding region'] == 'true'].to_list()
-        out += f'\n- We identified continuous stretches of residues that are above a '\
-               f'pre-determined threshold of a minimum length of 3 residues to ' \
-               f'assign whether each residue is part of a early folding region ' \
-               f'totalling to {len(earlyfolding_reg)} variants. {out_list(earlyfolding_reg)}\n'
-    except KeyError:
-        out += '\n- EfoldMine annotation not available.\n'
-
-    # Clinvar classification
-    try:
-        clinvar_nan = data[clinvar_clmn].isna().sum()
-        out += f'\nNot reported {clinvar_clmn} in clinvar: ' + str(clinvar_nan) + '\n'
-        clinvar_grouped = data.groupby([clinvar_clmn])[clinvar_clmn].count()
-        out += str(clinvar_grouped) + '\n'
-    except KeyError:
-        out += '\nClinvar grouped classification not available.\n'
-
-    return out, full_data_d
-
-def remove_duplicate_mutations(dictionary):
-    ''' Remove duplucate mutations in mutations with
-    multiple effects.
-
-    If a mutation is shared by more than 2 classes,
-    it must be removed from the list of the subclasses.
-
-    Parameters
-    ----------
-    dictionary: dict
-        dictionary to be filtered
-    Returns
-    ----------
-    filtered_dictionary: dict
-        filtered dictionary
-
-    '''
-
-    # Make empty out dict
-    filtered_dictionary = {}
-
-    # Iterate over dict keys and val
-    for key, value in dictionary.items():
-
-        # Set subset flag to false
-        is_subset = False
-
-        # Iterate over the dict keys
-        for other_key in dictionary.keys():
-
-            # If the new key is not the same as the previous one
-            # and the key is a subset of the previous one
-            if key != other_key and set(key).issubset(set(other_key)):
-
-                # Change flax to true
-                is_subset = True
-                break
-
-         # If flag is set to true
-        if is_subset:
-
-            # Remove the repeated mutations
-            filtered_value = [mutation for mutation in value if mutation not in dictionary[other_key]]
-
-        else:
-
-            # Keep the original list of mutations
-            filtered_value = value
-
-        # Replace the value associated to a key with the filtered list
-        filtered_dictionary[key] = filtered_value
-
-    return filtered_dictionary
-
-
-def out_list(x):
-    ''' Print list or message in summary.
-
-    The function returns the output that will be printed
-    in the summary file. If the length of the list containing
-    the mutations of a category is 10 or less it will return
-    the list, otherwise "see csv file for details".
-
-    Parameters
-    ----------
-    x: list
-        input list of interest
-    Returns
-    ----------
-    o: str
-        string containing the summary message
-
-    '''
-
-    # If length of list is shorter than 10
-    if len(x) <= 10:
-
-        # Print list
-        o = f'{x}\n'
-
-    else:
-
-        # Else print message
-        o = 'See csv file for details.\n'
-
-    return o
+    return full_data_d
 
 def effect_summary(df):
     '''Add effect column to AM output csv.
@@ -1797,6 +1042,10 @@ def effect_summary(df):
         '(?i)uncertain': 0,
         'ambiguous': 0}
 
+    # Rename Denovo phospho columns
+    df.columns = df.columns.str.replace("Classification of change in folding free energy with phosphorylation", "De novo phosphorylation stability", regex=False)
+    df.columns = df.columns.str.replace("Classification of change in binding free energy with phosphorylation", "De novo phosphorylation binding", regex=False)
+
     # Replace values with 0/1s
     temp_df = df.replace(mechanism_code, regex=True)
 
@@ -1808,9 +1057,9 @@ def effect_summary(df):
 
     # Define broad effect categories + corresponding regex patterns
     effect_categories = {
-        'Stability': 'Stability classification',
-        'Local Int.': 'Local Int.',
-        'PTM': 'PTM effect',
+        'Stability': 'Stability classification|De novo phosphorylation stability',
+        'Local Int.': 'Local Int.|De novo phosphorylation binding',
+        'PTM': 'Phosphorylation effect',
         'Long Range': 'AlloSigMA',
         'Functional': 'Functional sites',
         'Disulfide bridges': 'Disulfide bridges'}
@@ -1830,6 +1079,7 @@ def effect_summary(df):
 
     # Add the new column to the original DataFrame
     df['MAVISp Effects'] = effects_summary
+
     return df
 
 def load_clinvar_dict(tsv_file):
@@ -1910,9 +1160,11 @@ def filter_vep_summary(summary, df, vep_filter, glof_filter):
     f = lambda x: 'Stability classification' in x or \
               'Local Int. classification' in x or \
               'Local Int. With DNA classification' in x or \
+              "Classification of change in folding free energy with phosphorylation" in x or \
+              "Classification of change in binding free energy with phosphorylation" in x or \
               'AlloSigMA 2 predicted consequence' in x or \
               'AlloSigMA2-PSN classification' in x or \
-              'PTM effect' in x or \
+              'Phosphorylation effect' in x or \
               'Functional sites' in x or \
               'Loss of disulfide bridge' in x or \
               'Predicted de-novo disulfide bridge' in x or \
@@ -1955,6 +1207,7 @@ def filter_vep_summary(summary, df, vep_filter, glof_filter):
     if filtered_am.empty:
         log.warning(f'No mutations found with AM pathogenic annotation'\
                     f' output file will be empty...')
+
 
     return filtered_am
 
@@ -2240,15 +1493,9 @@ def main():
 
     ############################### SUMMARY ###############################
 
-    # Write summary output file
-    with open(f'log_{args.clinvar_class_type}.txt', 'w') as out:
-        summary, summary_df = generate_summary(data = dataframe,
-                                               d_cutoff = args.demask_threshold,
-                                               r_cutoff = args.revel_threshold,
-                                               p_cutoff=args.popeve_threshold,
-                                               clinvar_cols = clinvar_cols)
-        out.write(summary)
-
+    # Select the mutations with a damaging effect in at least one module
+    summary_df = get_damaging_mutations(data = dataframe)
+    
     ################################# PLOT #################################
     '''
     filter_col = [col for col in plot_df if col.startswith("Local Int.")]
