@@ -83,9 +83,10 @@ def process_input(df):
                         'Local Int. ' in x or \
                         'AlloSigMA 2 predicted consequence' in x or \
                         'AlloSigMA2-PSN classification' in x or \
-                        'PTM effect' in x or \
+                        'Phosphorylation effect' in x or \
                         'disulfide bridge' in x or \
                         'Functional sites' in x or \
+                        'De novo phosphorylation' in x or \
                         'Mutation' in x and not 'Mutation sources' in x
 
     df = df[[col for col in df.columns if f(col)]]
@@ -97,7 +98,7 @@ def process_input(df):
         'disulfide bridge' : 'Disulfide bridges',
         'AlloSigMA': 'Long Range',
         'Local Int. ': 'Local Int.',
-        'PTM effect': 'PTM',
+        'Phosphorylation effect': 'PTM',
         'Functional sites' : 'Functional'
     }
     # Print warning if not one column identified
@@ -127,7 +128,7 @@ def process_input(df):
     df['Disulfide bridges'] = df.filter(regex='disulfide bridge').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['Long Range'] = df.filter(regex='AlloSigMA').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['Local Int.'] = df.filter(regex='Local Int.').apply(pd.to_numeric, errors="coerce").max(axis=1)
-    df['PTM']        = df.filter(regex='PTM effect').apply(pd.to_numeric, errors="coerce").max(axis=1)
+    df['PTM']        = df.filter(regex='Phosphorylation effect|De novo phosphorylation').apply(pd.to_numeric, errors="coerce").max(axis=1)
     df['Functional'] = df.filter(regex='Functional sites').apply(pd.to_numeric, errors="coerce").max(axis=1)
 
     # Filter df for relevant columns
@@ -279,6 +280,11 @@ def main():
                         dest = "save_png",
                         action = 'store_true',
                         help = "Save individual plots as PNGs")
+    parser.add_argument('-o',
+                        dest="output_prefix",
+                        default="lolliplot",
+                        type=str,
+                        help="Output filename prefix. Default: lolliplot")
     args = parser.parse_args()
 
     # Logging configuration
@@ -310,10 +316,10 @@ def main():
         save_png = False
 
     # Save plots
-    with PdfPages("lolliplot.pdf") as pdf:
+    with PdfPages(f"{args.output_prefix}.pdf") as pdf:
         for i, figure in enumerate(figures):
             if save_png:
-                figure.savefig(f'lolliplot_{i}.png',
+                figure.savefig(f'{args.output_prefix}_{i}.png',
                             dpi=300,
                             bbox_inches='tight')
             figure.savefig(pdf,

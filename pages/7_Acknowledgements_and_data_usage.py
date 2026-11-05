@@ -110,7 +110,7 @@ or annotation of protein-level features, or structure:
   - [**ELM**](http://elm.eu.org), the Eukaryotic Linear Motif resource for functional sites in proteins.
   - [**PhosphoSitePlus**](https://www.phosphosite.org), a database of
   post-translational modifications. Data from PhosphoSitePlus in MAVISp, (i.e.
-  the PTMs column in our database files) is released according to the
+  the Phosphorylation column in our database files) is released according to the
   [PhosphoSitePlus' terms and conditions](https://www.phosphosite.org/staticDownloads),
   and it is not available for commercial use.
   - [**NetPhos**](https://services.healthtech.dtu.dk/services/NetPhos-3.1/) for the prediction

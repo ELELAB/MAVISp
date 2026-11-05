@@ -40,7 +40,7 @@ class MAVISpSimpleMode(MAVISpMode):
     supported_modules = [ CancermutsTable,
                           Pfam,
                           TED,
-                          PTMs,
+                          Phosphorylation,
                           DenovoPhospho,
                           LongRange,
                           SimpleStability,
@@ -61,7 +61,7 @@ class MAVISpSimpleMode(MAVISpMode):
                           Splicing,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions',
-    'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'ptms',
+    'local_interactions_DNA', 'local_interactions_homodimers', 'sas', 'phosphorylation',
     'denovo_phospho', 'long_range', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold',
     'demask', 'gemme', 'eve', 'alphamissense', 'popeve', 'splicing', 'experimental_data']
     supported_metadata = ['uniprot_ac', 'refseq_id', 'review_status', 'curators', 'gitbook_entry',
@@ -216,7 +216,7 @@ class MAVISpEnsembleMode(MAVISpMode):
     supported_modules = [ CancermutsTable,
                           Pfam,
                           TED,
-                          EnsemblePTMs,
+                          EnsemblePhosphorylation,
                           EnsembleAllosigmaPSNLongRange,
                           EnsembleStability,
                           EnsembleLocalInteractions,
@@ -238,7 +238,7 @@ class MAVISpEnsembleMode(MAVISpMode):
                           Splicing,
                           ExperimentalData ]
     module_order = ['cancermuts', 'pfam', 'ted', 'stability', 'efoldmine', 'local_interactions', 'local_interactions_DNA',
-    'local_interactions_homodimers', 'sas', 'ptms', 'denovo_phospho', 'long_range',
+    'local_interactions_homodimers', 'sas', 'phosphorylation', 'denovo_phospho', 'long_range',
     'functional_dynamics', 'functional_sites', 'disulfide_bridges', 'clinvar', 'alphafold', 'demask',
     'gemme', 'eve', 'alphamissense', 'popeve', 'splicing', 'experimental_data']
     name = 'ensemble_mode'
