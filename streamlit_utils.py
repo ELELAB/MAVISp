@@ -21,13 +21,18 @@ import pandas as pd
 from fsspec.implementations.dirfs import DirFileSystem
 from fsspec.implementations.zip   import ZipFileSystem
 from pathlib import Path
+
 from dot_plot import plot as do_dotplots
 from dot_plot import process_input as process_input_for_dotplot
-from dot_plot import generate_summary, filter_vep_summary
+from dot_plot import generate_summary
+from dot_plot import filter_vep_summary as filter_vep_summary_v1
+
 from dot_plot_v2 import plot as do_dotplots_v2
 from dot_plot_v2 import process_input as process_input_for_dotplot_v2
-from dot_plot_v2 import generate_summary as generate_summary_v2
+from dot_plot_v2 import get_damaging_mutations
+from dot_plot_v2 import filter_vep_summary as filter_vep_summary_v2
 from dot_plot_v2 import get_clinvar_columns
+
 from lolliplot import process_input as process_input_for_lolliplot
 from lolliplot import plot as do_lolliplot
 
@@ -278,6 +283,9 @@ def process_df_for_lolliplot(df):
                                                                 color_Clinvar=False)
 
         text, summary_df = generate_summary(full_df, d_cutoff=0.25, r_cutoff=0.5)
+
+        filtered_summary_df = filter_vep_summary_v1(summary_df, processed_df, 'alphamissense', True
+)
     else:
         # New-style CSVs split ClinVar fields and should use dot_plot_v2.py.
         clinvar_cols = get_clinvar_columns(df, NEW_CLINVAR_CLASS_TYPE)
@@ -298,9 +306,9 @@ def process_df_for_lolliplot(df):
                                                                 color_Clinvar=False,
                                                                 clinvar_cols=clinvar_cols)
 
-        text, summary_df = generate_summary_v2(full_df, d_cutoff=0.25, r_cutoff=0.5, p_cutoff=-4.617, clinvar_cols=clinvar_cols)
+        summary_df = get_damaging_mutations(full_df)
 
-    filtered_summary_df = filter_vep_summary(summary_df, processed_df, 'alphamissense', True)
+        filtered_summary_df = filter_vep_summary_v2(summary_df, processed_df, 'alphamissense', True)
 
     return process_input_for_lolliplot(filtered_summary_df)
 
@@ -311,7 +319,10 @@ def plot_lolliplots(df, muts_per_plot=50):
 @st.cache_data
 def get_compact_dataset(this_dataset_table):
     default_cols = ['Mutation', 'HGVSp', 'HGVSg', 'Mutation sources']
-    selected_cols = [c for c in this_dataset_table.columns if "classification" in c ]
+    selected_cols = [ c for c in this_dataset_table.columns if (
+        "classification" in c.lower()
+        or "phosphorylation effect" in c.lower()
+        or "ptm effect" in c.lower() ) ]
     return this_dataset_table[default_cols + selected_cols + ['References']]
 
 def replace_boolean_col(df, col, dictionary={True : 'Yes', False : 'No'}):
