@@ -1494,7 +1494,7 @@ class Phosphorylation(MavispModule):
         ddg_binding['number'] = ddg_binding['mutation'].str[2:-1].astype(int)
         ddg_binding['mutation'] = ddg_binding['ref'].astype(str) + ddg_binding['number'].astype(str) + ddg_binding['alt'].astype(str)
 
-        if ddg_stability.shape[0] != 0 and ddg_binding.shape[0] != 0 and not (ddg_binding['mutation'] == ddg_stability['mutation']).all():
+        if ddg_stability.shape[0] != 0 and ddg_binding.shape[0] != 0 and list(ddg_binding['mutation']) != list(ddg_stability['mutation']):
             this_error = f"stability DDG summary has different residues or a different order of residues than binding DDG summary"
             raise MAVISpMultipleError(warning=warnings,
                                       critical=[MAVISpCriticalError(this_error)])
