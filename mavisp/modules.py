@@ -412,7 +412,16 @@ class SimpleStability(Stability):
             for model in models:
                 method_dirs = os.listdir(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model))
                 for method_dir in method_dirs:
-                    model_data, model_stds, _, this_warnings = self.methods[method_dir].parse(os.path.join(self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}', method, model, method_dir))
+                    parser = self.methods[method_dir]
+                    method_path = os.path.join(
+                        self.data_dir, self.module_dir, f'{structure_ID}_{residue_range}',
+                        method, model, method_dir,
+                    )
+                    if isinstance(parser, (MutateXStability, RaSP)):
+                        result = parser.parse(method_path, warn_missing_conformations=False)
+                    else:
+                        result = parser.parse(method_path)
+                    model_data, model_stds, _, this_warnings = result
                     warnings += this_warnings
 
                     model_data.columns = [ f"Stability ({self.methods[method_dir].version}, {method}, {self.methods[method_dir].unit})" ]

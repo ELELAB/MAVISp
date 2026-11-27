@@ -89,7 +89,7 @@ class MutateXStability(Method):
 
         return df
 
-    def parse(self, dir_path):
+    def parse(self, dir_path, *, warn_missing_conformations=True):
 
         warnings = []
 
@@ -111,8 +111,9 @@ class MutateXStability(Method):
         if self.conf_filename in mutatex_files:
             conf_mutation_data = self._parse_conformations_file(os.path.join(dir_path, self.conf_filename))
         else:
-            warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for MutateX data"))
             conf_mutation_data = None
+            if warn_missing_conformations:
+                warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for MutateX data"))
 
         return averages_df, stds_df, conf_mutation_data, warnings
 
@@ -704,7 +705,7 @@ class RaSP(Method):
 
         return df
 
-    def parse(self, dir_path):
+    def parse(self, dir_path, *, warn_missing_conformations=True):
 
         warnings = []
 
@@ -723,9 +724,9 @@ class RaSP(Method):
             csv_files = []
             rasp_folder = os.listdir(dir_path)
 
-            if self.conf_filename not in rasp_folder:
-                                warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for RaSP data"))
-                                conf_mutation_data = None
+            conf_mutation_data = None
+            if warn_missing_conformations and self.conf_filename not in rasp_folder:
+                warnings.append(MAVISpWarningError("Conformation-dependent stability population file not found for RaSP data"))
 
             # Check if all available files are directories
             for item in rasp_folder:
