@@ -1,5 +1,7 @@
 # List of curators for protein entries in the MAVISp database
 
+Each `system/mode/mutation_list/` directory must contain exactly one mutation list file whose filename stem ends in a valid `DDMMYYYY` date. Store older lists outside that directory.
+
 Follows a list of all the people that contributed to the MAVISp database as curators:
 
 - Matteo Arnaudi, Technical University of Denmark and Danish Cancer Institute
