@@ -20,7 +20,7 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 import logging as log
-from datetime import date
+from datetime import datetime
 from mavisp.error import *
 from mavisp.methods import *
 from mavisp.modules import *
@@ -173,15 +173,16 @@ class MAVISpFileSystem:
 
         mutation_file = mutation_files[0]
         date_suffix = os.path.splitext(mutation_file)[0][-8:]
+        date_error = (
+            f"mutation list filename {mutation_file!r} in {system}/{mode}/mutation_list "
+            "must end with a valid DDMMYYYY date before the extension"
+        )
+        if len(date_suffix) != 8 or not date_suffix.isascii() or not date_suffix.isdecimal():
+            raise MAVISpCriticalError(date_error)
         try:
-            if len(date_suffix) != 8 or not date_suffix.isascii() or not date_suffix.isdecimal():
-                raise ValueError
-            date(int(date_suffix[4:]), int(date_suffix[2:4]), int(date_suffix[:2]))
+            datetime.strptime(date_suffix, "%d%m%Y")
         except ValueError as e:
-            raise MAVISpCriticalError(
-                f"mutation list filename {mutation_file!r} in {system}/{mode}/mutation_list "
-                "must end with a valid DDMMYYYY date before the extension"
-            ) from e
+            raise MAVISpCriticalError(date_error) from e
 
         self.log.info(f"selected {mutation_file} as mutation file")
 
