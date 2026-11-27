@@ -330,6 +330,8 @@ Additionally, if the mutation list or metadata file are not available, the whole
 as being in a `CRITICAL` state - if this is the case, the corresponding modules will not be 
 processed and the detected error will be displayed in the report. 
 
+Each `system/mode/mutation_list/` directory must contain exactly one mutation list file whose filename stem ends in a valid `DDMMYYYY` date (for example, `mutations_pmid_10122025.txt`). A missing or extra file or an invalid date flags the dataset as `CRITICAL`.
+
 If any module generates at least one error or warning for a given dataset, the status of the corresponding
 dataset in the summary table is set accordingly.
 
