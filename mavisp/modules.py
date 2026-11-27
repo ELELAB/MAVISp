@@ -2967,7 +2967,6 @@ class DisulfideBridges(MavispModule):
 
         for filename, separator, column in inputs:
             if filename not in available_files:
-                out_df[column] = pd.NA
                 continue
 
             try:
