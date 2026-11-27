@@ -2199,9 +2199,14 @@ class AlphaMissense(MavispModule):
                                       critical=[MAVISpCriticalError(this_error)])
         missing_mutations = set(mutations).difference(afm.index)
         if missing_mutations:
-            raise MAVISpMultipleError(warning=warnings,
-                                      critical=[MAVISpCriticalError(f"The following mutations had a wild-type residue that did not correspond "
-                                                                   f"to the sequence used by AlphaMissense: {missing_mutations}.")])
+            raise MAVISpMultipleError(
+                warning=warnings,
+                critical=[MAVISpCriticalError(
+                    "One or more requested mutations have no AlphaMissense entry. "
+                    "Check that the wild-type residues and numbering match "
+                    "the sequence used by AlphaMissense."
+                )],
+            )
 
         self.data = afm.rename(columns = {'am_pathogenicity'     : 'AlphaMissense pathogenicity score',
                                           'am_class'   : 'AlphaMissense classification',})
