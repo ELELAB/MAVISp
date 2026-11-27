@@ -106,6 +106,10 @@ class MAVISpFileSystem:
 
             try:
                 mutation_list = self._parse_mutation_list(system, mode.name)
+            except MAVISpCriticalError as e:
+                self.log.error(e)
+                mutation_list = None
+                mavisp_criticals.append(e)
             except Exception as e:
                 self.log.error(e)
                 mutation_list = None
@@ -161,10 +165,27 @@ class MAVISpFileSystem:
         self.log.info(f"Gathering mutation list for {system} {mode}")
 
         mutation_files = self._file_list(self._tree[system][mode]['mutation_list'])
-        most_recent_mut_file = self._select_most_recent_file(mutation_files)
-        self.log.info(f"selected {most_recent_mut_file} as mutation file")
+        if len(mutation_files) != 1:
+            raise MAVISpCriticalError(
+                f"expected exactly one file in {system}/{mode}/mutation_list, "
+                f"found {len(mutation_files)}"
+            )
 
-        mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', most_recent_mut_file)
+        mutation_file = mutation_files[0]
+        date_suffix = os.path.splitext(mutation_file)[0][-8:]
+        try:
+            if len(date_suffix) != 8 or not date_suffix.isascii() or not date_suffix.isdecimal():
+                raise ValueError
+            date(int(date_suffix[4:]), int(date_suffix[2:4]), int(date_suffix[:2]))
+        except ValueError as e:
+            raise MAVISpCriticalError(
+                f"mutation list filename {mutation_file!r} in {system}/{mode}/mutation_list "
+                "must end with a valid DDMMYYYY date before the extension"
+            ) from e
+
+        self.log.info(f"selected {mutation_file} as mutation file")
+
+        mut_path = os.path.join(self.data_dir, system, mode, 'mutation_list', mutation_file)
 
         try:
             mutations = pd.read_csv(mut_path, sep='\t')
@@ -184,29 +205,6 @@ class MAVISpFileSystem:
         self.log.debug(f"found mutations: {mutations['mutation'].tolist()}")
 
         return mutations
-
-    def _select_most_recent_file(self, fnames):
-
-        dates = {}
-
-        for fname in fnames:
-
-            basename = os.path.splitext(fname)[0]
-
-            try:
-                dates[date(int(basename[-4:]),
-                           int(basename[-6:-4]),
-                           int(basename[-8:-6]))] = fname
-            except (ValueError, TypeError):
-                log.error("file {fname} doesn't contain a valid date string at the end of the file name")
-                raise TypeError
-
-        selected_file = dates[max(dates.keys())]
-
-        self.log.debug(f"file names and their dates {dates}")
-        self.log.debug(f"selected most recent file {selected_file} among {fnames}")
-
-        return selected_file
 
     def ingest(self, stop_at='critical'):
 
